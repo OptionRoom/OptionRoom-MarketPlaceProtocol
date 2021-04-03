@@ -1,12 +1,11 @@
 pragma solidity ^0.5.1;
-//import {FixedProductMarketMaker} from "@gnosis.pm/conditional-tokens-market-makers/contracts/FixedProductMarketMaker.sol";
-import {FixedProductMarketMaker} from "./FixedProductMarketMaker.sol";
-import { SafeMath } from "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import { ConditionalTokens } from "@gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
-import { CTHelpers } from "@gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
-import { ERC1155TokenReceiver } from "@gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
-import { ERC20 } from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import {FixedProductMarketMaker} from "../gnosis.pm/conditional-tokens-market-makers/contracts/FixedProductMarketMaker.sol";
+import { SafeMath } from "../openzeppelin-solidity/contracts/math/SafeMath.sol";
+import { IERC20 } from "../openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import { ConditionalTokens } from "../gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
+import { CTHelpers } from "../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
+import { ERC1155TokenReceiver } from "../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
+import { ERC20 } from "../openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 contract ExtendedMarketMakert is FixedProductMarketMaker {
 }
