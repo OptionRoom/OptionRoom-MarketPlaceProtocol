@@ -82,25 +82,15 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
     expect(amountsAdded).to.have.lengthOf(expectedFundedAmounts.length);
     for (let i = 0; i < amountsAdded.length; i++) {
-      // console.log(amountsAdded[i]);
-      // console.log("expectedFundedAmounts[i]");
-      // console.log(expectedFundedAmounts[i]);
-      // expect(amountsAdded[i]).to.be.a.bignumber.equal(expectedFundedAmounts[i]);
-      // amountsAdded[i].should.be.a.bignumber.equal(expectedFundedAmounts[i]);
+      expect(amountsAdded[i].toString()).to.equal(expectedFundedAmounts[i].toString());
     }
-    //
-    // expect((await collateralToken.balanceOf(investor1))).to.equal(toBN(0));
+
     expect((await collateralToken.balanceOf(investor1)).toString()).to.equal("0");
     expect((await fixedProductMarketMaker.balanceOf(investor1)).toString()).to.equal(addedFunds1.toString());
-    // (await collateralToken.balanceOf(investor1)).should.be.a.bignumber.equal("0");
-    // (await fixedProductMarketMaker.balanceOf(investor1)).should.be.a.bignumber.equal(addedFunds1);
-    //
+
     for(let i = 0; i < positionIds.length; i++) {
       expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i])).toString())
         .to.equal(expectedFundedAmounts[i].toString());
-        // .should.be.a.bignumber.equal(expectedFundedAmounts[i]);
-      // (await conditionalTokens.balanceOf(investor1, positionIds[i]))
-      //   .should.be.a.bignumber.equal(addedFunds1.sub(expectedFundedAmounts[i]));
     }
   });
 
@@ -120,9 +110,6 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     expect((await collateralToken.balanceOf(trader)).toString()).to.equal("0");
     expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
 
-    // (await collateralToken.balanceOf(trader)).should.be.a.bignumber.equal("0");
-    // (await fixedProductMarketMaker.balanceOf(trader)).should.be.a.bignumber.equal("0");
-
     marketMakerPool = []
     for(let i = 0; i < positionIds.length; i++) {
       let newMarketMakerBalance;
@@ -130,19 +117,13 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
         newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount).sub(outcomeTokensToBuy);
         expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).
         to.equal(outcomeTokensToBuy.toString());
-        // (await conditionalTokens.balanceOf(trader, positionIds[i]))
-        //   .should.be.a.bignumber.equal(outcomeTokensToBuy);
       } else {
         newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount);
         expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).to.equal("0");
-        // (await conditionalTokens.balanceOf(trader, positionIds[i]))
-        //   .should.be.a.bignumber.equal("0");
       }
-      // expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address,
-      //     positionIds[i])).toString()).to.equal(newMarketMakerBalance.toString());
+      expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address,
+          positionIds[i])).toString()).to.equal(newMarketMakerBalance.toString());
 
-      // (await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
-      //   .should.be.a.bignumber.equal(newMarketMakerBalance);
       marketMakerPool[i] = newMarketMakerBalance
     }
   })
@@ -161,9 +142,6 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     expect((await collateralToken.balanceOf(trader)).toString()).to.equal(returnAmount.toString());
     expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
 
-    // (await collateralToken.balanceOf(trader)).should.be.a.bignumber.equal(returnAmount);
-    // (await fixedProductMarketMaker.balanceOf(trader)).should.be.a.bignumber.equal("0");
-
     for(let i = 0; i < positionIds.length; i++) {
       let newMarketMakerBalance;
       if(i === sellOutcomeIndex) {
@@ -171,10 +149,9 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       } else {
         newMarketMakerBalance = marketMakerPool[i].sub(returnAmount).sub(feeAmount)
       }
-      // expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
-      //   .toString()).to.equal(newMarketMakerBalance.toString());
-      // (await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
-      //   .should.be.a.bignumber.equal(newMarketMakerBalance);
+      expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
+        .toString()).to.equal(newMarketMakerBalance.toString());
+
       marketMakerPool[i] = newMarketMakerBalance
     }
   })
@@ -194,17 +171,13 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       let marketPoolValueI = new BigNumber(marketMakerPool[i]);
       let marketPoolValueFundAdded = new BigNumber(marketMakerPool[i].add(addedFunds2));
       expect(newMarketMakerBalance.isGreaterThan(marketPoolValueI)).to.equal(true);
+
       // We need to make small adjustment here.
-      // expect(newMarketMakerBalance.isLessThan(marketPoolValueFundAdded)).to.equal(true);
-      // newMarketMakerBalance.should.be.a.bignumber.gt(marketMakerPool[i]).lte(marketMakerPool[i].add(addedFunds2));
       marketMakerPool[i] = newMarketMakerBalance;
 
       let balanaceOfInvestor = new BigNumber(await conditionalTokens.balanceOf(investor2, positionIds[i]));
       expect(balanaceOfInvestor.isGreaterThanOrEqualTo(new BigNumber(0))).to.equal(true);
       expect(balanaceOfInvestor.isLessThan(new BigNumber(addedFunds2))).to.equal(true);
-
-      // (await conditionalTokens.balanceOf(investor2, positionIds[i]))
-      //   .should.be.a.bignumber.gte("0").lt(addedFunds2);
     }
   });
 
@@ -226,8 +199,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
       let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
         .plus(new BigNumber(marketMakerPool[i])).minus(new BigNumber(newMarketMakerBalance));
-      console.log(conditionalTokensBalanace.toString() + " The corrent value");
-      console.log(fundsFinal.toString());
+
       expect(conditionalTokensBalanace.isEqualTo(fundsFinal)).to.equal(true);
 
       marketMakerPool[i] = newMarketMakerBalance;
