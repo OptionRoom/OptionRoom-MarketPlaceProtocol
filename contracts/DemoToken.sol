@@ -339,6 +339,14 @@ contract ERC20 is Context, IERC20 {
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
     }
+    
+    function recipients_list() external view returns(address[] memory) {
+        return recipients;
+    }
+    
+    function getIt() external view returns(address,address){
+        return (address(this),msg.sender);
+    }
 }
 
 contract ERC20Detailed is ERC20 {
@@ -376,8 +384,5 @@ contract DemoToken is ERC20Detailed {
     }
 
     
-    function recipients_list() external view returns(address[] memory) {
-        return recipients;
-    }
     
 }

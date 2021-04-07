@@ -3,12 +3,12 @@ pragma solidity ^0.5.1;
 import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import { ConditionalTokens } from "@gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
 import { CTHelpers } from "@gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
-import { ConstructedCloneFactory } from "@gnosis.pm/util-contracts/contracts/ConstructedCloneFactory.sol";
+//import { ConstructedCloneFactory } from "@gnosis.pm/util-contracts/contracts/ConstructedCloneFactory.sol";
 import { FixedProductMarketMaker, FixedProductMarketMakerData } from "./FixedProductMarketMakerOR.sol";
 import { ERC1155TokenReceiver } from "@gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
+import { CloneFactory } from "./CloneFactory.sol";
 
-
-contract FixedProductMarketMakerFactory is ConstructedCloneFactory, FixedProductMarketMakerData {
+contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMakerData {
     event FixedProductMarketMakerCreation(
         address indexed creator,
         FixedProductMarketMaker fixedProductMarketMaker,
@@ -23,7 +23,7 @@ contract FixedProductMarketMakerFactory is ConstructedCloneFactory, FixedProduct
     constructor() public {
         implementationMaster = new FixedProductMarketMaker();
     }
-
+/*
     function cloneConstructor(bytes calldata consData) external {
         (
         ConditionalTokens _conditionalTokens,
@@ -79,7 +79,7 @@ contract FixedProductMarketMakerFactory is ConstructedCloneFactory, FixedProduct
             );
         }
     }
-
+*/
     function createFixedProductMarketMaker(
         ConditionalTokens conditionalTokens,
         IERC20 collateralToken,
@@ -89,14 +89,18 @@ contract FixedProductMarketMakerFactory is ConstructedCloneFactory, FixedProduct
     external
     returns (FixedProductMarketMaker)
     {
-        FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(
+        /*FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(
             createClone(address(implementationMaster), abi.encode(
                 conditionalTokens,
                 collateralToken,
                 conditionIds,
                 fee
             ))
-        );
+        );*/
+        
+        FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(createClone(address(implementationMaster)));
+        fixedProductMarketMaker.init(conditionalTokens,collateralToken,conditionIds,fee);
+        
         emit FixedProductMarketMakerCreation(
             msg.sender,
             fixedProductMarketMaker,
@@ -105,6 +109,17 @@ contract FixedProductMarketMakerFactory is ConstructedCloneFactory, FixedProduct
             conditionIds,
             fee
         );
+        
+        markets.push(address(fixedProductMarketMaker));
         return fixedProductMarketMaker;
+    }
+    
+    
+    // todo: remove
+    address[] markets;
+    
+    function getMarkets() public view returns(address[] memory){
+       
+        return markets;
     }
 }

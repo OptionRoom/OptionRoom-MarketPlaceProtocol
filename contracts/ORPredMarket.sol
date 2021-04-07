@@ -23,13 +23,19 @@ contract ORPredMarket{
         
     }
     
-    // votin time 1 day = 86,400 sec
+    // voting time 1 day = 86,400 sec
     uint256 public votingPeriod = 86400; 
     uint public proposalCount;
     
     address governenceAdd;
     
     MarketProposal[] MarketProposals;
+    
+    constructor() public{
+        ct = block.timestamp;
+        
+        governenceAdd = msg.sender;
+    }
     
     function state(uint proposalId) public view returns (MarketProposalState) {
         if(proposalId > proposalCount || proposalId == 0){
@@ -63,11 +69,12 @@ contract ORPredMarket{
         votingPeriod = peridInMintues*60;
     }
     
-    constructor() public{
-        ct = block.timestamp;
-        
-        governenceAdd = msg.sender;
+    
+    modifier governence{
+        require(msg.sender == governenceAdd);
+      _;
     }
+    
     
     function getCurrentTime() public view returns(uint256){
         //TODO 
@@ -75,10 +82,7 @@ contract ORPredMarket{
         return ct;
     }
     
-    modifier governence{
-        require(msg.sender == governenceAdd);
-      _;
-    }
+    
     
     //TODO just for testing remove them
     uint256 ct;
