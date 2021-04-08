@@ -83,10 +83,10 @@ contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMaker
     function createFixedProductMarketMaker(
         ConditionalTokens conditionalTokens,
         IERC20 collateralToken,
-        bytes32[] calldata conditionIds,
+        bytes32[] memory conditionIds,
         uint fee
     )
-    external
+    internal
     returns (FixedProductMarketMaker)
     {
         /*FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(
