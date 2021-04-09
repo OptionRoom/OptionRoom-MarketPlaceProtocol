@@ -22,6 +22,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory{
         governenceAdd = msg.sender;
     }
     
+    /*
     function state(uint proposalId) public view returns (ORMarketLib.MarketProposalState) {
         if(proposalId > proposalCount || proposalId == 0){
             return ORMarketLib.MarketProposalState.Invalid;
@@ -30,6 +31,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory{
         // todo continue
         
     }
+    */
     
     mapping(bytes32 => address) public proposalIds;
     
