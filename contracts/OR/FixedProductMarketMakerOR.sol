@@ -62,12 +62,15 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     mapping (address => uint256) withdrawnFees;
     uint internal totalWithdrawnFees;
     
+    bool initiated;
     function init(
          ConditionalTokens _conditionalTokens,
          IERC20 _collateralToken,
          bytes32[] memory _conditionIds,
          uint _fee
      ) public {
+         require(initiated == false, "Market Already initiated");
+         
          conditionalTokens = _conditionalTokens;
          collateralToken = _collateralToken;
          conditionIds = _conditionIds;
@@ -386,8 +389,9 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 }
 
 
+// Todo: remove
 // for proxying purposes
-contract FixedProductMarketMakerData {
+contract FixedProductMarketMakerDataXX {
     mapping (address => uint256) internal _balances;
     mapping (address => mapping (address => uint256)) internal _allowances;
     uint256 internal _totalSupply;

@@ -4,11 +4,11 @@ import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import { ConditionalTokens } from "@gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
 import { CTHelpers } from "@gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
 //import { ConstructedCloneFactory } from "@gnosis.pm/util-contracts/contracts/ConstructedCloneFactory.sol";
-import { ORFPMarket, FixedProductMarketMakerData } from "./ORFPMarket.sol";
+import { ORFPMarket } from "./ORFPMarket.sol";
 import { ERC1155TokenReceiver } from "@gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 import { CloneFactory } from "./CloneFactory.sol";
 
-contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMakerData {
+contract FixedProductMarketMakerFactory is CloneFactory {
     event FixedProductMarketMakerCreation(
         address indexed creator,
         ORFPMarket fixedProductMarketMaker,
@@ -19,9 +19,11 @@ contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMaker
     );
 
     ORFPMarket public implementationMaster;
+    address implementationMasterAddr;
 
     constructor() public {
         implementationMaster = new ORFPMarket();
+        implementationMasterAddr = address(implementationMaster);
     }
 /*
     function cloneConstructor(bytes calldata consData) external {
@@ -98,7 +100,8 @@ contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMaker
             ))
         );*/
         
-        ORFPMarket fixedProductMarketMaker = ORFPMarket(createClone(address(implementationMaster)));
+        ORFPMarket fixedProductMarketMaker = ORFPMarket(createClone(implementationMasterAddr));
+        
         fixedProductMarketMaker.init(conditionalTokens,collateralToken,conditionIds,fee);
         
         emit FixedProductMarketMakerCreation(
@@ -110,16 +113,31 @@ contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMaker
             fee
         );
         
-        markets.push(address(fixedProductMarketMaker));
+        marketsqqq.push(fixedProductMarketMaker);
+        proposalCount++;
         return fixedProductMarketMaker;
     }
     
+    uint public proposalCount;
+    ORFPMarket[] public marketsqqq;
     
-    // todo: remove
-    address[] markets;
-    
-    function getMarkets() public view returns(address[] memory){
+    function getMarkets() public view returns(ORFPMarket[] memory){
        
-        return markets;
+        return marketsqqq;
+    }
+    
+    
+    function getCurrentTime() public view returns(uint256){
+        //TODO 
+        //return block.timestamp;
+        return crntTime;
+    }
+    
+    
+    
+    //TODO just for testing remove them
+    uint256 crntTime;
+    function increaseTime(uint256 t) public{
+        crntTime+=t;
     }
 }
