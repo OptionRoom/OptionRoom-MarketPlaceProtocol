@@ -1,10 +1,11 @@
 pragma solidity ^0.5.1;
-import "./OR/FixedProductMarketMakerFactoryOR.sol";
-import "./ORFPMarket.sol";
+import "./FixedProductMarketMakerFactoryOR.sol";
+//import "./ORFPMarket.sol";
+import "./ORMarketLib.sol";
 
 
 
-contract ORPredMarket is FixedProductMarketMakerFactory{
+contract ORPredictionMarket is FixedProductMarketMakerFactory{
     
     struct MarketProposal {
         address proposer;
@@ -16,8 +17,9 @@ contract ORPredMarket is FixedProductMarketMakerFactory{
         
     }
     
-    ConditionalTokens ct = ConditionalTokens(0xe652A61388f5389DfbcF80dF9DDC5890453f3C57);
-    address collateralToken = 0x6A9Ea9Fb55D559F87389203e04B34e91c299EC3B; 
+    address public collateralToken = 0xB1B9C9AbE8CC193467b62F2E2a1Af98183049dB7; 
+    ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
+    
     
     // voting time 1 day = 86,400 sec
     uint256 public votingPeriod = 86400; 
@@ -61,6 +63,7 @@ contract ORPredMarket is FixedProductMarketMakerFactory{
     }
     
     mapping(bytes32 => address) public proposalIds;
+    
     function createMarketProposal(bytes32 questionId) public {
         require(proposalIds[questionId] == address(0),"proposal Id already used");
         
@@ -69,7 +72,7 @@ contract ORPredMarket is FixedProductMarketMakerFactory{
         bytes32[]  memory conditionIds = new bytes32[](1);
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
         
-        FixedProductMarketMaker fpMarket = createFixedProductMarketMaker(ct,IERC20(collateralToken),conditionIds,0);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20(collateralToken),conditionIds,0);
         proposalIds[questionId] = address(fpMarket);
         
     }

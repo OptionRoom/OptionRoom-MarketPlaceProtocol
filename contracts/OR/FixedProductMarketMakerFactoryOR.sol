@@ -4,24 +4,24 @@ import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import { ConditionalTokens } from "@gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
 import { CTHelpers } from "@gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
 //import { ConstructedCloneFactory } from "@gnosis.pm/util-contracts/contracts/ConstructedCloneFactory.sol";
-import { FixedProductMarketMaker, FixedProductMarketMakerData } from "./FixedProductMarketMakerOR.sol";
+import { ORFPMarket, FixedProductMarketMakerData } from "./ORFPMarket.sol";
 import { ERC1155TokenReceiver } from "@gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 import { CloneFactory } from "./CloneFactory.sol";
 
 contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMakerData {
     event FixedProductMarketMakerCreation(
         address indexed creator,
-        FixedProductMarketMaker fixedProductMarketMaker,
+        ORFPMarket fixedProductMarketMaker,
         ConditionalTokens indexed conditionalTokens,
         IERC20 indexed collateralToken,
         bytes32[] conditionIds,
         uint fee
     );
 
-    FixedProductMarketMaker public implementationMaster;
+    ORFPMarket public implementationMaster;
 
     constructor() public {
-        implementationMaster = new FixedProductMarketMaker();
+        implementationMaster = new ORFPMarket();
     }
 /*
     function cloneConstructor(bytes calldata consData) external {
@@ -87,7 +87,7 @@ contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMaker
         uint fee
     )
     internal
-    returns (FixedProductMarketMaker)
+    returns (ORFPMarket)
     {
         /*FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(
             createClone(address(implementationMaster), abi.encode(
@@ -98,7 +98,7 @@ contract FixedProductMarketMakerFactory is CloneFactory, FixedProductMarketMaker
             ))
         );*/
         
-        FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(createClone(address(implementationMaster)));
+        ORFPMarket fixedProductMarketMaker = ORFPMarket(createClone(address(implementationMaster)));
         fixedProductMarketMaker.init(conditionalTokens,collateralToken,conditionIds,fee);
         
         emit FixedProductMarketMakerCreation(
