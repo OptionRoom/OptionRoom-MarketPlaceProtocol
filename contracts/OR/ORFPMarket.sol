@@ -14,7 +14,7 @@ contract ORFPMarket is FixedProductMarketMaker{
         Rejected,
         Active,
         Inactive,
-        Setteling, // governency voting for result
+        Settling, // governency voting for result
         finished  // can redeem
         
     }
@@ -26,19 +26,19 @@ contract ORFPMarket is FixedProductMarketMaker{
     uint256 public approveVotesCount;
     uint256 public rejectVotesCount;
     uint256 public participationEndTime;
-    uint256 public settelingPeriod;
+    uint256 public settlingPeriod;
     
     IORGovernence public orgovernence;
     
     bool initedPhase2;
     
-    function init2( address _proposer,uint256 _createdTime, uint256 _participationEndTime, uint256 _settelingPeriod, address _governence) public{
+    function init2( address _proposer,uint256 _createdTime, uint256 _participationEndTime, uint256 _settlingPeriod, address _governence) public{
         require(initedPhase2 == false, "init2 already called");
         initedPhase2 = true;
         proposer= _proposer;
         createdTime = _createdTime;
         participationEndTime = _participationEndTime;
-        settelingPeriod = _settelingPeriod;
+        settlingPeriod = _settlingPeriod;
         orgovernence= IORGovernence(_governence);
     }
     
@@ -56,11 +56,11 @@ contract ORFPMarket is FixedProductMarketMaker{
         }else if(time < participationEndTime){
             return MarketState.Active;
 
-        }else if(time > (participationEndTime + settelingPeriod)){
+        }else if(time > (participationEndTime + settlingPeriod)){
             return MarketState.finished;
             
         }else{
-            return MarketState.Setteling;
+            return MarketState.Settling;
         }
     }
     
