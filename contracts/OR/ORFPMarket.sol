@@ -77,9 +77,48 @@ contract ORFPMarket is FixedProductMarketMaker{
             }
         }
     }
+   
+    function addLiquidity(uint256 amount) public{
+        uint[] memory distributionHint;
+        if(totalSupply() >0){
+            
+            addFunding(amount,distributionHint);
+        }else{
+            distributionHint = new uint[](2);
+            distributionHint[0] = 1;
+            distributionHint[1] = 1;
+            addFunding(amount,distributionHint);
+        }
+    }
     
+    function removeLiquidity(uint256 shares) public {
+        removeFunding(shares);
+        //todo
+    }
     
-     function getCurrentTime() public view returns(uint256){
+    function merg() public{
+        uint[] memory balances = getBalances(msg.sender);
+        uint minBalance = balances[0];
+        for(uint256 i=0;i<balances.length;i++){
+            if(balances[i] < minBalance){
+                minBalance = balances[i];
+            }
+        }
+        
+       
+        uint[] memory sendAmounts = new uint[](balances.length);
+        for(uint256 i=0;i<balances.length;i++){
+            sendAmounts[i] = minBalance;
+        }
+        
+        
+        conditionalTokens.safeBatchTransferFrom( msg.sender, address(this), positionIds, sendAmounts, "");
+        mergePositionsThroughAllConditions(minBalance);
+        
+        require(collateralToken.transfer(msg.sender, minBalance), "return transfer failed");
+    }
+    
+    function getCurrentTime() public view returns(uint256){
         //TODO 
         //return block.timestamp;
         return crntTime;

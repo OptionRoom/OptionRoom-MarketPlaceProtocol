@@ -115,9 +115,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
      
      
     function getPoolBalances() private view returns (uint[] memory) {
+        return getBalances(address(this));
+    }
+    
+    function getBalances(address account) public view returns(uint[] memory){
         address[] memory thises = new address[](positionIds.length);
         for(uint i = 0; i < positionIds.length; i++) {
-            thises[i] = address(this);
+            thises[i] = account;
         }
         return conditionalTokens.balanceOfBatch(thises, positionIds);
     }
@@ -144,9 +148,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
     }
 
-    function mergePositionsThroughAllConditions(uint amount)
-    private
-    {
+    function mergePositionsThroughAllConditions(uint amount) internal {
         for(uint i = 0; i < conditionIds.length; i++) {
             uint[] memory partition = generateBasicPartition(outcomeSlotCounts[i]);
             for(uint j = 0; j < collectionIds[i].length; j++) {
@@ -198,8 +200,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
     }
 
-    function addFunding(uint addedFunds, uint[] calldata distributionHint)
-    external
+    function addFunding(uint addedFunds, uint[] memory distributionHint) internal
     {
         require(addedFunds > 0, "funding must be non-zero");
 
@@ -258,9 +259,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         emit FPMMFundingAdded(msg.sender, sendBackAmounts, mintAmount);
     }
 
-    function removeFunding(uint sharesToBurn)
-    external
-    {
+    function removeFunding(uint sharesToBurn)  internal  {
         uint[] memory poolBalances = getPoolBalances();
 
         uint[] memory sendAmounts = new uint[](poolBalances.length);

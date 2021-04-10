@@ -15,11 +15,11 @@ contract AAA2ConditnalToken1 is ConditionalTokens{
 }
 
 contract AAA3MarketFactory1 is ORPredictionMarket{
-    
+ 
     
     constructor() public{
-        collateralToken = 0x6Cf985ADDEc5847A95FfC2Fbd2d12dD64B70f146;
-        ct = ConditionalTokens(0x74E7E3383288FEaa69fA72bE26C9C9fE6942B7e4);
+        collateralToken = 0x0A56CA08EdfcE34b110C80cC4D85b21b406e50BB;
+        ct = ConditionalTokens(0x78ECBC8c9337DfD4c816b9bc99D5762f6337297d);
     }
     
 }

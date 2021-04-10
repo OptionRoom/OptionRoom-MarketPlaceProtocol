@@ -241,6 +241,8 @@ contract ERC1155 is ERC165, IERC1155
     )
         internal
     {
+        //TODO: check and decide if we want to uncomit 
+        /*
         if(to.isContract()) {
             require(
                 IERC1155TokenReceiver(to).onERC1155Received(operator, from, id, value, data) ==
@@ -248,6 +250,7 @@ contract ERC1155 is ERC165, IERC1155
                 "ERC1155: got unknown value from onERC1155Received"
             );
         }
+        */
     }
 
     function _doSafeBatchTransferAcceptanceCheck(
@@ -260,11 +263,12 @@ contract ERC1155 is ERC165, IERC1155
     )
         internal
     {
-        if(to.isContract()) {
+        //TODO: check and decide if we want to uncomit 
+        /*if(to.isContract()) {
             require(
                 IERC1155TokenReceiver(to).onERC1155BatchReceived(operator, from, ids, values, data) == IERC1155TokenReceiver(to).onERC1155BatchReceived.selector,
                 "ERC1155: got unknown value from onERC1155BatchReceived"
             );
-        }
+        }*/
     }
 }
