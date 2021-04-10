@@ -333,11 +333,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         return buyTokenPoolBalance.add(investmentAmountMinusFees).sub(endingOutcomeBalance.ceildiv(ONE));
     }
 
-    function calcSellAmount(uint returnAmount, uint outcomeIndex) public view returns (uint outcomeTokenSellAmount) {
+
+    function calcSellAmount(uint returnAmount, uint outcomeIndex) internal view returns (uint outcomeTokenSellAmount) {
         require(outcomeIndex < positionIds.length, "invalid outcome index");
 
-        uint[] memory poolBalances = getPoolBalances();
-        uint returnAmountPlusFees = returnAmount.mul(ONE) / ONE.sub(fee);
+        uint[] memory poolBalances = getPoolBalances(); 
+        //uint returnAmountPlusFees = returnAmount.mul(ONE) / ONE.sub(fee);
+        uint returnAmountPlusFees = returnAmount.mul(ONE.add(fee)) / ONE;
         uint sellTokenPoolBalance = poolBalances[outcomeIndex];
         uint endingOutcomeBalance = sellTokenPoolBalance.mul(ONE);
         for(uint i = 0; i < poolBalances.length; i++) {
@@ -352,6 +354,32 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
         return returnAmountPlusFees.add(endingOutcomeBalance.ceildiv(ONE)).sub(sellTokenPoolBalance);
     }
+    
+    function calcSellReturnInv( uint amount, uint inputIndex) public view returns(uint256 ret){
+         uint256[] memory poolBalnce0 = getPoolBalances();
+         
+        uint256  c = poolBalnce0[0] * poolBalnce0[1];
+        
+        uint256 m=0;
+         if(inputIndex == 0){
+             m = amount + poolBalnce0[0] -poolBalnce0[1];
+             
+         }else{
+             m = amount + poolBalnce0[1] -poolBalnce0[0];
+         }
+         
+         uint256 f= sqrt((m * m) + 4*c);
+         
+         if(inputIndex == 0){
+            ret = ((2* poolBalnce0[1]) -  (f - m)) /2;
+         }else{
+             ret = ((2* poolBalnce0[0]) - (f - m)) /2;
+         }
+         
+          ret = ret.mul(ONE.sub(fee)) / ONE;
+    }
+    
+   
 
     function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) external {
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
@@ -370,13 +398,14 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         emit FPMMBuy(msg.sender, investmentAmount, feeAmount, outcomeIndex, outcomeTokensToBuy);
     }
 
-    function sell(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) external {
+    function sellbyReturnAmount(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
         uint outcomeTokensToSell = calcSellAmount(returnAmount, outcomeIndex);
         require(outcomeTokensToSell <= maxOutcomeTokensToSell, "maximum sell amount exceeded");
 
         conditionalTokens.safeTransferFrom(msg.sender, address(this), positionIds[outcomeIndex], outcomeTokensToSell, "");
 
-        uint feeAmount = returnAmount.mul(fee) / (ONE.sub(fee));
+        //uint feeAmount = returnAmount.mul(fee) / (ONE.sub(fee));
+        uint feeAmount = returnAmount.mul(fee) / ONE;
         feePoolWeight = feePoolWeight.add(feeAmount);
         uint returnAmountPlusFees = returnAmount.add(feeAmount);
         mergePositionsThroughAllConditions(returnAmountPlusFees);
@@ -385,4 +414,20 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
         emit FPMMSell(msg.sender, returnAmount, feeAmount, outcomeIndex, outcomeTokensToSell);
     }
+    
+    function sell(uint256 amount, uint256 indx) external{
+        uint256 expectedRet = calcSellReturnInv(amount,indx);
+        sellbyReturnAmount(expectedRet,indx,amount*105/100);
+    }
+    
+    function sqrt(uint x) private pure returns  (uint y) {
+        uint z = (x + 1) / 2;
+        y = x;
+        while (z < y) {
+            y = z;
+            z = (x / z + z) / 2;
+        }
+        z = z+1;
+    }
+
 }

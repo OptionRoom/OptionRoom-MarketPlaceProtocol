@@ -66,7 +66,7 @@ contract ORFPMarket is FixedProductMarketMaker{
     
     
     mapping(address => bool) voters;  
-    function voting(bool approve) public{
+    function approveMarket(bool approve) public{
         if(state() ==  MarketState.Pending && voters[msg.sender] == false){ 
             voters[msg.sender] = true;
             
@@ -105,7 +105,6 @@ contract ORFPMarket is FixedProductMarketMaker{
             }
         }
         
-       
         uint[] memory sendAmounts = new uint[](balances.length);
         for(uint256 i=0;i<balances.length;i++){
             sendAmounts[i] = minBalance;

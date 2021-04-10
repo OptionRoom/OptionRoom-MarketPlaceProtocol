@@ -18,8 +18,8 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
  
     
     constructor() public{
-        collateralToken = 0x0A56CA08EdfcE34b110C80cC4D85b21b406e50BB;
-        ct = ConditionalTokens(0x78ECBC8c9337DfD4c816b9bc99D5762f6337297d);
+        collateralToken = 0xd1838d1849A9fdA59526ed8Da5C591B08e85cc92;
+        ct = ConditionalTokens(0x35A47B61327445571bD9AFadb1e1DFD2176D0D82);
     }
     
 }
