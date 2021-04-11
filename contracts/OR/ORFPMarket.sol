@@ -1,10 +1,10 @@
 pragma solidity ^0.5.1;
-import "./ORMarketLib.sol";
 import "./FixedProductMarketMakerOR.sol";
 
 
 interface IORGovernence{
     function getPowerCount(address account) external returns(uint256);
+    function resolve(address marketAddress) external;
 }
 
 contract ORFPMarket is FixedProductMarketMaker{
@@ -14,8 +14,8 @@ contract ORFPMarket is FixedProductMarketMaker{
         Rejected,
         Active,
         Inactive,
-        Settling, // governency voting for result
-        finished  // can redeem
+        Resolving, // governency voting for result
+        Resolved  // can redeem
         
     }
     
@@ -57,26 +57,28 @@ contract ORFPMarket is FixedProductMarketMaker{
             return MarketState.Active;
 
         }else if(time > (participationEndTime + settlingPeriod)){
-            return MarketState.finished;
+            return MarketState.Resolved;
             
         }else{
-            return MarketState.Settling;
+            return MarketState.Resolving;
         }
     }
     
     
-    mapping(address => bool) voters;  
+    mapping(address => bool) marketVoters;  
     function approveMarket(bool approve) public{
-        if(state() ==  MarketState.Pending && voters[msg.sender] == false){ 
-            voters[msg.sender] = true;
+        require(state() == MarketState.Pending, "Market is not in pendinf state");
+        require(marketVoters[msg.sender] == false, "user already voted");
+        marketVoters[msg.sender] = true;
             
-            if(approve == true){
-                approveVotesCount+= orgovernence.getPowerCount(msg.sender);
-            }else{
-                rejectVotesCount+= orgovernence.getPowerCount(msg.sender);
-            }
+        if(approve == true){
+            approveVotesCount+= orgovernence.getPowerCount(msg.sender);
+        }else{
+            rejectVotesCount+= orgovernence.getPowerCount(msg.sender);
         }
+        
     }
+    
    
     function addLiquidity(uint256 amount) public{
         uint[] memory distributionHint;
@@ -115,6 +117,44 @@ contract ORFPMarket is FixedProductMarketMaker{
         mergePositionsThroughAllConditions(minBalance);
         
         require(collateralToken.transfer(msg.sender, minBalance), "return transfer failed");
+    }
+    
+    mapping(address => bool) resolvingVoters;
+    uint256[2] public resolvingVotes;
+    function resolvingMarket(uint256 outcomeIndex) public{
+        require(state() == MarketState.Resolving, "market is not in settling period");
+        require(resolvingVoters[msg.sender] == false, "already voted");
+        resolvingVotes[outcomeIndex] += orgovernence.getPowerCount(msg.sender);
+    }
+   
+    function getIndexSet() public pure returns(uint256[] memory indexSet){
+        indexSet = new uint256[](2);
+        indexSet[0] =1; 
+        indexSet[1] =2;
+    }
+    
+    function getResolvingOutcome() public view returns(uint256[] memory indexSet){
+        indexSet = new uint256[](2);
+        indexSet[0]=1;
+        indexSet[1]=1;
+        
+        if(resolvingVotes[0] > resolvingVotes[1]){
+            indexSet[1] = 0;
+        }
+         if(resolvingVotes[1] > resolvingVotes[0]){
+            indexSet[1] = 1;
+        }
+    }
+    
+    
+    bool resolved;
+    function resolve() public{
+       if(resolved == true){
+           return;
+       }
+       resolved = true;
+       require(state() == MarketState.Resolved, "Market is not in resolved state");
+       orgovernence.resolve(address(this));
     }
     
     function getCurrentTime() public view returns(uint256){

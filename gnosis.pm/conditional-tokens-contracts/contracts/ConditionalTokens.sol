@@ -215,7 +215,7 @@ contract ConditionalTokens is ERC1155 {
         emit PositionsMerge(msg.sender, collateralToken, parentCollectionId, conditionId, partition, amount);
     }
 
-    function redeemPositions(IERC20 collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint[] calldata indexSets) external {
+    function redeemPositions(IERC20 collateralToken, bytes32 parentCollectionId, bytes32 conditionId, uint[] memory indexSets) public {
         uint den = payoutDenominator[conditionId];
         require(den > 0, "result for condition not received yet");
         uint outcomeSlotCount = payoutNumerators[conditionId].length;
