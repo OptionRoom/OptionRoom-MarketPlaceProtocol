@@ -114,7 +114,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
      }
      
      
-    function getPoolBalances() private view returns (uint[] memory) {
+    function getPoolBalances() internal view returns (uint[] memory) {
         return getBalances(address(this));
     }
     
