@@ -1,11 +1,8 @@
 pragma solidity ^0.5.1;
 import "./FixedProductMarketMakerOR.sol";
+import "./IORGovernence.sol";
 
 
-interface IORGovernence{
-    function getPowerCount(address account) external returns(uint256);
-    function resolve(address marketAddress) external;
-}
 
 contract ORFPMarket is FixedProductMarketMaker{
     enum MarketState {
@@ -26,19 +23,21 @@ contract ORFPMarket is FixedProductMarketMaker{
     uint256 public approveVotesCount;
     uint256 public rejectVotesCount;
     uint256 public participationEndTime;
-    uint256 public settlingPeriod;
+    uint256 public resolvingPeriod;
+    bytes32 public questionId;
     
     IORGovernence public orgovernence;
     
     bool initedPhase2;
     
-    function init2( address _proposer,uint256 _createdTime, uint256 _participationEndTime, uint256 _settlingPeriod, address _governence) public{
+    function init2( address _proposer,uint256 _createdTime, uint256 _participationEndTime, uint256 _resolvingPeriod, address _governence, bytes32 _questionId) public{
         require(initedPhase2 == false, "init2 already called");
         initedPhase2 = true;
         proposer= _proposer;
         createdTime = _createdTime;
         participationEndTime = _participationEndTime;
-        settlingPeriod = _settlingPeriod;
+        resolvingPeriod = _resolvingPeriod;
+        questionId = _questionId;
         orgovernence= IORGovernence(_governence);
     }
     
@@ -56,7 +55,7 @@ contract ORFPMarket is FixedProductMarketMaker{
         }else if(time < participationEndTime){
             return MarketState.Active;
 
-        }else if(time > (participationEndTime + settlingPeriod)){
+        }else if(time > (participationEndTime + resolvingPeriod)){
             return MarketState.Resolved;
             
         }else{
@@ -122,7 +121,7 @@ contract ORFPMarket is FixedProductMarketMaker{
     mapping(address => bool) resolvingVoters;
     uint256[2] public resolvingVotes;
     function resolvingMarket(uint256 outcomeIndex) public{
-        require(state() == MarketState.Resolving, "market is not in settling period");
+        require(state() == MarketState.Resolving, "market is not in resolving period");
         require(resolvingVoters[msg.sender] == false, "already voted");
         resolvingVotes[outcomeIndex] += orgovernence.getPowerCount(msg.sender);
     }
@@ -144,17 +143,7 @@ contract ORFPMarket is FixedProductMarketMaker{
          if(resolvingVotes[1] > resolvingVotes[0]){
             indexSet[1] = 1;
         }
-    }
-    
-    
-    bool resolved;
-    function resolve() public{
-       if(resolved == true){
-           return;
-       }
-       resolved = true;
-       require(state() == MarketState.Resolved, "Market is not in resolved state");
-       orgovernence.resolve(address(this));
+
     }
     
     function getCurrentTime() public view returns(uint256){
