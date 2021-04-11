@@ -25,9 +25,9 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
  
      
     constructor() public{
-        governenceAdd = 0xf1A4D964393cd1044A74FB935D61FfBfaC80697E;
-        collateralToken = 0x05Adb8daa5efc36C288c3E8C75Be7b84a9021DF1;
-        ct = ConditionalTokens(0x021835D6B59f98B0203325Ef7614a619aA3a2A4C);
+        governenceAdd = 0x102Ea1BB7c34d5b49E8647bfad8d231A8F6E39B4;
+        collateralToken = 0xF5995555E2E7C4707C023F3f3260FF324b7a85c6;
+        ct = ConditionalTokens(0x9F245c9eB0E6cB2E94ED8682c07cDF5f19cD6440);
         
     } 
     

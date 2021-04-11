@@ -37,7 +37,9 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory{
     
     mapping(bytes32 => address) public proposalIds;
     
-    function createMarketProposal(bytes32 questionId) public {
+     
+    function createMarketProposal(string memory marketQuestion,uint256 participationEndTime, uint256 resolvingPeriodInDays) public {
+        bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0),"proposal Id already used");
         
         
@@ -47,8 +49,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory{
         
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20(collateralToken),conditionIds,20000000000000000);
         
-        
-        fpMarket.init2(msg.sender,getCurrentTime(),0,0,governenceAdd,questionId);
+        fpMarket.init2(marketQuestion,msg.sender,getCurrentTime(),participationEndTime,resolvingPeriodInDays * 86400,governenceAdd,questionId);
         
         proposalIds[questionId] = address(fpMarket);
     }

@@ -30,8 +30,9 @@ contract ORFPMarket is FixedProductMarketMaker{
     
     bool initedPhase2;
     
-    function init2( address _proposer,uint256 _createdTime, uint256 _participationEndTime, uint256 _resolvingPeriod, address _governence, bytes32 _questionId) public{
+    function init2(string memory _marketQuestion, address _proposer,uint256 _createdTime, uint256 _participationEndTime, uint256 _resolvingPeriod, address _governence, bytes32 _questionId) public{
         require(initedPhase2 == false, "init2 already called");
+        marketQuestion = _marketQuestion; 
         initedPhase2 = true;
         proposer= _proposer;
         createdTime = _createdTime;
@@ -41,6 +42,9 @@ contract ORFPMarket is FixedProductMarketMaker{
         orgovernence= IORGovernence(_governence);
     }
     
+    string public marketQuestion;
+    
+   
     
     function state() public view  returns(MarketState){
         

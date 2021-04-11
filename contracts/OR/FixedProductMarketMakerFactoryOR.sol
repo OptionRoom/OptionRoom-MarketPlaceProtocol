@@ -114,11 +114,11 @@ contract FixedProductMarketMakerFactory is CloneFactory {
         );
         
         marketsqqq.push(fixedProductMarketMaker);
-        proposalCount++;
+        marketsCount++;
         return fixedProductMarketMaker;
     }
     
-    uint public proposalCount;
+    uint public marketsCount;
     ORFPMarket[] public marketsqqq;
     
     function getMarkets() public view returns(ORFPMarket[] memory){
