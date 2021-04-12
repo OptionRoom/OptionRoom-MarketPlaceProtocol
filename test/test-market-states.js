@@ -53,7 +53,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   })
 
   it('Should revert because the market is in pending state', async function() {
-    const REVERT = "Market is not in pendinf state";
+    const REVERT = "Market is not in pending state";
 
     try {
       await fixedProductMarketMaker.approveMarket(true, { from: investor1 });
