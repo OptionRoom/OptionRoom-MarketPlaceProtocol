@@ -31,7 +31,7 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
     */
 
     function setA0(address a) public{
-        governenceAdd = a;
+        governanceAdd = a;
     }
 
     function setA1(address a) public{

@@ -23,13 +23,13 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         require(proposalIds[questionId] == address(0),"proposal Id already used");
 
 
-        ct.prepareCondition(governenceAdd, questionId, 2);
+        ct.prepareCondition(governanceAdd, questionId, 2);
         bytes32[]  memory conditionIds = new bytes32[](1);
-        conditionIds[0] = ct.getConditionId(governenceAdd, questionId, 2);
+        conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20(collateralToken),conditionIds,20000000000000000);
 
-        fpMarket.init2(marketQuestion,msg.sender,getCurrentTime(),participationEndTime,resolvingPeriodInDays * 86400,governenceAdd,questionId);
+        fpMarket.init2(marketQuestion,msg.sender,getCurrentTime(),participationEndTime,resolvingPeriodInDays * 86400,governanceAdd,questionId);
 
         proposalIds[questionId] = address(fpMarket);
 
