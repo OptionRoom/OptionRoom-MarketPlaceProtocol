@@ -1,18 +1,17 @@
 pragma solidity ^0.5.1;
 
-import { SafeMath } from "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import { ConditionalTokens } from "../../gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
-import { CTHelpers } from "../../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
-import { ERC1155TokenReceiver } from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
-//import { ERC20 } from "./ERC20.sol";
-import { ERC20 } from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
+import {SafeMath} from "openzeppelin-solidity/contracts/math/SafeMath.sol";
+import {IERC20} from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import {ConditionalTokens} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
+import {CTHelpers} from "../../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
+import {ERC1155TokenReceiver} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
+import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 
 
 library CeilDiv {
     // calculates ceil(x/y)
     function ceildiv(uint x, uint y) internal pure returns (uint) {
-        if(x > 0) return ((x - 1) / y) + 1;
+        if (x > 0) return ((x - 1) / y) + 1;
         return x / y;
     }
 }
@@ -48,7 +47,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     using SafeMath for uint;
     using CeilDiv for uint;
 
-    uint constant ONE = 10**18;
+    uint constant ONE = 10 ** 18;
 
     ConditionalTokens public conditionalTokens;
     IERC20 public collateralToken;
@@ -59,68 +58,69 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     uint[] outcomeSlotCounts;
     bytes32[][] collectionIds;
     uint[] positionIds;
-    mapping (address => uint256) withdrawnFees;
+    mapping(address => uint256) withdrawnFees;
     uint internal totalWithdrawnFees;
-    
+
     bool initiated;
+
     function init(
-         ConditionalTokens _conditionalTokens,
-         IERC20 _collateralToken,
-         bytes32[] memory _conditionIds,
-         uint _fee
-     ) public {
-         require(initiated == false, "Market Already initiated");
-         
-         conditionalTokens = _conditionalTokens;
-         collateralToken = _collateralToken;
-         conditionIds = _conditionIds;
-         fee = _fee;
+        ConditionalTokens _conditionalTokens,
+        IERC20 _collateralToken,
+        bytes32[] memory _conditionIds,
+        uint _fee
+    ) public {
+        require(initiated == false, "Market Already initiated");
 
-         uint atomicOutcomeSlotCount = 1;
-         outcomeSlotCounts = new uint[](conditionIds.length);
-         for (uint i = 0; i < conditionIds.length; i++) {
-             uint outcomeSlotCount = conditionalTokens.getOutcomeSlotCount(conditionIds[i]);
-             atomicOutcomeSlotCount *= outcomeSlotCount;
-             outcomeSlotCounts[i] = outcomeSlotCount;
-         }
-         require(atomicOutcomeSlotCount > 1, "conditions must be valid");
+        conditionalTokens = _conditionalTokens;
+        collateralToken = _collateralToken;
+        conditionIds = _conditionIds;
+        fee = _fee;
 
-         collectionIds = new bytes32[][](conditionIds.length);
-         _recordCollectionIDsForAllConditions(conditionIds.length, bytes32(0));
-         require(positionIds.length == atomicOutcomeSlotCount, "position IDs construction failed!?");
-     }
-     
+        uint atomicOutcomeSlotCount = 1;
+        outcomeSlotCounts = new uint[](conditionIds.length);
+        for (uint i = 0; i < conditionIds.length; i++) {
+            uint outcomeSlotCount = conditionalTokens.getOutcomeSlotCount(conditionIds[i]);
+            atomicOutcomeSlotCount *= outcomeSlotCount;
+            outcomeSlotCounts[i] = outcomeSlotCount;
+        }
+        require(atomicOutcomeSlotCount > 1, "conditions must be valid");
+
+        collectionIds = new bytes32[][](conditionIds.length);
+        _recordCollectionIDsForAllConditions(conditionIds.length, bytes32(0));
+        require(positionIds.length == atomicOutcomeSlotCount, "position IDs construction failed!?");
+    }
+
     function _recordCollectionIDsForAllConditions(uint conditionsLeft, bytes32 parentCollectionId) private {
-         if(conditionsLeft == 0) {
-             positionIds.push(CTHelpers.getPositionId(collateralToken, parentCollectionId));
-             return;
-         }
+        if (conditionsLeft == 0) {
+            positionIds.push(CTHelpers.getPositionId(collateralToken, parentCollectionId));
+            return;
+        }
 
-         conditionsLeft--;
+        conditionsLeft--;
 
-         uint outcomeSlotCount = outcomeSlotCounts[conditionsLeft];
+        uint outcomeSlotCount = outcomeSlotCounts[conditionsLeft];
 
-         collectionIds[conditionsLeft].push(parentCollectionId);
-         for(uint i = 0; i < outcomeSlotCount; i++) {
-             _recordCollectionIDsForAllConditions(
-                 conditionsLeft,
-                 CTHelpers.getCollectionId(
-                     parentCollectionId,
-                     conditionIds[conditionsLeft],
-                     1 << i
-                 )
-             );
-         }
-     }
-     
-     
+        collectionIds[conditionsLeft].push(parentCollectionId);
+        for (uint i = 0; i < outcomeSlotCount; i++) {
+            _recordCollectionIDsForAllConditions(
+                conditionsLeft,
+                CTHelpers.getCollectionId(
+                    parentCollectionId,
+                    conditionIds[conditionsLeft],
+                    1 << i
+                )
+            );
+        }
+    }
+
+
     function getPoolBalances() internal view returns (uint[] memory) {
         return getBalances(address(this));
     }
-    
-    function getBalances(address account) public view returns(uint[] memory){
+
+    function getBalances(address account) public view returns (uint[] memory){
         address[] memory thises = new address[](positionIds.length);
-        for(uint i = 0; i < positionIds.length; i++) {
+        for (uint i = 0; i < positionIds.length; i++) {
             thises[i] = account;
         }
         return conditionalTokens.balanceOfBatch(thises, positionIds);
@@ -132,7 +132,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     returns (uint[] memory partition)
     {
         partition = new uint[](outcomeSlotCount);
-        for(uint i = 0; i < outcomeSlotCount; i++) {
+        for (uint i = 0; i < outcomeSlotCount; i++) {
             partition[i] = 1 << i;
         }
     }
@@ -140,18 +140,18 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     function splitPositionThroughAllConditions(uint amount)
     private
     {
-        for(uint i = conditionIds.length - 1; int(i) >= 0; i--) {
+        for (uint i = conditionIds.length - 1; int(i) >= 0; i--) {
             uint[] memory partition = generateBasicPartition(outcomeSlotCounts[i]);
-            for(uint j = 0; j < collectionIds[i].length; j++) {
+            for (uint j = 0; j < collectionIds[i].length; j++) {
                 conditionalTokens.splitPosition(collateralToken, collectionIds[i][j], conditionIds[i], partition, amount);
             }
         }
     }
 
     function mergePositionsThroughAllConditions(uint amount) internal {
-        for(uint i = 0; i < conditionIds.length; i++) {
+        for (uint i = 0; i < conditionIds.length; i++) {
             uint[] memory partition = generateBasicPartition(outcomeSlotCounts[i]);
-            for(uint j = 0; j < collectionIds[i].length; j++) {
+            for (uint j = 0; j < collectionIds[i].length; j++) {
                 conditionalTokens.mergePositions(collateralToken, collectionIds[i][j], conditionIds[i], partition, amount);
             }
         }
@@ -169,7 +169,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     function withdrawFees(address account) public {
         uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
         uint withdrawableAmount = rawAmount.sub(withdrawnFees[account]);
-        if(withdrawableAmount > 0){
+        if (withdrawableAmount > 0) {
             withdrawnFees[account] = rawAmount;
             totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
             require(collateralToken.transfer(account, withdrawableAmount), "withdrawal transfer failed");
@@ -207,33 +207,33 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         uint[] memory sendBackAmounts = new uint[](positionIds.length);
         uint poolShareSupply = totalSupply();
         uint mintAmount;
-        if(poolShareSupply > 0) {
+        if (poolShareSupply > 0) {
             require(distributionHint.length == 0, "cannot use distribution hint after initial funding");
             uint[] memory poolBalances = getPoolBalances();
             uint poolWeight = 0;
-            for(uint i = 0; i < poolBalances.length; i++) {
+            for (uint i = 0; i < poolBalances.length; i++) {
                 uint balance = poolBalances[i];
-                if(poolWeight < balance)
+                if (poolWeight < balance)
                     poolWeight = balance;
             }
 
-            for(uint i = 0; i < poolBalances.length; i++) {
+            for (uint i = 0; i < poolBalances.length; i++) {
                 uint remaining = addedFunds.mul(poolBalances[i]) / poolWeight;
                 sendBackAmounts[i] = addedFunds.sub(remaining);
             }
 
             mintAmount = addedFunds.mul(poolShareSupply) / poolWeight;
         } else {
-            if(distributionHint.length > 0) {
+            if (distributionHint.length > 0) {
                 require(distributionHint.length == positionIds.length, "hint length off");
                 uint maxHint = 0;
-                for(uint i = 0; i < distributionHint.length; i++) {
+                for (uint i = 0; i < distributionHint.length; i++) {
                     uint hint = distributionHint[i];
-                    if(maxHint < hint)
+                    if (maxHint < hint)
                         maxHint = hint;
                 }
 
-                for(uint i = 0; i < distributionHint.length; i++) {
+                for (uint i = 0; i < distributionHint.length; i++) {
                     uint remaining = addedFunds.mul(distributionHint[i]) / maxHint;
                     require(remaining > 0, "must hint a valid distribution");
                     sendBackAmounts[i] = addedFunds.sub(remaining);
@@ -259,13 +259,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         emit FPMMFundingAdded(msg.sender, sendBackAmounts, mintAmount);
     }
 
-    function removeFunding(uint sharesToBurn)  internal  {
+    function removeFunding(uint sharesToBurn) internal {
         uint[] memory poolBalances = getPoolBalances();
 
         uint[] memory sendAmounts = new uint[](poolBalances.length);
 
         uint poolShareSupply = totalSupply();
-        for(uint i = 0; i < poolBalances.length; i++) {
+        for (uint i = 0; i < poolBalances.length; i++) {
             sendAmounts[i] = poolBalances[i].mul(sharesToBurn) / poolShareSupply;
         }
 
@@ -283,10 +283,10 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
     function onERC1155Received(
         address operator,
-        address ,
-        uint256 ,
-        uint256 ,
-        bytes calldata 
+        address,
+        uint256,
+        uint256,
+        bytes calldata
     )
     external
     returns (bytes4)
@@ -300,9 +300,9 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     function onERC1155BatchReceived(
         address operator,
         address from,
-        uint256[] calldata ,
-        uint256[] calldata ,
-        bytes calldata 
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
     )
     external
     returns (bytes4)
@@ -320,8 +320,8 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         uint investmentAmountMinusFees = investmentAmount.sub(investmentAmount.mul(fee) / ONE);
         uint buyTokenPoolBalance = poolBalances[outcomeIndex];
         uint endingOutcomeBalance = buyTokenPoolBalance.mul(ONE);
-        for(uint i = 0; i < poolBalances.length; i++) {
-            if(i != outcomeIndex) {
+        for (uint i = 0; i < poolBalances.length; i++) {
+            if (i != outcomeIndex) {
                 uint poolBalance = poolBalances[i];
                 endingOutcomeBalance = endingOutcomeBalance.mul(poolBalance).ceildiv(
                     poolBalance.add(investmentAmountMinusFees)
@@ -337,13 +337,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     function calcSellAmount(uint returnAmount, uint outcomeIndex) internal view returns (uint outcomeTokenSellAmount) {
         require(outcomeIndex < positionIds.length, "invalid outcome index");
 
-        uint[] memory poolBalances = getPoolBalances(); 
+        uint[] memory poolBalances = getPoolBalances();
         //uint returnAmountPlusFees = returnAmount.mul(ONE) / ONE.sub(fee);
         uint returnAmountPlusFees = returnAmount.mul(ONE.add(fee)) / ONE;
         uint sellTokenPoolBalance = poolBalances[outcomeIndex];
         uint endingOutcomeBalance = sellTokenPoolBalance.mul(ONE);
-        for(uint i = 0; i < poolBalances.length; i++) {
-            if(i != outcomeIndex) {
+        for (uint i = 0; i < poolBalances.length; i++) {
+            if (i != outcomeIndex) {
                 uint poolBalance = poolBalances[i];
                 endingOutcomeBalance = endingOutcomeBalance.mul(poolBalance).ceildiv(
                     poolBalance.sub(returnAmountPlusFees)
@@ -354,32 +354,31 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
         return returnAmountPlusFees.add(endingOutcomeBalance.ceildiv(ONE)).sub(sellTokenPoolBalance);
     }
-    
-    function calcSellReturnInv( uint amount, uint inputIndex) public view returns(uint256 ret){
-         uint256[] memory poolBalnce0 = getPoolBalances();
-         
-        uint256  c = poolBalnce0[0] * poolBalnce0[1];
-        
-        uint256 m=0;
-         if(inputIndex == 0){
-             m = amount + poolBalnce0[0] -poolBalnce0[1];
-             
-         }else{
-             m = amount + poolBalnce0[1] -poolBalnce0[0];
-         }
-         
-         uint256 f= sqrt((m * m) + 4*c);
-         
-         if(inputIndex == 0){
-            ret = ((2* poolBalnce0[1]) -  (f - m)) /2;
-         }else{
-             ret = ((2* poolBalnce0[0]) - (f - m)) /2;
-         }
-         
-          ret = ret.mul(ONE.sub(fee)) / ONE;
+
+    function calcSellReturnInv(uint amount, uint inputIndex) public view returns (uint256 ret){
+        uint256[] memory poolBalance0 = getPoolBalances();
+
+        uint256 c = poolBalance0[0] * poolBalance0[1];
+
+        uint256 m = 0;
+        if (inputIndex == 0) {
+            m = amount + poolBalance0[0] - poolBalance0[1];
+
+        } else {
+            m = amount + poolBalance0[1] - poolBalance0[0];
+        }
+
+        uint256 f = sqrt((m * m) + 4 * c);
+
+        if (inputIndex == 0) {
+            ret = ((2 * poolBalance0[1]) - (f - m)) / 2;
+        } else {
+            ret = ((2 * poolBalance0[0]) - (f - m)) / 2;
+        }
+
+        ret = ret.mul(ONE.sub(fee)) / ONE;
     }
-    
-   
+
 
     function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) external {
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
@@ -398,7 +397,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         emit FPMMBuy(msg.sender, investmentAmount, feeAmount, outcomeIndex, outcomeTokensToBuy);
     }
 
-    function sellbyReturnAmount(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
+    function sellByReturnAmount(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
         uint outcomeTokensToSell = calcSellAmount(returnAmount, outcomeIndex);
         require(outcomeTokensToSell <= maxOutcomeTokensToSell, "maximum sell amount exceeded");
 
@@ -414,20 +413,20 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
         emit FPMMSell(msg.sender, returnAmount, feeAmount, outcomeIndex, outcomeTokensToSell);
     }
-    
-    function sell(uint256 amount, uint256 indx) external{
-        uint256 expectedRet = calcSellReturnInv(amount,indx);
-        sellbyReturnAmount(expectedRet,indx,amount*105/100);
+
+    function sell(uint256 amount, uint256 index) external {
+        uint256 expectedRet = calcSellReturnInv(amount, index);
+        sellByReturnAmount(expectedRet, index, amount * 105 / 100);
     }
-    
-    function sqrt(uint x) private pure returns  (uint y) {
+
+    function sqrt(uint x) private pure returns (uint y) {
         uint z = (x + 1) / 2;
         y = x;
         while (z < y) {
             y = z;
             z = (x / z + z) / 2;
         }
-        z = z+1;
+        z = z + 1;
     }
 
 }

@@ -1,12 +1,11 @@
 pragma solidity ^0.5.1;
 
-import { IERC20 } from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import { ConditionalTokens } from "../../gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
-import { CTHelpers } from "../../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
-//import { ConstructedCloneFactory } from "@gnosis.pm/util-contracts/contracts/ConstructedCloneFactory.sol";
-import { ORFPMarket } from "./ORFPMarket.sol";
-import { ERC1155TokenReceiver } from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
-import { CloneFactory } from "./CloneFactory.sol";
+import {IERC20} from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import {ConditionalTokens} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
+import {CTHelpers} from "../../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
+import {ORFPMarket} from "./ORFPMarket.sol";
+import {ERC1155TokenReceiver} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
+import {CloneFactory} from "./CloneFactory.sol";
 
 contract FixedProductMarketMakerFactory is CloneFactory {
     event FixedProductMarketMakerCreation(
@@ -21,67 +20,70 @@ contract FixedProductMarketMakerFactory is CloneFactory {
     ORFPMarket public implementationMaster;
     address implementationMasterAddr;
 
+    uint public marketsCount;
+    ORFPMarket[] public markets;
+
     constructor() public {
         implementationMaster = new ORFPMarket();
         implementationMasterAddr = address(implementationMaster);
     }
-/*
-    function cloneConstructor(bytes calldata consData) external {
-        (
-        ConditionalTokens _conditionalTokens,
-        IERC20 _collateralToken,
-        bytes32[] memory _conditionIds,
-        uint _fee
-        ) = abi.decode(consData, (ConditionalTokens, IERC20, bytes32[], uint));
+    /*
+        function cloneConstructor(bytes calldata consData) external {
+            (
+            ConditionalTokens _conditionalTokens,
+            IERC20 _collateralToken,
+            bytes32[] memory _conditionIds,
+            uint _fee
+            ) = abi.decode(consData, (ConditionalTokens, IERC20, bytes32[], uint));
 
-        _supportedInterfaces[_INTERFACE_ID_ERC165] = true;
-        _supportedInterfaces[
-        ERC1155TokenReceiver(0).onERC1155Received.selector ^
-        ERC1155TokenReceiver(0).onERC1155BatchReceived.selector
-        ] = true;
+            _supportedInterfaces[_INTERFACE_ID_ERC165] = true;
+            _supportedInterfaces[
+            ERC1155TokenReceiver(0).onERC1155Received.selector ^
+            ERC1155TokenReceiver(0).onERC1155BatchReceived.selector
+            ] = true;
 
-        conditionalTokens = _conditionalTokens;
-        collateralToken = _collateralToken;
-        conditionIds = _conditionIds;
-        fee = _fee;
+            conditionalTokens = _conditionalTokens;
+            collateralToken = _collateralToken;
+            conditionIds = _conditionIds;
+            fee = _fee;
 
-        uint atomicOutcomeSlotCount = 1;
-        outcomeSlotCounts = new uint[](conditionIds.length);
-        for (uint i = 0; i < conditionIds.length; i++) {
-            uint outcomeSlotCount = conditionalTokens.getOutcomeSlotCount(conditionIds[i]);
-            atomicOutcomeSlotCount *= outcomeSlotCount;
-            outcomeSlotCounts[i] = outcomeSlotCount;
-        }
-        require(atomicOutcomeSlotCount > 1, "conditions must be valid");
+            uint atomicOutcomeSlotCount = 1;
+            outcomeSlotCounts = new uint[](conditionIds.length);
+            for (uint i = 0; i < conditionIds.length; i++) {
+                uint outcomeSlotCount = conditionalTokens.getOutcomeSlotCount(conditionIds[i]);
+                atomicOutcomeSlotCount *= outcomeSlotCount;
+                outcomeSlotCounts[i] = outcomeSlotCount;
+            }
+            require(atomicOutcomeSlotCount > 1, "conditions must be valid");
 
-        collectionIds = new bytes32[][](conditionIds.length);
-        _recordCollectionIDsForAllConditions(conditionIds.length, bytes32(0));
-        require(positionIds.length == atomicOutcomeSlotCount, "position IDs construction failed!?");
-    }
-
-    function _recordCollectionIDsForAllConditions(uint conditionsLeft, bytes32 parentCollectionId) private {
-        if(conditionsLeft == 0) {
-            positionIds.push(CTHelpers.getPositionId(collateralToken, parentCollectionId));
-            return;
+            collectionIds = new bytes32[][](conditionIds.length);
+            _recordCollectionIDsForAllConditions(conditionIds.length, bytes32(0));
+            require(positionIds.length == atomicOutcomeSlotCount, "position IDs construction failed!?");
         }
 
-        conditionsLeft--;
+        function _recordCollectionIDsForAllConditions(uint conditionsLeft, bytes32 parentCollectionId) private {
+            if(conditionsLeft == 0) {
+                positionIds.push(CTHelpers.getPositionId(collateralToken, parentCollectionId));
+                return;
+            }
 
-        uint outcomeSlotCount = outcomeSlotCounts[conditionsLeft];
+            conditionsLeft--;
 
-        collectionIds[conditionsLeft].push(parentCollectionId);
-        for(uint i = 0; i < outcomeSlotCount; i++) {
-            _recordCollectionIDsForAllConditions(
-                conditionsLeft,
-                CTHelpers.getCollectionId(
-                    parentCollectionId,
-                    conditionIds[conditionsLeft],
-                    1 << i
-                )
-            );
+            uint outcomeSlotCount = outcomeSlotCounts[conditionsLeft];
+
+            collectionIds[conditionsLeft].push(parentCollectionId);
+            for(uint i = 0; i < outcomeSlotCount; i++) {
+                _recordCollectionIDsForAllConditions(
+                    conditionsLeft,
+                    CTHelpers.getCollectionId(
+                        parentCollectionId,
+                        conditionIds[conditionsLeft],
+                        1 << i
+                    )
+                );
+            }
         }
-    }
-*/
+    */
     function createFixedProductMarketMaker(
         ConditionalTokens conditionalTokens,
         IERC20 collateralToken,
@@ -91,19 +93,10 @@ contract FixedProductMarketMakerFactory is CloneFactory {
     internal
     returns (ORFPMarket)
     {
-        /*FixedProductMarketMaker fixedProductMarketMaker = FixedProductMarketMaker(
-            createClone(address(implementationMaster), abi.encode(
-                conditionalTokens,
-                collateralToken,
-                conditionIds,
-                fee
-            ))
-        );*/
-        
         ORFPMarket fixedProductMarketMaker = ORFPMarket(createClone(implementationMasterAddr));
-        
-        fixedProductMarketMaker.init(conditionalTokens,collateralToken,conditionIds,fee);
-        
+
+        fixedProductMarketMaker.init(conditionalTokens, collateralToken, conditionIds, fee);
+
         emit FixedProductMarketMakerCreation(
             msg.sender,
             fixedProductMarketMaker,
@@ -112,32 +105,26 @@ contract FixedProductMarketMakerFactory is CloneFactory {
             conditionIds,
             fee
         );
-        
-        marketsqqq.push(fixedProductMarketMaker);
+
+        markets.push(fixedProductMarketMaker);
         marketsCount++;
         return fixedProductMarketMaker;
     }
-    
-    uint public marketsCount;
-    ORFPMarket[] public marketsqqq;
-    
-    function getMarkets() public view returns(ORFPMarket[] memory){
-       
-        return marketsqqq;
+
+    function getMarkets() public view returns (ORFPMarket[] memory) {
+        return markets;
     }
-    
-    
-    function getCurrentTime() public view returns(uint256){
-        //TODO 
+
+    function getCurrentTime() public view returns (uint256) {
+        //TODO
         //return block.timestamp;
         return crntTime;
     }
-    
-    
-    
+
     //TODO just for testing remove them
     uint256 crntTime;
-    function increaseTime(uint256 t) public{
-        crntTime+=t;
+
+    function increaseTime(uint256 t) public {
+        crntTime += t;
     }
 }
