@@ -1,7 +1,7 @@
 pragma solidity ^0.5.1;
 
 import "./FixedProductMarketMakerOR.sol";
-import "./IORGovernence.sol";
+import "./IORGovernance.sol";
 
 /**
     @title ORFPMarket Extended version of the FixedProductMarketMaker
@@ -36,7 +36,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     string public marketQuestion;
 
-    IORGovernence public ORGovernence;
+    IORGovernance public ORGovernance;
 
     function init2(string memory _marketQuestion, address _proposer, uint256 _createdTime,
             uint256 _participationEndTime, uint256 _resolvingPeriod, address _governance, bytes32 _questionId) public {
@@ -48,7 +48,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         participationEndTime = _participationEndTime;
         resolvingPeriod = _resolvingPeriod;
         questionId = _questionId;
-        ORGovernence = IORGovernence(_governance);
+        ORGovernance = IORGovernance(_governance);
     }
 
     function state() public view returns (MarketState) {
@@ -78,9 +78,9 @@ contract ORFPMarket is FixedProductMarketMaker {
         marketVoters[msg.sender] = true;
 
         if (approve == true) {
-            approveVotesCount += ORGovernence.getPowerCount(msg.sender);
+            approveVotesCount += ORGovernance.getPowerCount(msg.sender);
         } else {
-            rejectVotesCount += ORGovernence.getPowerCount(msg.sender);
+            rejectVotesCount += ORGovernance.getPowerCount(msg.sender);
         }
     }
 
@@ -124,7 +124,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     function resolvingMarket(uint256 outcomeIndex) public {
         require(state() == MarketState.Resolving, "market is not in resolving period");
         require(resolvingVoters[msg.sender] == false, "already voted");
-        resolvingVotes[outcomeIndex] += ORGovernence.getPowerCount(msg.sender);
+        resolvingVotes[outcomeIndex] += ORGovernance.getPowerCount(msg.sender);
     }
 
     function getIndexSet() public pure returns (uint256[] memory indexSet) {
