@@ -35,4 +35,8 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         return fpMarket;
     }
+
+    function getCurrentMarketQuestionId() external view returns (bytes32) {
+        return bytes32(marketsCount);
+    }
 }

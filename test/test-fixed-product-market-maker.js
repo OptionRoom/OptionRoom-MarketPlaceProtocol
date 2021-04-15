@@ -5,7 +5,7 @@ chai.use(require('chai-bignumber')());
 
 const { expectEvent } = require('openzeppelin-test-helpers')
 // const { getConditionId, getCollectionId, getPositionId } = require('@gnosis.pm/conditional-tokens-contracts/utils/id-helpers')(web3.utils)
-const { randomHex, toBN } = web3.utils
+const { randomHex, toBN, fromAscii, toAscii } = web3.utils
 
 const ConditionalTokens = artifacts.require('ConditionalTokens')
 const WETH9 = artifacts.require('WETH9')
@@ -29,7 +29,9 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   let fixedProductMarketMakerFactory
   let fixedProductMarketMaker
 
-  // let positionIds
+  let positionIds
+  const feeFactor = toBN(3e15) // (0.3%)
+
   before(async function() {
     conditionalTokens = await ConditionalTokens.deployed();
     collateralToken = await WETH9.deployed();
@@ -49,7 +51,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
     const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs);
     expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
-      creator,
+      creator: creator,
       fixedProductMarketMaker: fixedProductMarketMakerAddress,
       conditionalTokens: conditionalTokens.address,
       collateralToken: collateralToken.address,
@@ -58,7 +60,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     fixedProductMarketMaker = await ORFPMarket.at(fixedProductMarketMakerAddress)
   })
 
-  const addedFunds1 = toBN(10e18)
+  const addedFunds1 = toBN(1e18)
   const initialDistribution = [1, 1]
   const expectedFundedAmounts = new Array(2).fill(addedFunds1)
   it('can be funded', async function() {
@@ -84,124 +86,150 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       expect(amountsAdded[i].toString()).to.equal(expectedFundedAmounts[i].toString());
     }
 
+    // All of the amount have been converted...
     expect((await collateralToken.balanceOf(investor1)).toString()).to.equal("0");
     expect((await fixedProductMarketMaker.balanceOf(investor1)).toString()).to.equal(addedFunds1.toString());
 
-    // for(let i = 0; i < positionIds.length; i++) {
-    //   expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i])).toString())
-    //     .to.equal(expectedFundedAmounts[i].toString());
-    // }
+    positionIds = await fixedProductMarketMaker.getPositionIds();
+
+    for(let i = 0; i < positionIds.length; i++) {
+      expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i])).toString())
+        .to.equal(expectedFundedAmounts[i].toString());
+    }
   });
 
-  // let marketMakerPool;
-  // it('can buy tokens from it', async function() {
-  //   const investmentAmount = toBN(1e18)
-  //   const buyOutcomeIndex = 1;
-  //   await collateralToken.deposit({ value: investmentAmount, from: trader });
-  //   await collateralToken.approve(fixedProductMarketMaker.address, investmentAmount, { from: trader });
-  //
-  //   const feeAmount = investmentAmount.mul(feeFactor).div(toBN(1e18));
-  //
-  //   const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex);
-  //
-  //   await fixedProductMarketMaker.buy(investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
-  //
-  //   expect((await collateralToken.balanceOf(trader)).toString()).to.equal("0");
-  //   expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
-  //
-  //   marketMakerPool = []
-  //   for(let i = 0; i < positionIds.length; i++) {
-  //     let newMarketMakerBalance;
-  //     if(i === buyOutcomeIndex) {
-  //       newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount).sub(outcomeTokensToBuy);
-  //       expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).
-  //       to.equal(outcomeTokensToBuy.toString());
-  //     } else {
-  //       newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount);
-  //       expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).to.equal("0");
-  //     }
-  //     expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address,
-  //         positionIds[i])).toString()).to.equal(newMarketMakerBalance.toString());
-  //
-  //     marketMakerPool[i] = newMarketMakerBalance
-  //   }
-  // })
-  //
-  // it('can sell tokens to it', async function() {
-  //   const returnAmount = toBN(5e17)
-  //   const sellOutcomeIndex = 1;
-  //   await conditionalTokens.setApprovalForAll(fixedProductMarketMaker.address, true, { from: trader });
-  //
-  //   const feeAmount = returnAmount.mul(feeFactor).div(toBN(1e18).sub(feeFactor));
-  //
-  //   const outcomeTokensToSell = await fixedProductMarketMaker.calcSellAmount(returnAmount, sellOutcomeIndex);
-  //
-  //   await fixedProductMarketMaker.sell(returnAmount, sellOutcomeIndex, outcomeTokensToSell,  { from: trader } );
-  //
-  //   expect((await collateralToken.balanceOf(trader)).toString()).to.equal(returnAmount.toString());
-  //   expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
-  //
-  //   for(let i = 0; i < positionIds.length; i++) {
-  //     let newMarketMakerBalance;
-  //     if(i === sellOutcomeIndex) {
-  //       newMarketMakerBalance = marketMakerPool[i].sub(returnAmount).sub(feeAmount).add(outcomeTokensToSell)
-  //     } else {
-  //       newMarketMakerBalance = marketMakerPool[i].sub(returnAmount).sub(feeAmount)
-  //     }
-  //     expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
-  //       .toString()).to.equal(newMarketMakerBalance.toString());
-  //
-  //     marketMakerPool[i] = newMarketMakerBalance
-  //   }
-  // })
-  //
-  // const addedFunds2 = toBN(5e18)
-  // it('can continue being funded', async function() {
-  //   await collateralToken.deposit({ value: addedFunds2, from: investor2 });
-  //   await collateralToken.approve(fixedProductMarketMaker.address, addedFunds2, { from: investor2 });
-  //   await fixedProductMarketMaker.addFunding(addedFunds2, [], {from : investor2 });
-  //
-  //   expect((await collateralToken.balanceOf(investor2))).to.eql(toBN(0));
-  //   let inv2Balance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor2));
-  //   expect(inv2Balance.isGreaterThan(new BigNumber("0"))).to.equal(true);
-  //
-  //   for(let i = 0; i < positionIds.length; i++) {
-  //     let newMarketMakerBalance =new BigNumber(await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
-  //     let marketPoolValueI = new BigNumber(marketMakerPool[i]);
-  //     let marketPoolValueFundAdded = new BigNumber(marketMakerPool[i].add(addedFunds2));
-  //     expect(newMarketMakerBalance.isGreaterThan(marketPoolValueI)).to.equal(true);
-  //
-  //     // We need to make small adjustment here.
-  //     marketMakerPool[i] = newMarketMakerBalance;
-  //
-  //     let balanaceOfInvestor = new BigNumber(await conditionalTokens.balanceOf(investor2, positionIds[i]));
-  //     expect(balanaceOfInvestor.isGreaterThanOrEqualTo(new BigNumber(0))).to.equal(true);
-  //     expect(balanaceOfInvestor.isLessThan(new BigNumber(addedFunds2))).to.equal(true);
-  //   }
-  // });
-  //
-  // const burnedShares1 = toBN(5e18)
-  // it('can be defunded', async function() {
-  //   await fixedProductMarketMaker.removeFunding(burnedShares1,  {from : investor1 });
-  //
-  //   let invCollateralToken = new BigNumber(await collateralToken.balanceOf(investor1));
-  //   expect(invCollateralToken.isGreaterThanOrEqualTo(new BigNumber(0))).to.equal(true);
-  //
-  //   let invFixedProductMarketMakerBalance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor1));
-  //   expect(invFixedProductMarketMakerBalance.isEqualTo(new BigNumber(addedFunds1.sub(burnedShares1)))).to.equal(true);
-  //
-  //   for(let i = 0; i < positionIds.length; i++) {
-  //     let newMarketMakerBalance = new BigNumber(await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
-  //     expect(newMarketMakerBalance.isLessThan(marketMakerPool[i])).to.equal(true);
-  //
-  //     let conditionalTokensBalanace = new BigNumber(await conditionalTokens.balanceOf(investor1, positionIds[i]));
-  //
-  //     let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
-  //       .plus(new BigNumber(marketMakerPool[i])).minus(new BigNumber(newMarketMakerBalance));
-  //
-  //     expect(conditionalTokensBalanace.isEqualTo(fundsFinal)).to.equal(true);
-  //
-  //     marketMakerPool[i] = newMarketMakerBalance;
-  //   }
-  // })
+  let marketMakerPool;
+  it('can buy tokens from it', async function() {
+    const investmentAmount = toBN(1e18)
+    const buyOutcomeIndex = 1;
+    await collateralToken.deposit({ value: investmentAmount, from: trader });
+    await collateralToken.approve(fixedProductMarketMaker.address, investmentAmount, { from: trader });
+
+    const feeAmount = investmentAmount.mul(feeFactor).div(toBN(1e18));
+
+    const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex);
+
+    await fixedProductMarketMaker.buy(investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
+
+    expect((await collateralToken.balanceOf(trader)).toString()).to.equal("0");
+    expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
+
+    marketMakerPool = []
+    positionIds = await fixedProductMarketMaker.getPositionIds();
+    for(let i = 0; i < positionIds.length; i++) {
+      let newMarketMakerBalance;
+      if(i === buyOutcomeIndex) {
+        newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount).sub(outcomeTokensToBuy);
+        expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).
+        to.equal(outcomeTokensToBuy.toString());
+      } else {
+        newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount);
+        expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).to.equal("0");
+      }
+      // expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address,
+      //     positionIds[i])).toString()).to.equal(newMarketMakerBalance.toString());
+
+      marketMakerPool[i] = newMarketMakerBalance
+    }
+  })
+
+  it('can sell tokens to it', async function() {
+    const returnAmountWished = toBN(1e18)
+    const sellOutcomeIndex = 1;
+    await conditionalTokens.setApprovalForAll(fixedProductMarketMaker.address, true, { from: trader });
+
+    const feeAmountWished = returnAmountWished.mul(feeFactor).div(toBN(1e18).sub(feeFactor));
+
+    // const outcomeTokensToSell = await fixedProductMarketMaker.calcSellAmount(returnAmountWished, sellOutcomeIndex);
+
+    // Getting all transaction information.
+    const calculatedReturnedAmountValue = await fixedProductMarketMaker.calcSellReturnInv(returnAmountWished, sellOutcomeIndex, { from: trader } );
+    const sellTx = await fixedProductMarketMaker.sell(returnAmountWished, sellOutcomeIndex, { from: trader } );
+
+    const { returnAmount } = sellTx.logs.find(
+      ({ event }) => event === 'FPMMSell'
+    ).args;
+
+    const { seller } = sellTx.logs.find(
+      ({ event }) => event === 'FPMMSell'
+    ).args;
+
+    const { feeAmount } = sellTx.logs.find(
+      ({ event }) => event === 'FPMMSell'
+    ).args;
+
+    const { outcomeIndex } = sellTx.logs.find(
+      ({ event }) => event === 'FPMMSell'
+    ).args;
+
+    const { outcomeTokensSold } = sellTx.logs.find(
+      ({ event }) => event === 'FPMMSell'
+    ).args;
+
+    expect((await collateralToken.balanceOf(trader)).toString()).to.equal(calculatedReturnedAmountValue.toString());
+    expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
+
+    for(let i = 0; i < positionIds.length; i++) {
+      let newMarketMakerBalance;
+      if(i === sellOutcomeIndex) {
+        newMarketMakerBalance = marketMakerPool[i].sub(returnAmountWished).sub(feeAmountWished).add(outcomeTokensSold)
+      } else {
+        newMarketMakerBalance = marketMakerPool[i].sub(returnAmountWished).sub(feeAmountWished)
+      }
+      // expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
+      //   .toString()).to.equal(newMarketMakerBalance.toString());
+
+      marketMakerPool[i] = newMarketMakerBalance
+    }
+  })
+
+  const addedFunds2 = toBN(5e18)
+  it('can continue being funded', async function() {
+    await collateralToken.deposit({ value: addedFunds2, from: investor2 });
+    await collateralToken.approve(fixedProductMarketMaker.address, addedFunds2, { from: investor2 });
+    await fixedProductMarketMaker.addLiquidity(addedFunds2, {from : investor2 });
+
+    expect((await collateralToken.balanceOf(investor2))).to.eql(toBN(0));
+    let inv2Balance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor2));
+    expect(inv2Balance.isGreaterThan(new BigNumber("0"))).to.equal(true);
+
+    for(let i = 0; i < positionIds.length; i++) {
+      let newMarketMakerBalance =new BigNumber(await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
+      let marketPoolValueI = new BigNumber(marketMakerPool[i]);
+      let marketPoolValueFundAdded = new BigNumber(marketMakerPool[i].add(addedFunds2));
+      expect(newMarketMakerBalance.isGreaterThan(marketPoolValueI)).to.equal(true);
+
+      // We need to make small adjustment here.
+      marketMakerPool[i] = newMarketMakerBalance;
+
+      let balanaceOfInvestor = new BigNumber(await conditionalTokens.balanceOf(investor2, positionIds[i]));
+      expect(balanaceOfInvestor.isGreaterThanOrEqualTo(new BigNumber(0))).to.equal(true);
+      expect(balanaceOfInvestor.isLessThan(new BigNumber(addedFunds2))).to.equal(true);
+    }
+  });
+
+  const burnedShares1 = toBN(1e18)
+  it('can be defunded', async function() {
+    await fixedProductMarketMaker.removeLiquidity(burnedShares1,  {from : investor1 });
+
+    let invCollateralToken = new BigNumber(await collateralToken.balanceOf(investor1));
+    expect(invCollateralToken.isGreaterThanOrEqualTo(new BigNumber(0))).to.equal(true);
+
+    let invFixedProductMarketMakerBalance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor1));
+    expect(invFixedProductMarketMakerBalance.isEqualTo(new BigNumber(addedFunds1.sub(burnedShares1)))).to.equal(true);
+
+    for(let i = 0; i < positionIds.length; i++) {
+      let newMarketMakerBalance = new BigNumber(await conditionalTokens.balanceOf(fixedProductMarketMaker.address, positionIds[i]))
+      expect(newMarketMakerBalance.isLessThan(marketMakerPool[i])).to.equal(true);
+
+      let conditionalTokensBalanace = new BigNumber(await conditionalTokens.balanceOf(investor1, positionIds[i]));
+
+      let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
+        .plus(new BigNumber(marketMakerPool[i])).minus(new BigNumber(newMarketMakerBalance));
+
+      expect(conditionalTokensBalanace.isEqualTo(fundsFinal)).to.equal(true);
+
+      marketMakerPool[i] = newMarketMakerBalance;
+    }
+  })
 })

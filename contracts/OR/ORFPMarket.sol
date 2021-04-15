@@ -155,6 +155,10 @@ contract ORFPMarket is FixedProductMarketMaker {
         percentage[1] = balances[0] * 100 / totalBalances;
     }
 
+    function getPositionIds() public view returns (uint256[] memory) {
+        return positionIds;
+    }
+
     function getCurrentTime() public view returns (uint256) {
         //TODO
         //return block.timestamp;
