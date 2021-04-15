@@ -15,7 +15,7 @@ module.exports = function(deployer) {
     
     await factoryC.setA0(demoGovernence.address);
 	await factoryC.setA1(demoToken.address);
-	await factoryC.setA2(factoryC.address);
+	await factoryC.setA2(CondTokenArt.address);
 	 
 	console.log("demoGovernence.address (AAA0)");
 	console.log(demoGovernence.address);
