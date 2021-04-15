@@ -18,7 +18,8 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
     // return value.
     function createMarketProposalTest(string memory marketQuestion,
             uint256 participationEndTime,
-            uint256 resolvingPeriodInDays) public returns (ORFPMarket) {
+            uint256 resolvingPeriodInDays,
+            uint fees) public returns (ORFPMarket) {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0),"proposal Id already used");
 
@@ -27,7 +28,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         bytes32[]  memory conditionIds = new bytes32[](1);
         conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
 
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20(collateralToken),conditionIds,20000000000000000);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20(collateralToken),conditionIds,fees);
 
         fpMarket.init2(marketQuestion,msg.sender,getCurrentTime(),participationEndTime,resolvingPeriodInDays * 86400,governanceAdd,questionId);
 

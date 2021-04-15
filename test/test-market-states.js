@@ -22,6 +22,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   let fixedProductMarketMakerFactory
   let fixedProductMarketMaker
   const questionString = "Test"
+  const feeFactor = toBN(3e15) // (0.3%)
 
   // let positionIds
   before(async function() {
@@ -38,6 +39,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       questionString,
       12,
       now.getTime(),
+      feeFactor,
       { from: creator }
     ]
     const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)

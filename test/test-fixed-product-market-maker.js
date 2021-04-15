@@ -46,6 +46,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       questionString,
       12,
       now.getTime(),
+      feeFactor,
       { from: creator }
     ]
     const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
