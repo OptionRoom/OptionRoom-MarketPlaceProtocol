@@ -127,8 +127,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
         newMarketMakerBalance = expectedFundedAmounts[i].add(investmentAmount).sub(feeAmount);
         expect((await conditionalTokens.balanceOf(trader, positionIds[i])).toString()).to.equal("0");
       }
-      // expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address,
-      //     positionIds[i])).toString()).to.equal(newMarketMakerBalance.toString());
+      expect((await conditionalTokens.balanceOf(fixedProductMarketMaker.address,
+          positionIds[i])).toString()).to.equal(newMarketMakerBalance.toString());
 
       marketMakerPool[i] = newMarketMakerBalance
     }
@@ -140,11 +140,9 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await conditionalTokens.setApprovalForAll(fixedProductMarketMaker.address, true, { from: trader });
 
     const feeAmountWished = returnAmountWished.mul(feeFactor).div(toBN(1e18).sub(feeFactor));
-
-    // const outcomeTokensToSell = await fixedProductMarketMaker.calcSellAmount(returnAmountWished, sellOutcomeIndex);
-
+    
     // Getting all transaction information.
-    const calculatedReturnedAmountValue = await fixedProductMarketMaker.calcSellReturnInv(returnAmountWished, sellOutcomeIndex, { from: trader } );
+    const expectedRetValue = await fixedProductMarketMaker.calcSellReturnInv(returnAmountWished, sellOutcomeIndex, { from: trader } );
     const sellTx = await fixedProductMarketMaker.sell(returnAmountWished, sellOutcomeIndex, { from: trader } );
 
     const { returnAmount } = sellTx.logs.find(
@@ -167,13 +165,13 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       ({ event }) => event === 'FPMMSell'
     ).args;
 
-    expect((await collateralToken.balanceOf(trader)).toString()).to.equal(calculatedReturnedAmountValue.toString());
+    expect((await collateralToken.balanceOf(trader)).toString()).to.equal(expectedRetValue.toString());
     expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
 
     for(let i = 0; i < positionIds.length; i++) {
       let newMarketMakerBalance;
       if(i === sellOutcomeIndex) {
-        newMarketMakerBalance = marketMakerPool[i].sub(returnAmountWished).sub(feeAmountWished).add(outcomeTokensSold)
+        newMarketMakerBalance = marketMakerPool[i].sub(returnAmountWished).sub(feeAmountWished).add(expectedRetValue)
       } else {
         newMarketMakerBalance = marketMakerPool[i].sub(returnAmountWished).sub(feeAmountWished)
       }
