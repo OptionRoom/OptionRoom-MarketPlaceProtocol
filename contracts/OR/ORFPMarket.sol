@@ -171,4 +171,16 @@ contract ORFPMarket is FixedProductMarketMaker {
     function increaseTime(uint256 t) public {
         crntTime += t;
     }
+
+    function getVotingPeriod() public view returns (uint256 time) {
+        return votingPeriod;
+    }
+
+    function getCurrentState() public view returns (MarketState yes) {
+        return state();
+    }
+
+    function resetCurrentTime() public {
+        crntTime = block.timestamp;
+    }
 }

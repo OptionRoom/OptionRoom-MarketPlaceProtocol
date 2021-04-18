@@ -23,6 +23,10 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         ct = ConditionalTokens(ddd);
     }
 
+    function assignGovernanceContract(address governanceAddAssign) public {
+        governanceAdd = governanceAddAssign;
+    }
+
     function assignCollateralTokenAddress(address collateralTokenAddress) public {
         collateralToken = collateralTokenAddress;
     }
@@ -62,6 +66,11 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 //            });
 //        }
 //    }
+
+    // TODO: Remove this code completely from flattended.
+    function resetCurrentTime() public {
+        crntTime = block.timestamp;
+    }
 
     function getCurrentMarketQuestionId() external view returns (bytes32) {
         return bytes32(marketsCount);
