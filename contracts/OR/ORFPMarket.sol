@@ -72,7 +72,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         }
     }
 
-    function approveMarket(bool approve) public {
+    function castGovernanceApprovalVote(bool approve) public {
         require(state() == MarketState.Pending, "Market is not in pending state");
         require(marketVoters[msg.sender] == false, "user already voted");
         marketVoters[msg.sender] = true;
@@ -121,7 +121,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         require(collateralToken.transfer(msg.sender, minBalance), "return transfer failed");
     }
 
-    function resolvingMarket(uint256 outcomeIndex) public {
+    function castGovernanceResolvingVote(uint256 outcomeIndex) public {
         require(state() == MarketState.Resolving, "market is not in resolving period");
         require(resolvingVoters[msg.sender] == false, "already voted");
         resolvingVotes[outcomeIndex] += ORGovernance.getPowerCount(msg.sender);

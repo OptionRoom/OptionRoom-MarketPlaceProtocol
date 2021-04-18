@@ -13,8 +13,8 @@ contract ORGovernanceDemo is IORGovernance {
         return powerPerUser[account];
     }
 
-    function resolve(address marketAddress) external {
-        // TODO: Nasser Why not require instead ?
+    function resolveMarketAction(address marketAddress) external {
+       
         if (resolvedMarkets[marketAddress] == true) {
             return;
         }
@@ -27,16 +27,9 @@ contract ORGovernanceDemo is IORGovernance {
         orConditionalTokens.reportPayouts(market.questionId(), market.getResolvingOutcome());
     }
 
-    function getInputsToResolve(address marketAddress) public view returns (ORConditionalTokens orConditionalTokens, bytes32 questionId, uint256[] memory indices) {
-        ORFPMarket market = ORFPMarket(marketAddress);
-        questionId = market.questionId();
-        indices = market.getResolvingOutcome();
-        orConditionalTokens = ORConditionalTokens(address(market.conditionalTokens));
-    }
-
-
+   
+    // todo: not a real function, just to mimic the Governance power
     function setPower(uint256 power) public {
         powerPerUser[msg.sender] = power;
     }
-
 }

@@ -13,7 +13,7 @@ contract ORGovernanceMock is IORGovernance {
         return powerPerUser[account];
     }
 
-    function resolve(address marketAddress) external {
+    function resolveMarketAction(address marketAddress) external {
         // TODO: Nasser Why not require instead ?
         if (resolvedMarkets[marketAddress] == true) {
             return;
