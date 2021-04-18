@@ -61,7 +61,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     let day = 86400 / 2;
     let endDate = new Date(now.getTime() + day);
     await fixedProductMarketMaker.resetCurrentTime();
-    await fixedProductMarketMaker.approveMarket(true, { from: investor1 });
+    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
   });
 
   it('Should revert because the market is in pending state', async function() {
@@ -71,7 +71,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await fixedProductMarketMaker.resetCurrentTime();
     await fixedProductMarketMaker.increaseTime(day);
     try {
-      await fixedProductMarketMaker.approveMarket(true, { from: investor1 });
+      await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
       throw null;
     }
     catch (error) {
