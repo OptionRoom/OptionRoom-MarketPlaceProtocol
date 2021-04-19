@@ -60,6 +60,10 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     let now = new Date();
     let day = 86400 / 2;
     let endDate = new Date(now.getTime() + day);
+
+    // Setting the voting power.
+    await governanceMock.setPower(5, {from: investor1});
+
     await fixedProductMarketMaker.resetCurrentTime();
     await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
   });
@@ -80,5 +84,26 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     }
 
     await fixedProductMarketMaker.resetCurrentTime();
+  });
+
+
+  it('Should revert because already voted', async function() {
+    const REVERT = "user already voted";
+
+    await fixedProductMarketMaker.resetCurrentTime();
+    try {
+      await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
+  });
+
+  it('Should return the correct number of governance votes', async function() {
+    let governanceVotes = await fixedProductMarketMaker.getGovernanceVotingResults();
+    expect(governanceVotes[0].toString()).to.equal("5");
+    expect(governanceVotes[1].toString()).to.equal("0");
   });
 })
