@@ -174,4 +174,22 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
     }
   });
+
+  it('Should allow multiple voters for the resolve', async function() {
+    await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: investor2 });
+    await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: trader });
+    await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: oracle });
+  });
+
+  it('Should return winning result in this case for option 1', async function() {
+    let outcome = await fixedProductMarketMaker.getResolvingOutcome();
+    expect(outcome[0].toString()).to.equal("0");
+    expect(outcome[1].toString()).to.equal("1");
+  });
+
+  it('Should return winning result in this case for option 1', async function() {
+    let outcome = await fixedProductMarketMaker.getPercentage();
+    expect(outcome[0].toString()).to.equal("0");
+    expect(outcome[1].toString()).to.equal("0");
+  });
 })

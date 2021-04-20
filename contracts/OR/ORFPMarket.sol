@@ -144,7 +144,7 @@ contract ORFPMarket is FixedProductMarketMaker {
             indexSet[1] = 0;
         }
         if (resolvingVotes[1] > resolvingVotes[0]) {
-            indexSet[1] = 1;
+            indexSet[0] = 0;
         }
     }
 
