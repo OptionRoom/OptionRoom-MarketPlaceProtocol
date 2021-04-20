@@ -161,6 +161,17 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await fixedProductMarketMaker.resetCurrentTime();
     await fixedProductMarketMaker.increaseTime(days);
     await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
-    await fixedProductMarketMaker.resetCurrentTime();
+  });
+
+  it('Should revert because gov already voted', async function() {
+    const REVERT = "already voted";
+    try {
+      await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
   });
 })

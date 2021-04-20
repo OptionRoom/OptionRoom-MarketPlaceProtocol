@@ -124,6 +124,8 @@ contract ORFPMarket is FixedProductMarketMaker {
     function castGovernanceResolvingVote(uint256 outcomeIndex) public {
         require(state() == MarketState.Resolving, "market is not in resolving period");
         require(resolvingVoters[msg.sender] == false, "already voted");
+        resolvingVoters[msg.sender] = true;
+
         resolvingVotes[outcomeIndex] += ORGovernance.getPowerCount(msg.sender);
     }
 
