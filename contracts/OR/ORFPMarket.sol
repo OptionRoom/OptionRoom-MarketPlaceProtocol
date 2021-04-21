@@ -29,24 +29,24 @@ contract ORFPMarket is FixedProductMarketMaker {
     uint256 public approveVotesCount;
     uint256 public rejectVotesCount;
     uint256 public participationEndTime;
-    uint256 public resolvingPeriod;
+    uint256 public resolvingEndTime;
     bytes32 public questionId;
 
     bool initializationPhase2;
 
-    string public marketQuestion;
+    string public marketQuestionID;
 
     IORGovernance public ORGovernance;
 
-    function init2(string memory _marketQuestion, address _proposer, uint256 _createdTime,
-            uint256 _participationEndTime, uint256 _resolvingPeriod, address _governance, bytes32 _questionId) public {
+    function init2(string memory _marketQuestionID, address _proposer, uint256 _createdTime,
+            uint256 _participationEndTime, uint256 _resolvingEndTime, address _governance, bytes32 _questionId) public {
         require(initializationPhase2 == false, "Initialization already called");
-        marketQuestion = _marketQuestion;
+        marketQuestionID = _marketQuestionID;
         initializationPhase2 = true;
         proposer = _proposer;
         createdTime = _createdTime;
         participationEndTime = _participationEndTime;
-        resolvingPeriod = _resolvingPeriod;
+        resolvingEndTime = _resolvingEndTime;
         questionId = _questionId;
         ORGovernance = IORGovernance(_governance);
     }
@@ -64,7 +64,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         } else if (time < participationEndTime) {
             return MarketState.Active;
 
-        } else if (time > (participationEndTime + resolvingPeriod)) {
+        } else if (time > resolvingEndTime) {
             return MarketState.Resolved;
 
         } else {
@@ -167,6 +167,10 @@ contract ORFPMarket is FixedProductMarketMaker {
         governanceVotes[1] = rejectVotesCount;
         return governanceVotes;
     }
+    
+    function getMarketQuestionID() public view returns(string memory){
+        return marketQuestionID;
+    }
 
     function getCurrentTime() public view returns (uint256) {
         //TODO
@@ -181,7 +185,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         crntTime += t;
     }
 
-    function getVotingPeriod() public view returns (uint256 time) {
+    function getVotingPeriod() public pure returns (uint256 time) {
         return votingPeriod;
     }
 

@@ -21,7 +21,7 @@ contract FixedProductMarketMakerFactory is CloneFactory {
     address implementationMasterAddr;
 
     uint public marketsCount;
-    ORFPMarket[] public markets;
+    ORFPMarket[] public fpMarkets;
 
     constructor() public {
         implementationMaster = new ORFPMarket();
@@ -106,14 +106,20 @@ contract FixedProductMarketMakerFactory is CloneFactory {
             fee
         );
 
-        markets.push(fixedProductMarketMaker);
+        fpMarkets.push(fixedProductMarketMaker);
         marketsCount++;
         return fixedProductMarketMaker;
     }
 
-    function getMarkets() public view returns (ORFPMarket[] memory) {
-        return markets;
+    function getAllMarkets() public view returns (ORFPMarket[] memory) {
+        return fpMarkets;
     }
+    
+    function getAllMarketsCount() public view returns(uint256){
+        return marketsCount; 
+    }
+    
+    
 
     function getCurrentTime() public view returns (uint256) {
         //TODO
