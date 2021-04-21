@@ -32,7 +32,9 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         collateralToken = collateralTokenAddress;
     }
 
-    function createMarketProposalWithCollateralTest(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
+    function createMarketProposalWithCollateralTest(string memory marketQuestionID,
+        uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken,
+        uint256 initialLiq, uint fees) public returns (ORFPMarket) {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
 
@@ -40,17 +42,20 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         bytes32[]  memory conditionIds = new bytes32[](1);
         conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
 
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, fees);
 
         fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
         // Add liquidity
+
         collateralToken.transferFrom(msg.sender,address(this),initialLiq);
         collateralToken.approve(address(fpMarket),initialLiq);
         fpMarket.addLiquidity(initialLiq);
         fpMarket.transfer(msg.sender,fpMarket.balanceOf(address(this)));
         //TODO: check collateralToken is from the list
+
+        return fpMarket;
     }
 
     // Override this method to do the same as before at the
