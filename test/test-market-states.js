@@ -47,11 +47,13 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await fixedProductMarketMakerFactory.resetCurrentTime();
 
     let now = new Date();
+    let resolvingEndDate = addDays(now, 5);
     let endTime = Math.floor(addDays(now,3).getTime() / 1000);
+    let resolvingEndTime = Math.floor(resolvingEndDate.getTime() / 1000);
     const createArgs = [
       questionString,
       endTime,
-      2,
+      resolvingEndTime,
       feeFactor,
       { from: creator }
     ]

@@ -4,7 +4,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
     ORFPMarket marketMaker;
     address public collateralToken;
-    
+
     struct tokenBalance {
         address holder;
         uint yesBalance;
@@ -32,12 +32,32 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         collateralToken = collateralTokenAddress;
     }
 
+    function createMarketProposalWithCollateralTest(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
+        bytes32 questionId = bytes32(marketsCount);
+        require(proposalIds[questionId] == address(0), "proposal Id already used");
+
+        ct.prepareCondition(governanceAdd, questionId, 2);
+        bytes32[]  memory conditionIds = new bytes32[](1);
+        conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
+
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
+
+        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
+
+        proposalIds[questionId] = address(fpMarket);
+        // Add liquidity
+        collateralToken.transferFrom(msg.sender,address(this),initialLiq);
+        collateralToken.approve(address(fpMarket),initialLiq);
+        fpMarket.addLiquidity(initialLiq);
+        fpMarket.transfer(msg.sender,fpMarket.balanceOf(address(this)));
+        //TODO: check collateralToken is from the list
+    }
 
     // Override this method to do the same as before at the
     // return value.
-    function createMarketProposalTest(string memory marketQuestion,
+    function createMarketProposalTest(string memory marketQuestionID,
         uint256 participationEndTime,
-        uint256 resolvingPeriodInDays,
+        uint256 resolvingEndTime,
         uint fees) public returns (ORFPMarket) {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
@@ -50,7 +70,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
         marketMaker = fpMarket;
 
-        fpMarket.init2(marketQuestion, msg.sender, getCurrentTime(), participationEndTime, resolvingPeriodInDays * 86400, governanceAdd, questionId);
+        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
 
