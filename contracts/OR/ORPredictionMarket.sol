@@ -4,7 +4,7 @@ import "./FixedProductMarketMakerFactoryOR.sol";
 
 contract ORPredictionMarket is FixedProductMarketMakerFactory {
 
-    address public collateralToken = 0xB1B9C9AbE8CC193467b62F2E2a1Af98183049dB7;
+
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
 
     address governanceAdd;
@@ -25,9 +25,9 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         // todo continue
 
     }
-    */
+    */ 
 
-    function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime) public {
+    function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
 
@@ -35,11 +35,17 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         bytes32[]  memory conditionIds = new bytes32[](1);
         conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
 
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, 20000000000000000);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
 
         fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
+        // Add liquidity
+        collateralToken.transferFrom(msg.sender,address(this),initialLiq);
+        collateralToken.approve(address(fpMarket),initialLiq);
+        fpMarket.addLiquidity(initialLiq);
+        fpMarket.transfer(msg.sender,fpMarket.balanceOf(address(this)));
+        //TODO: check collateralToken is from the list
     }
 
     modifier governance {

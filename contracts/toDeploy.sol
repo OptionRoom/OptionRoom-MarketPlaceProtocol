@@ -20,7 +20,8 @@ contract AAA2ConditnalToken1 is ORConditionalTokens{
 
 
 contract AAA3MarketFactory1 is ORPredictionMarket{
-
+    address public collateralToken;
+    
    /*
     constructor() public{
         governenceAdd = 0x102Ea1BB7c34d5b49E8647bfad8d231A8F6E39B4;

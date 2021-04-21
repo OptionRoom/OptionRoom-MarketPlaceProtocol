@@ -3,7 +3,8 @@ import '../OR/ORPredictionMarket.sol';
 contract PredictionMarketFactoryMock is ORPredictionMarket {
 
     ORFPMarket marketMaker;
-
+    address public collateralToken;
+    
     struct tokenBalance {
         address holder;
         uint yesBalance;
