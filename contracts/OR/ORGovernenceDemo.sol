@@ -29,7 +29,12 @@ contract ORGovernanceDemo is IORGovernance {
 
    
     // todo: not a real function, just to mimic the Governance power
-    function setPower(uint256 power) public {
+    function setSenderPower(uint256 power) public {
         powerPerUser[msg.sender] = power;
+    }
+    
+    // todo: not a real function, just to mimic the Governance power
+    function setPower(address account, uint256 power) public{
+        powerPerUser[account] = power;
     }
 }
