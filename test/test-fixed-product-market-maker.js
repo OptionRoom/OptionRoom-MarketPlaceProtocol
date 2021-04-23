@@ -224,9 +224,9 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
       let conditionalTokensBalanace = new BigNumber(await conditionalTokens.balanceOf(investor1, positionIds[i]));
 
-`      let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
+      let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
         .plus(new BigNumber(marketMakerPool[i])).minus(new BigNumber(newMarketMakerBalance));
-`
+
       expect(conditionalTokensBalanace.isEqualTo(fundsFinal)).to.equal(true);
 
       marketMakerPool[i] = newMarketMakerBalance;
