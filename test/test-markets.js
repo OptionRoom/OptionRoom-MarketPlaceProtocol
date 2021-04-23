@@ -76,7 +76,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await createNewMarket();
     await createNewMarket();
     await createNewMarket();
-    let marketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORFPMarket.MarketState.Active);
+    let marketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORFPMarket.MarketState.Pending);
     expect(marketsCount.toString()).to.equal("3");
   });
 
@@ -87,7 +87,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
     let days = 86400 * 3;
     await marketMaker.increaseTime(days);
-    let activeMarketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORFPMarket.MarketState.Active);
+    let activeMarketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORFPMarket.MarketState.Pending);
     expect(activeMarketsCount.toString()).to.equal("2");
 
     let resolvingMarketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORFPMarket.MarketState.Resolving);
