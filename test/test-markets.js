@@ -28,6 +28,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     collateralToken = await WETH9.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
     governanceMock = await ORGovernanceMock.deployed()
+    let deployedMarketMakerContract = await ORFPMarket.deployed();
+    await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(collateralToken.address);
     await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
@@ -44,7 +46,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   }
 
   it('can be created by factory', async function() {
-    await fixedProductMarketMakerFactory.resetCurrentTime();
+    // await fixedProductMarketMakerFactory.resetCurrentTime();
   })
 
   async function createNewMarket() {
@@ -82,7 +84,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
   it('Should check for correct markets numbers', async function() {
     let marketMaker = marketMakers[0];
-    await marketMaker.resetCurrentTime();
+    // await marketMaker.resetCurrentTime();
     await marketMaker.castGovernanceApprovalVote(true, { from: investor1 });
 
     let days = 86400 * 3;

@@ -33,6 +33,8 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     conditionalTokens = await ConditionalTokens.deployed();
     collateralToken = await WETH9.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
+    let deployedMarketMakerContract = await ORFPMarket.deployed();
+    await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(collateralToken.address);
   })

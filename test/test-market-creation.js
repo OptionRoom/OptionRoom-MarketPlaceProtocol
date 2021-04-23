@@ -31,6 +31,9 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     collateralToken2 = await ERC20DemoToken.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
     governanceMock = await ORGovernanceMock.deployed()
+    let deployedMarketMakerContract = await ORFPMarket.deployed();
+    await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
+
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
     await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
 
@@ -46,7 +49,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   }
 
   it('can be created by factory', async function() {
-    await fixedProductMarketMakerFactory.resetCurrentTime();
+    // await fixedProductMarketMakerFactory.resetCurrentTime();
   })
 
   const addedFunds1 = toBN(10e18)

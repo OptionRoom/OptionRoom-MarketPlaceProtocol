@@ -3,7 +3,6 @@ import '../OR/ORPredictionMarket.sol';
 
 contract PredictionMarketFactoryMock is ORPredictionMarket {
 
-    ORFPMarket marketMaker;
     address public collateralToken;
 
     struct tokenBalance {
@@ -74,7 +73,6 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
-        marketMaker = fpMarket;
 
         fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
 
@@ -93,11 +91,6 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 //            });
 //        }
 //    }
-
-    // TODO: Remove this code completely from flattended.
-    function resetCurrentTime() public {
-        crntTime = block.timestamp;
-    }
 
     function getCurrentMarketQuestionId() external view returns (bytes32) {
         return bytes32(marketsCount);

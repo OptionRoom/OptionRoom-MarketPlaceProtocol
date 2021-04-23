@@ -18,7 +18,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         Resolved  // can redeem
     }
 
-    uint256 public constant votingPeriod = 1800 ;// 1 days;  
+    uint256 public constant votingPeriod = 1800 ;// 1 days;
 
     mapping(address => bool) public marketVoters;
     mapping(address => bool) public resolvingVoters;
@@ -169,7 +169,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         governanceVotes[1] = rejectVotesCount;
         return governanceVotes;
     }
-    
+
     function getMarketQuestionID() public view returns(string memory){
         return marketQuestionID;
     }
@@ -181,12 +181,16 @@ contract ORFPMarket is FixedProductMarketMaker {
     function getCurrentState() public view returns (MarketState yes) {
         return state();
     }
-    
+
     //TODO just for testing remove them
     uint256 timeIncrease;
 
     function increaseTime(uint256 t) public {
         timeIncrease += t;
+    }
+
+    function resetTimeIncrease() public {
+        timeIncrease = 0;
     }
 
     function getCurrentTime() public view returns (uint256) {
