@@ -15,14 +15,7 @@ const ORFPMarket = artifacts.require('ORFPMarket')
 var BigNumber = require('bignumber.js');
 
 contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trader, investor2]) {
-  const questionId = randomHex(32)
   const questionString = "Test";
-  const numOutcomes = 2
-  // const conditionId = getConditionId(oracle, questionId, numOutcomes)
-  // const collectionIds = Array.from(
-  //   { length: numOutcomes },
-  //   (_, i) => getCollectionId(conditionId, toBN(1).shln(i))
-  // );
 
   let conditionalTokens
   let collateralToken
@@ -31,6 +24,10 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
   let positionIds
   const feeFactor = toBN(3e15) // (0.3%)
+
+  function addDays(theDate, days) {
+    return new Date(theDate.getTime() + days*24*60*60*1000);
+  }
 
   before(async function() {
     conditionalTokens = await ConditionalTokens.deployed();
@@ -42,10 +39,14 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
   it('can be created by factory', async function() {
     let now = new Date();
+    let resolvingEndDate = addDays(now, 5);
+    let endTime = Math.floor(addDays(now,3).getTime() / 1000);
+    let resolvingEndTime = Math.floor(resolvingEndDate.getTime() / 1000);
+
     const createArgs = [
       questionString,
-      12,
-      now.getTime(),
+      endTime,
+      resolvingEndTime,
       feeFactor,
       { from: creator }
     ]
@@ -140,7 +141,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await conditionalTokens.setApprovalForAll(fixedProductMarketMaker.address, true, { from: trader });
 
     const feeAmountWished = returnAmountWished.mul(feeFactor).div(toBN(1e18).sub(feeFactor));
-    
+
     // Getting all transaction information.
     const expectedRetValue = await fixedProductMarketMaker.calcSellReturnInv(returnAmountWished, sellOutcomeIndex, { from: trader } );
     const sellTx = await fixedProductMarketMaker.sell(returnAmountWished, sellOutcomeIndex, { from: trader } );
@@ -209,7 +210,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
   const burnedShares1 = toBN(1e18)
   it('can be defunded', async function() {
-    await fixedProductMarketMaker.removeLiquidity(burnedShares1,  {from : investor1 });
+    await fixedProductMarketMaker.removeLiquidity(burnedShares1, false,  {from : investor1 });
 
     let invCollateralToken = new BigNumber(await collateralToken.balanceOf(investor1));
     expect(invCollateralToken.isGreaterThanOrEqualTo(new BigNumber(0))).to.equal(true);
@@ -223,12 +224,12 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
       let conditionalTokensBalanace = new BigNumber(await conditionalTokens.balanceOf(investor1, positionIds[i]));
 
-      let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
+`      let fundsFinal = new BigNumber(addedFunds1).minus(new BigNumber(expectedFundedAmounts[i]))
         .plus(new BigNumber(marketMakerPool[i])).minus(new BigNumber(newMarketMakerBalance));
-
+`
       expect(conditionalTokensBalanace.isEqualTo(fundsFinal)).to.equal(true);
 
       marketMakerPool[i] = newMarketMakerBalance;
     }
-  })
+  });
 })
