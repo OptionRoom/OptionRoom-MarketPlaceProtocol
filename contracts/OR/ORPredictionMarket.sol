@@ -25,7 +25,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         // todo continue
 
     }
-    */ 
+    */
 
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
@@ -51,8 +51,8 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
     modifier governance {
         require(msg.sender == governanceAdd);
         _;
-    } 
-     
+    }
+
     function getMarketsCount(ORFPMarket.MarketState marketState) public view returns(uint256){
         uint256 marketsInStateCount = 0;
         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
@@ -60,10 +60,10 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
                 marketsInStateCount++;
             }
         }
-        
+
         return marketsInStateCount;
     }
-     
+
     function getMarkets(ORFPMarket.MarketState marketState, uint256 startIndx, uint256 length) public view returns(ORFPMarket[] memory markets){
         markets = new ORFPMarket[](length);
         uint256 marketInStateIndex = 0;
@@ -74,16 +74,16 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
                     if(currentIndex >=  length){
                         return markets;
                     }
-                    
+
                     markets[currentIndex] = fpMarkets[marketIndex];
                 }
                 marketInStateIndex++;
             }
         }
-        
+
         return markets;
     }
-    
+
     function getMarketsQuestionIDs(ORFPMarket.MarketState marketState, uint256 startIndx, uint256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
         markets = new ORFPMarket[](length);
         questionsIDs = new string[](length);
@@ -95,47 +95,35 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
                     if(currentIndex >=  length){
                         return (markets,questionsIDs);
                     }
-                    
+
                     markets[currentIndex] = fpMarkets[marketIndex];
                     questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
                 }
                 marketInStateIndex++;
             }
         }
-        
+
         return (markets,questionsIDs);
     }
-    
-    
-   
+
     function getMarket(string memory marketQuestionID) public view returns(ORFPMarket  market){
-     
+
         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-             string memory mqID = fpMarkets[marketIndex].getMarketQuestionID(); 
+             string memory mqID = fpMarkets[marketIndex].getMarketQuestionID();
              if(hashCompareWithLengthCheck(mqID,marketQuestionID) == true){
-                 return fpMarkets[marketIndex]; 
+                 return fpMarkets[marketIndex];
              }
         }
     }
-    
-    function getMarketQuestionID(string memory marketQuestionID) public view returns(ORFPMarket  market, string memory questionID){
-     
-        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-             string memory mqID = fpMarkets[marketIndex].getMarketQuestionID(); 
-             if(hashCompareWithLengthCheck(mqID,marketQuestionID) == true){
-                 return (fpMarkets[marketIndex],fpMarkets[marketIndex].getMarketQuestionID()); 
-             }
-        }
-    }
-    
+
     function hashCompareWithLengthCheck(string memory a, string memory b) internal pure returns (bool) {
         bytes memory bytesA = bytes(a);
         bytes memory bytesB = bytes(b);
-        
-        if(bytesA.length != bytesB.length) { 
+
+        if(bytesA.length != bytesB.length) {
             return false;
         } else {
-            return keccak256(bytesA) == keccak256(bytesB); 
+            return keccak256(bytesA) == keccak256(bytesB);
         }
     }
 }
