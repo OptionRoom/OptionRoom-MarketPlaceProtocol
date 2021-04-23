@@ -1,5 +1,5 @@
 pragma solidity ^0.5.1;
-
+pragma experimental ABIEncoderV2;
 import "./FixedProductMarketMakerFactoryOR.sol";
 
 contract ORPredictionMarket is FixedProductMarketMakerFactory {
@@ -84,15 +84,46 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         return markets;
     }
     
+    function getMarketsQuestionIDs(ORFPMarket.MarketState marketState, uint256 startIndx, uint256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        markets = new ORFPMarket[](length);
+        questionsIDs = new string[](length);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].state() == marketState){
+                if(marketInStateIndex >= startIndx){
+                    uint256 currentIndex = marketInStateIndex - startIndx;
+                    if(currentIndex >=  length){
+                        return (markets,questionsIDs);
+                    }
+                    
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
+                }
+                marketInStateIndex++;
+            }
+        }
+        
+        return (markets,questionsIDs);
+    }
+    
     
    
     function getMarket(string memory marketQuestionID) public view returns(ORFPMarket  market){
      
-        
         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
              string memory mqID = fpMarkets[marketIndex].getMarketQuestionID(); 
              if(hashCompareWithLengthCheck(mqID,marketQuestionID) == true){
                  return fpMarkets[marketIndex]; 
+             }
+        }
+    }
+    
+    function getMarketQuestionID(string memory marketQuestionID) public view returns(ORFPMarket  market, string memory questionID){
+     
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+             string memory mqID = fpMarkets[marketIndex].getMarketQuestionID(); 
+             if(hashCompareWithLengthCheck(mqID,marketQuestionID) == true){
+                 return (fpMarkets[marketIndex],fpMarkets[marketIndex].getMarketQuestionID()); 
              }
         }
     }

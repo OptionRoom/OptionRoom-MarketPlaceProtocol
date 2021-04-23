@@ -10,7 +10,8 @@ contract ORGovernanceDemo is IORGovernance {
     mapping(address => bool) resolvedMarkets;
 
     function getPowerCount(address account) external returns (uint256) {
-        return powerPerUser[account];
+        //return powerPerUser[account];
+        return 100;
     }
 
     function resolveMarketAction(address marketAddress) external {
