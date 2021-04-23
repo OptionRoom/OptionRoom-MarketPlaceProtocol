@@ -49,6 +49,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         resolvingEndTime = _resolvingEndTime;
         questionId = _questionId;
         ORGovernance = IORGovernance(_governance);
+        crntTime = _createdTime;
     }
 
     function state() public view returns (MarketState) {
