@@ -1,3 +1,4 @@
+pragma experimental ABIEncoderV2;
 import '../OR/ORPredictionMarket.sol';
 
 contract PredictionMarketFactoryMock is ORPredictionMarket {

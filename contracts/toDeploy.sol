@@ -1,5 +1,5 @@
 pragma solidity ^0.5.0;
-
+pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
 import './OR/ORPredictionMarket.sol';
 import "./OR/ORGovernenceDemo.sol";
