@@ -23,9 +23,18 @@ contract FixedProductMarketMakerFactory is CloneFactory {
     uint public marketsCount;
     ORFPMarket[] public fpMarkets;
 
+    address deployer;
     constructor() public {
-        implementationMaster = new ORFPMarket();
-        implementationMasterAddr = address(implementationMaster);
+        //implementationMaster = new ORFPMarket();
+        //implementationMasterAddr = address(implementationMaster);
+        
+        //implementationMasterAddr = marketTemplateAdd; 
+        deployer = msg.sender;
+    }
+    
+    function setTemplateAddress(address templateAddress) public{
+        require(msg.sender == deployer,"only deployer can set the template");
+        implementationMasterAddr = templateAddress;
     }
     /*
         function cloneConstructor(bytes calldata consData) external {
