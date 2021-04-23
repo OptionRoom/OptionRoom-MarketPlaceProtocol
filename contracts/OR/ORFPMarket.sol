@@ -18,10 +18,10 @@ contract ORFPMarket is FixedProductMarketMaker {
         Resolved  // can redeem
     }
 
-    uint256 public constant votingPeriod = 86400;
+    uint256 public constant votingPeriod = 1800 ;// 1 days;  
 
-    mapping(address => bool) marketVoters;
-    mapping(address => bool) resolvingVoters;
+    mapping(address => bool) public marketVoters;
+    mapping(address => bool) public resolvingVoters;
     uint256[2] public resolvingVotes;
 
     address public proposer;
