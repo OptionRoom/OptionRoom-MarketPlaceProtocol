@@ -97,9 +97,11 @@ contract ORFPMarket is FixedProductMarketMaker {
         }
     }
 
-    function removeLiquidity(uint256 shares) public {
+    function removeLiquidity(uint256 shares, bool autoMerge) public {
         removeFunding(shares);
-        //todo
+        if(autoMerge == true){
+            merge();
+        }
     }
 
     function merge() public {
