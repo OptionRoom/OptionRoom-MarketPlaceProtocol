@@ -12,7 +12,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
     mapping(bytes32 => address) public proposalIds;
 
     constructor() public {
-        crntTime = block.timestamp;
+       
         governanceAdd = msg.sender;
     }
 

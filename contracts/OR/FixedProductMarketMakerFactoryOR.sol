@@ -131,15 +131,7 @@ contract FixedProductMarketMakerFactory is CloneFactory {
     
 
     function getCurrentTime() public view returns (uint256) {
-        //TODO
-        //return block.timestamp;
-        return crntTime;
+        return block.timestamp ;
     }
 
-    //TODO just for testing remove them
-    uint256 crntTime;
-
-    function increaseTime(uint256 t) public {
-        crntTime += t;
-    }
 }

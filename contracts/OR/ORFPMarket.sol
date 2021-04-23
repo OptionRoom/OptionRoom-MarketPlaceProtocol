@@ -49,7 +49,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         resolvingEndTime = _resolvingEndTime;
         questionId = _questionId;
         ORGovernance = IORGovernance(_governance);
-        crntTime = _createdTime;
     }
 
     function state() public view returns (MarketState) {
@@ -175,19 +174,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         return marketQuestionID;
     }
 
-    function getCurrentTime() public view returns (uint256) {
-        //TODO
-        //return block.timestamp;
-        return crntTime;
-    }
-
-    //TODO just for testing remove them
-    uint256 crntTime;
-
-    function increaseTime(uint256 t) public {
-        crntTime += t;
-    }
-
     function getVotingPeriod() public pure returns (uint256 time) {
         return votingPeriod;
     }
@@ -195,8 +181,17 @@ contract ORFPMarket is FixedProductMarketMaker {
     function getCurrentState() public view returns (MarketState yes) {
         return state();
     }
+    
+    //TODO just for testing remove them
+    uint256 timeIncrease;
 
-    function resetCurrentTime() public {
-        crntTime = block.timestamp;
+    function increaseTime(uint256 t) public {
+        timeIncrease += t;
+    }
+
+    function getCurrentTime() public view returns (uint256) {
+        //TODO
+        //return block.timestamp;
+        return block.timestamp + timeIncrease;
     }
 }
