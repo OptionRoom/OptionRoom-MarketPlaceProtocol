@@ -8,13 +8,15 @@ const { toBN } = web3.utils
 
 const ConditionalTokens = artifacts.require('ConditionalTokens')
 const WETH9 = artifacts.require('WETH9')
+const ERC20DemoToken = artifacts.require('ERC20DemoToken')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
 const ORGovernanceMock = artifacts.require('ORGovernanceMock')
 
 contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trader, investor2]) {
   let conditionalTokens
-  let collateralToken
+  let collateralToken1
+  let collateralToken2
   let fixedProductMarketMakerFactory
   let governanceMock
   let marketMakers = [];
@@ -25,11 +27,11 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   // let positionIds
   before(async function() {
     conditionalTokens = await ConditionalTokens.deployed();
-    collateralToken = await WETH9.deployed();
+    collateralToken1 = await WETH9.deployed();
+    collateralToken2 = await ERC20DemoToken.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
     governanceMock = await ORGovernanceMock.deployed()
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
-    await fixedProductMarketMakerFactory.assignCollateralTokenAddress(collateralToken.address);
     await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
 
     // Setting the voting power.
@@ -47,22 +49,30 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     await fixedProductMarketMakerFactory.resetCurrentTime();
   })
 
-  const addedFunds1 = toBN(1e18)
-  async function createNewMarket() {
+  const addedFunds1 = toBN(10e18)
+  const addedFunds = toBN(1e18)
+  async function createNewMarket(collateralToken, isERC20) {
     let now = new Date();
     let resolvingEndDate = addDays(now, 5);
     let endTime = Math.floor(addDays(now,3).getTime() / 1000);
     let resolvingEndTime = Math.floor(resolvingEndDate.getTime() / 1000);
 
-    await collateralToken.deposit({ value: addedFunds1, from: creator });
-    await collateralToken.approve(fixedProductMarketMakerFactory.address, addedFunds1, { from: creator });
+    if (isERC20) {
+      await collateralToken.mint(addedFunds1, { from: creator })
+      await collateralToken.transfer(creator, addedFunds, { from: creator })
+      let accountValue = await collateralToken.balanceOf(creator);
+    }  else {
+      await collateralToken.deposit({ value: addedFunds1, from: creator });
+    }
+
+    await collateralToken.approve(fixedProductMarketMakerFactory.address, addedFunds, { from: creator });
 
     const createArgs = [
       questionString,
       endTime,
       resolvingEndTime,
       collateralToken.address,
-      addedFunds1,
+      addedFunds,
       feeFactor,
       { from: creator }
     ]
@@ -79,7 +89,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     marketMakers.push(fixedProductMarketMaker);
   }
 
-  it('Should create a new market with collateral token assigned', async function() {
-    await createNewMarket();
+  it('Should create a new market with collateral tokens assigned', async function() {
+    await createNewMarket(collateralToken1, false);
+    await createNewMarket(collateralToken2, true);
   });
 })
