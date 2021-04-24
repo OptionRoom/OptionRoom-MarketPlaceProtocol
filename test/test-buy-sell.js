@@ -23,7 +23,7 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
   let fixedProductMarketMaker
 
   let positionIds
-  const feeFactor = toBN(3e15) // (0.3%)
+  const feeFactor = toBN(0) // (0.3%)
 
   function addDays(theDate, days) {
     return new Date(theDate.getTime() + days*24*60*60*1000);
@@ -144,5 +144,25 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     let totalNoBalance = noBalanace.plus(new BigNumber(traderNoBalance));
 
     expect(totalNoBalance.isEqualTo(yesBalanace)).to.equal(true);
+  })
+
+
+  it('Should check balance after selling shares', async function() {
+    let traderNoBalanceBefore= (await fixedProductMarketMaker.getBalances(trader))[1];
+    let expectedSellValue = await fixedProductMarketMaker.calcSellReturnInv(toBN(traderNoBalanceBefore), 1, { from: trader })
+
+    await conditionalTokens.setApprovalForAll(fixedProductMarketMaker.address, true, { from: trader });
+    await fixedProductMarketMaker.sell(expectedSellValue, 1, { from: trader })
+
+    let traderNoBalance = (await fixedProductMarketMaker.getBalances(trader))[1];
+    let summation = new BigNumber(expectedSellValue).plus(new BigNumber(traderNoBalance));
+
+    traderNoBalanceBefore = new BigNumber(traderNoBalanceBefore)
+
+    let devision = summation.dividedBy(traderNoBalanceBefore).toFixed(0, BigNumber.ROUND_CEIL);
+    expect(new BigNumber(devision).isEqualTo(new BigNumber(1))).to.equal(true);
+
+    let colTokenBalance = new BigNumber((await collateralToken.balanceOf(trader)));
+    expect(colTokenBalance.isGreaterThan(new BigNumber(0)));
   })
 })
