@@ -125,6 +125,14 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
         return conditionalTokens.balanceOfBatch(thises, positionIds);
     }
+    
+    function getMarketCollateralTotalSupplay() public view returns(uint256){
+        uint256 collateralTotalsupplay = 0;
+        for (uint i = 0; i < positionIds.length; i++) {
+            collateralTotalsupplay = conditionalTokens.totalBalances(positionIds[i]).add(collateralTotalsupplay);
+        }
+        return collateralTotalsupplay.div(positionIds.length);
+    }
 
     function generateBasicPartition(uint outcomeSlotCount)
     private
