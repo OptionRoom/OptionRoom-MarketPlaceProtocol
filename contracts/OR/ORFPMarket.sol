@@ -153,10 +153,16 @@ contract ORFPMarket is FixedProductMarketMaker {
     function getPercentage() public view returns (uint256[] memory percentage) {
         percentage = new uint256[](2);
         uint256[] memory balances = getPoolBalances();
-        uint256 totalBalances = balances[0] + balances[1] + 1;
-
-        percentage[0] = balances[1] * 100 / totalBalances;
-        percentage[1] = balances[0] * 100 / totalBalances;
+        uint256 totalBalances = balances[0] + balances[1] ;
+        if(totalBalances == 0){
+            percentage[0] = 500000 ;
+            percentage[1] = 500000 ;
+            
+        }else{
+            percentage[0] = balances[1] * 1000000 / totalBalances;
+            percentage[1] = balances[0] * 1000000 / totalBalances;
+            
+        }
     }
 
     function getPositionIds() public view returns (uint256[] memory) {
