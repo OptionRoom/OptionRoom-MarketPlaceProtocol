@@ -17,6 +17,9 @@ contract ERC1155 is ERC165, IERC1155
 {
     using SafeMath for uint256;
     using Address for address;
+    
+    // totalBalances
+    mapping(uint256 => uint256) public totalBalances;
 
     // Mapping from token ID to owner balances
     mapping (uint256 => mapping(address => uint256)) private _balances;
@@ -180,10 +183,10 @@ contract ERC1155 is ERC165, IERC1155
 
         _balances[id][to] = value.add(_balances[id][to]);
         emit TransferSingle(msg.sender, address(0), to, id, value);
-
+        totalBalances[id] = value.add(totalBalances[id]);
         _doSafeTransferAcceptanceCheck(msg.sender, address(0), to, id, value, data);
     }
-
+    
     /**
      * @dev Internal function to batch mint amounts of tokens with the given IDs
      * @param to The address that will own the minted token
@@ -197,6 +200,7 @@ contract ERC1155 is ERC165, IERC1155
 
         for(uint i = 0; i < ids.length; i++) {
             _balances[ids[i]][to] = values[i].add(_balances[ids[i]][to]);
+            totalBalances[ids[i]] = values[i].add(totalBalances[ids[i]]);
         }
 
         emit TransferBatch(msg.sender, address(0), to, ids, values);
@@ -212,6 +216,7 @@ contract ERC1155 is ERC165, IERC1155
      */
     function _burn(address owner, uint256 id, uint256 value) internal {
         _balances[id][owner] = _balances[id][owner].sub(value);
+        totalBalances[id] = totalBalances[id].sub(value);
         emit TransferSingle(msg.sender, owner, address(0), id, value);
     }
 
@@ -226,6 +231,7 @@ contract ERC1155 is ERC165, IERC1155
 
         for(uint i = 0; i < ids.length; i++) {
             _balances[ids[i]][owner] = _balances[ids[i]][owner].sub(values[i]);
+            totalBalances[ids[i]] = totalBalances[ids[i]].sub(values[i]);
         }
 
         emit TransferBatch(msg.sender, owner, address(0), ids, values);
