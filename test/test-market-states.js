@@ -15,7 +15,7 @@ const ORGovernanceMock = artifacts.require('ORGovernanceMock')
 var BigNumber = require('bignumber.js');
 const helper = require('ganache-time-traveler');
 
-contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trader, investor2]) {
+contract('MarketMakerStates', function([, creator, oracle, investor1, trader, investor2]) {
   let conditionalTokens
   let collateralToken
   let fixedProductMarketMakerFactory
@@ -144,56 +144,52 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   });
 
 
-  // it('Should revert because we are not in resolving period', async function() {
-  //   const REVERT = "market is not in resolving period";
-  //
-  //   // await fixedProductMarketMaker.resetCurrentTime();
-  //   await helper.revertToSnapshot(orgTimeSnapShot);
-  //   try {
-  //     await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
-  //     throw null;
-  //   }
-  //   catch (error) {
-  //     assert(error, "Expected an error but did not get one");
-  //     assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
-  //   }
-  // });
-  //
-  // it('Should be able to cast a resolving vote for gov', async function() {
-  //   let days = 86400 * 4;
-  //   // await fixedProductMarketMaker.resetCurrentTime();
-  //   await helper.revertToSnapshot(orgTimeSnapShot);
-  //   await fixedProductMarketMaker.increaseTime(days);
-  //   await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
-  // });
-  //
-  // it('Should revert because gov already voted', async function() {
-  //   const REVERT = "already voted";
-  //   try {
-  //     await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
-  //     throw null;
-  //   }
-  //   catch (error) {
-  //     assert(error, "Expected an error but did not get one");
-  //     assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
-  //   }
-  // });
-  //
-  // it('Should allow multiple voters for the resolve', async function() {
-  //   await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: investor2 });
-  //   await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: trader });
-  //   await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: oracle });
-  // });
-  //
-  // it('Should return winning result in this case for option 1', async function() {
-  //   let outcome = await fixedProductMarketMaker.getResolvingOutcome();
-  //   expect(outcome[0].toString()).to.equal("0");
-  //   expect(outcome[1].toString()).to.equal("1");
-  // });
-  //
-  // it('Should return winning result in this case for option 1', async function() {
-  //   let outcome = await fixedProductMarketMaker.getPercentage();
-  //   expect(outcome[0].toString()).to.equal("0");
-  //   expect(outcome[1].toString()).to.equal("0");
-  // });
+  it('Should revert because we are not in resolving period', async function() {
+    const REVERT = "market is not in resolving period";
+    ;
+    try {
+      await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
+  });
+
+  it('Should be able to cast a resolving vote for gov', async function() {
+    let days = 3*24*60*60
+    await fixedProductMarketMaker.increaseTime(days);
+    await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
+  });
+
+  it('Should revert because gov already voted', async function() {
+    const REVERT = "already voted";
+    try {
+      await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
+  });
+
+  it('Should allow multiple voters for the resolve', async function() {
+    await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: investor2 });
+    await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: trader });
+    await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: oracle });
+  });
+
+  it('Should return winning result in this case for option 1', async function() {
+    let outcome = await fixedProductMarketMaker.getResolvingOutcome();
+    expect(outcome[0].toString()).to.equal("0");
+    expect(outcome[1].toString()).to.equal("1");
+  });
+
+  it('Should return winning result in this case for option 1', async function() {
+    let outcome = await fixedProductMarketMaker.getPercentage();
+    expect(outcome[0].toString()).to.equal("0");
+    expect(outcome[1].toString()).to.equal("0");
+  });
 })
