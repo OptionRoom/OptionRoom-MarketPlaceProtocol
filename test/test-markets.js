@@ -103,7 +103,7 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     pendingMarketMakersMap.delete(marketMaker.address + "");
   });
 
-  it('Should return markets count according to the state', async function() {
+  it('Should return paginated markets according to the state', async function() {
     let pendingMarkets = await fixedProductMarketMakerFactory.getMarkets(ORFPMarket.MarketState.Pending, 0, 10);
     let retPendingCount = 0;
 

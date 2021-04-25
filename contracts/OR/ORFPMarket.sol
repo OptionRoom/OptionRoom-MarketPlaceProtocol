@@ -39,13 +39,13 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     IORGovernance public ORGovernance;
 
-    function init2(string memory _marketQuestionID, 
-                    address _proposer, 
+    function init2(string memory _marketQuestionID,
+                    address _proposer,
                     uint256 _createdTime,
-                    uint256 _participationEndTime, 
-                    uint256 _resolvingEndTime, 
+                    uint256 _participationEndTime,
+                    uint256 _resolvingEndTime,
                     uint256 _minShareLiq,
-                    address _governance, 
+                    address _governance,
                     bytes32 _questionId) public {
         require(initializationPhase2 == false, "Initialization already called");
         initializationPhase2 = true;
@@ -165,11 +165,11 @@ contract ORFPMarket is FixedProductMarketMaker {
         if(totalBalances == 0){
             percentage[0] = 500000 ;
             percentage[1] = 500000 ;
-            
+
         }else{
             percentage[0] = balances[1] * 1000000 / totalBalances;
             percentage[1] = balances[0] * 1000000 / totalBalances;
-            
+
         }
     }
 
@@ -195,14 +195,14 @@ contract ORFPMarket is FixedProductMarketMaker {
     function getCurrentState() public view returns (MarketState yes) {
         return state();
     }
-    
-    function beforRemoveFunding(uint sharesToBurn) internal{
-        if(msg.sender == proposer){
-            require(balanceOf(msg.sender).sub(sharesToBurn) > minShareLiq, "remainnig shares dropped under the minimmum");
+
+    function beforeRemoveFunding(uint sharesToBurn) internal {
+        if(msg.sender == proposer) {
+            require(balanceOf(msg.sender).sub(sharesToBurn) > minShareLiq, "The remaining shares dropped under the minimum");
         }
     }
-    
-    function getSharesPercentage(address account) public view returns(uint256){
+
+    function getSharesPercentage(address account) public view returns(uint256) {
         return balanceOf(account) * 100 * 10000 / totalSupply();
     }
 
@@ -222,6 +222,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         //return block.timestamp;
         return block.timestamp + timeIncrease;
     }
-    
-    
+
+
 }
