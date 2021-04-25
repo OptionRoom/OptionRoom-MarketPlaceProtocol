@@ -4,7 +4,7 @@ import "./FixedProductMarketMakerFactoryOR.sol";
 
 contract ORPredictionMarket is FixedProductMarketMakerFactory {
 
-    uint256 public minShareLiq = 100;
+    uint256 public minShareLiq ;
 
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
 
@@ -17,7 +17,9 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         governanceAdd = msg.sender;
     }
 
-   
+    function setMinLiquidity(uint256 minLiq) public {
+        minShareLiq = minLiq;
+    }
 
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
