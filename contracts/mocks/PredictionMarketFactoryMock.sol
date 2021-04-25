@@ -32,6 +32,14 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         collateralToken = collateralTokenAddress;
     }
 
+    function setMinLiq(uint256 minShareLiqValue) public {
+        minShareLiq = minShareLiqValue;
+    }
+
+    function getMinLiq() external view returns (uint256 )  {
+        return minShareLiq;
+    }
+
     function createMarketProposalWithCollateralTest(string memory marketQuestionID,
         uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken,
         uint256 initialLiq, uint fees) public returns (ORFPMarket) {
@@ -44,7 +52,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, fees);
 
-        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,0, governanceAdd, questionId);
+        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,minShareLiq, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
         // Add liquidity
@@ -74,7 +82,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
 
-        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,0, governanceAdd, questionId);
+        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,minShareLiq, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
 
