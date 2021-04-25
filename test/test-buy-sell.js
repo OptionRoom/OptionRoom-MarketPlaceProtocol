@@ -62,6 +62,7 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     });
 
     fixedProductMarketMaker = await ORFPMarket.at(fixedProductMarketMakerAddress)
+    positionIds = await fixedProductMarketMaker.getPositionIds();
   })
 
   const addedFunds1 = toBN(1e18)
@@ -85,29 +86,6 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
 
   })
 
-  const addedFunds2 = toBN(1e18)
-  it('can continue being funded', async function() {
-    await collateralToken.deposit({ value: addedFunds2, from: investor2 });
-    await collateralToken.approve(fixedProductMarketMaker.address, addedFunds2, { from: investor2 });
-    await fixedProductMarketMaker.addLiquidity(addedFunds2, {from : investor2 });
-
-    expect((await collateralToken.balanceOf(investor2))).to.eql(toBN(0));
-    let inv2Balance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor2));
-    expect(inv2Balance.isGreaterThan(new BigNumber("0"))).to.equal(true);
-  });
-
-  it('Should return balance of account', async function() {
-    // This should be zeros because we have the same rations of the both options.
-    let retArray = await fixedProductMarketMaker.getBalances(investor1);
-    expect(retArray[0].toString()).to.equal("0");
-    expect(retArray[1].toString()).to.equal("0");
-
-    retArray = await fixedProductMarketMaker.getBalances(investor2);
-    expect(retArray[0].toString()).to.equal("0");
-    expect(retArray[1].toString()).to.equal("0");
-  })
-
-
   let marketMakerPool;
   it('can buy tokens from it', async function() {
     const investmentAmount = toBN(1e18)
@@ -125,27 +103,31 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     expect((await fixedProductMarketMaker.balanceOf(trader)).toString()).to.equal("0");
   })
 
+  const addedFunds2 = toBN(1e18)
+  it('can continue being funded', async function() {
+    await collateralToken.deposit({ value: addedFunds2, from: investor2 });
+    await collateralToken.approve(fixedProductMarketMaker.address, addedFunds2, { from: investor2 });
+    await fixedProductMarketMaker.addLiquidity(addedFunds2, {from : investor2 });
+
+    expect((await collateralToken.balanceOf(investor2))).to.eql(toBN(0));
+    let inv2Balance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor2));
+    expect(inv2Balance.isGreaterThan(new BigNumber("0"))).to.equal(true);
+  });
+
   it('Should return balance of account', async function() {
+
+    let outcome1 = new BigNumber(await conditionalTokens.balanceOf(investor2, positionIds[0]));
+    let outcome2 = new BigNumber(await conditionalTokens.balanceOf(investor2, positionIds[1]));
+
     // This should be zeros because we have the same rations of the both options.
     let retArray = await fixedProductMarketMaker.getBalances(investor1);
     expect(retArray[0].toString()).to.equal("0");
     expect(retArray[1].toString()).to.equal("0");
 
     retArray = await fixedProductMarketMaker.getBalances(investor2);
-    expect(retArray[0].toString()).to.equal("0");
-    expect(retArray[1].toString()).to.equal("0");
-
-    let marketMakerBalance = await fixedProductMarketMaker.getBalances(fixedProductMarketMaker.address);
-
-    let yesBalanace = new BigNumber(marketMakerBalance[0]);
-    let noBalanace = new BigNumber(marketMakerBalance[1]);
-
-    let traderNoBalance = (await fixedProductMarketMaker.getBalances(trader))[1];
-    let totalNoBalance = noBalanace.plus(new BigNumber(traderNoBalance));
-
-    expect(totalNoBalance.isEqualTo(yesBalanace)).to.equal(true);
+    expect(new BigNumber(retArray[0]).isEqualTo(outcome1)).to.equal(true);
+    expect(new BigNumber(retArray[1]).isEqualTo(outcome2)).to.equal(true);
   })
-
 
   it('Should check balance after selling shares', async function() {
     let traderNoBalanceBefore= (await fixedProductMarketMaker.getBalances(trader))[1];

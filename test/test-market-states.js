@@ -187,9 +187,11 @@ contract('MarketMakerStates', function([, creator, oracle, investor1, trader, in
     expect(outcome[1].toString()).to.equal("1");
   });
 
-  it('Should return winning result in this case for option 1', async function() {
+  it('Should return the correct percentage.', async function() {
     let outcome = await fixedProductMarketMaker.getPercentage();
-    expect(outcome[0].toString()).to.equal("0");
-    expect(outcome[1].toString()).to.equal("0");
+    let outcomeOne = new BigNumber(outcome[0]);
+    let outcomeTwo = new BigNumber(outcome[1]);
+    expect(outcomeOne.isEqualTo(new BigNumber(500000))).to.equal(true);
+    expect(outcomeTwo.isEqualTo(new BigNumber(500000))).to.equal(true);
   });
 })

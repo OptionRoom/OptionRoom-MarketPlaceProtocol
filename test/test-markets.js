@@ -19,6 +19,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   let governanceMock
   let marketMakers = [];
 
+  let pendingMarketMakersMap = new Map()
+
   const questionString = "Test"
   const feeFactor = toBN(3e15) // (0.3%)
 
@@ -72,6 +74,9 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
     let fixedProductMarketMaker = await ORFPMarket.at(fixedProductMarketMakerAddress);
     marketMakers.push(fixedProductMarketMaker);
+
+    // set only works because we want to delete
+    pendingMarketMakersMap.set(fixedProductMarketMaker.address,fixedProductMarketMaker );
   }
 
   it('Should return correct active markets count', async function() {
@@ -84,7 +89,6 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
   it('Should check for correct markets numbers', async function() {
     let marketMaker = marketMakers[0];
-    // await marketMaker.resetCurrentTime();
     await marketMaker.castGovernanceApprovalVote(true, { from: investor1 });
 
     let days = 86400 * 3;
@@ -94,5 +98,39 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
 
     let resolvingMarketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORFPMarket.MarketState.Resolving);
     expect(resolvingMarketsCount.toString()).to.equal("1");
+
+    // remove this market from pending states.
+    pendingMarketMakersMap.delete(marketMaker.address + "");
   });
+
+  it('Should return markets count according to the state', async function() {
+    let pendingMarkets = await fixedProductMarketMakerFactory.getMarkets(ORFPMarket.MarketState.Pending, 0, 10);
+    let retPendingCount = 0;
+
+    for (let i = 0; i < pendingMarkets .length; i++) {
+      if (pendingMarkets[i] !== "0x0000000000000000000000000000000000000000") {
+        retPendingCount++;
+      }
+    }
+
+    expect(retPendingCount).to.equal(2);
+
+    pendingMarkets = await fixedProductMarketMakerFactory.getMarketsQuestionIDs(ORFPMarket.MarketState.Pending, 0, 5);
+
+    let markets = pendingMarkets["markets"];
+    let questionsIds = pendingMarkets["questionsIDs"];
+
+    let firstFoundMarket;
+    for (let j = 0; j < markets .length; j++) {
+      if (markets[j] !== "0x0000000000000000000000000000000000000000") {
+        firstFoundMarket = markets[j];
+        break;
+      }
+    }
+
+    let firstAddressInMap = pendingMarketMakersMap.keys().next().value
+
+    expect(firstFoundMarket).to.equal(firstAddressInMap);
+  });
+
 })
