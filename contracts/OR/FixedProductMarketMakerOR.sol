@@ -268,6 +268,9 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     }
 
     function removeFunding(uint sharesToBurn) internal {
+       
+        beforRemoveFunding(sharesToBurn);
+        
         uint[] memory poolBalances = getPoolBalances();
 
         uint[] memory sendAmounts = new uint[](poolBalances.length);
@@ -288,6 +291,8 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
         emit FPMMFundingRemoved(msg.sender, sendAmounts, collateralRemovedFromFeePool, sharesToBurn);
     }
+    
+    function beforRemoveFunding(uint sharesToBurn) internal;
 
     function onERC1155Received(
         address operator,

@@ -44,7 +44,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, fees);
 
-        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
+        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,0, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
         // Add liquidity
@@ -74,7 +74,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
 
-        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime, governanceAdd, questionId);
+        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,0, governanceAdd, questionId);
 
         proposalIds[questionId] = address(fpMarket);
 

@@ -30,6 +30,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     uint256 public rejectVotesCount;
     uint256 public participationEndTime;
     uint256 public resolvingEndTime;
+    uint256 public minShareLiq;
     bytes32 public questionId;
 
     bool initializationPhase2;
@@ -38,11 +39,18 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     IORGovernance public ORGovernance;
 
-    function init2(string memory _marketQuestionID, address _proposer, uint256 _createdTime,
-            uint256 _participationEndTime, uint256 _resolvingEndTime, address _governance, bytes32 _questionId) public {
+    function init2(string memory _marketQuestionID, 
+                    address _proposer, 
+                    uint256 _createdTime,
+                    uint256 _participationEndTime, 
+                    uint256 _resolvingEndTime, 
+                    uint256 _minShareLiq,
+                    address _governance, 
+                    bytes32 _questionId) public {
         require(initializationPhase2 == false, "Initialization already called");
-        marketQuestionID = _marketQuestionID;
         initializationPhase2 = true;
+        marketQuestionID = _marketQuestionID;
+        minShareLiq = _minShareLiq;
         proposer = _proposer;
         createdTime = _createdTime;
         participationEndTime = _participationEndTime;
@@ -187,6 +195,16 @@ contract ORFPMarket is FixedProductMarketMaker {
     function getCurrentState() public view returns (MarketState yes) {
         return state();
     }
+    
+    function beforRemoveFunding(uint sharesToBurn) internal{
+        if(msg.sender == proposer){
+            require(balanceOf(msg.sender).sub(sharesToBurn) > minShareLiq, "remainnig shares dropped under the minimmum");
+        }
+    }
+    
+    function getSharesPercentage(address account) public view returns(uint256){
+        return balanceOf(account) * 100 * 10000 / totalSupply();
+    }
 
     //TODO just for testing remove them
     uint256 timeIncrease;
@@ -204,4 +222,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         //return block.timestamp;
         return block.timestamp + timeIncrease;
     }
+    
+    
 }
