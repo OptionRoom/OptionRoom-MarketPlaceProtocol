@@ -64,14 +64,26 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         return marketsInStateCount;
     }
 
-    function getMarkets(ORFPMarket.MarketState marketState, uint256 startIndx, uint256 length) public view returns(ORFPMarket[] memory markets){
-        markets = new ORFPMarket[](length);
+    function getMarkets(ORFPMarket.MarketState marketState, uint256 startIndx, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 ulength;
+        
+        if(length <0){
+            uint256 mc = getMarketsCount(marketState);
+            if(startIndx >= mc){
+                return markets;
+            }
+            ulength = mc - startIndx;
+        }else{
+            ulength = uint256(length);
+        }
+        
+        markets = new ORFPMarket[](ulength);
         uint256 marketInStateIndex = 0;
          for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
             if(fpMarkets[marketIndex].state() == marketState){
                 if(marketInStateIndex >= startIndx){
                     uint256 currentIndex = marketInStateIndex - startIndx;
-                    if(currentIndex >=  length){
+                    if(currentIndex >=  ulength){
                         return markets;
                     }
 
@@ -84,15 +96,27 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         return markets;
     }
 
-    function getMarketsQuestionIDs(ORFPMarket.MarketState marketState, uint256 startIndx, uint256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
-        markets = new ORFPMarket[](length);
-        questionsIDs = new string[](length);
+    function getMarketsQuestionIDs(ORFPMarket.MarketState marketState, uint256 startIndx, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        uint256 ulength;
+        
+        if(length <0){
+            uint256 mc = getMarketsCount(marketState);
+            if(startIndx >= mc){
+                return (markets,questionsIDs);
+            }
+            ulength = mc - startIndx;
+        }else{
+            ulength = uint256(length);
+        }
+        
+        markets = new ORFPMarket[](ulength);
+        questionsIDs = new string[](ulength);
         uint256 marketInStateIndex = 0;
          for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
             if(fpMarkets[marketIndex].state() == marketState){
                 if(marketInStateIndex >= startIndx){
                     uint256 currentIndex = marketInStateIndex - startIndx;
-                    if(currentIndex >=  length){
+                    if(currentIndex >=  ulength){
                         return (markets,questionsIDs);
                     }
 
