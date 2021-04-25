@@ -125,13 +125,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
         return conditionalTokens.balanceOfBatch(thises, positionIds);
     }
-    
-    function getMarketCollateralTotalSupplay() public view returns(uint256){
-        uint256 collateralTotalsupplay = 0;
+
+    function getMarketCollateralTotalSupply() public view returns(uint256){
+        uint256 collateralTotalSupply = 0;
         for (uint i = 0; i < positionIds.length; i++) {
-            collateralTotalsupplay = conditionalTokens.totalBalances(positionIds[i]).add(collateralTotalsupplay);
+            collateralTotalSupply = conditionalTokens.totalBalances(positionIds[i]).add(collateralTotalSupply);
         }
-        return collateralTotalsupplay.div(positionIds.length);
+        return collateralTotalSupply.div(positionIds.length);
     }
 
     function generateBasicPartition(uint outcomeSlotCount)
@@ -268,9 +268,9 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     }
 
     function removeFunding(uint sharesToBurn) internal {
-       
+
         beforRemoveFunding(sharesToBurn);
-        
+
         uint[] memory poolBalances = getPoolBalances();
 
         uint[] memory sendAmounts = new uint[](poolBalances.length);
@@ -291,7 +291,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
         emit FPMMFundingRemoved(msg.sender, sendAmounts, collateralRemovedFromFeePool, sharesToBurn);
     }
-    
+
     function beforRemoveFunding(uint sharesToBurn) internal;
 
     function onERC1155Received(
