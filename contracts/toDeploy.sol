@@ -12,7 +12,7 @@ contract AAA0GovernencyDemo is ORGovernanceDemo {
 
 contract AAA1DemoToken1 is DemoToken{
 
-}
+} 
 
 contract AAA2ConditnalToken1 is ORConditionalTokens{
 
@@ -43,6 +43,12 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
         ct = ORConditionalTokens(a);
     }
 
+}
+
+contract timeAA{
+    function getCurrentTime() public view returns (uint256);
+     
+    function increaseTime(uint256 t) public;
 }
 
 

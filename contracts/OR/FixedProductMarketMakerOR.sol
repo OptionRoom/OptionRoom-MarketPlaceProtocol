@@ -394,6 +394,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
 
     function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) external {
+        _beforeBuy();
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
 
@@ -428,9 +429,14 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     }
 
     function sell(uint256 amount, uint256 index) external {
+        _beforSell();
         uint256 expectedRet = calcSellReturnInv(amount, index);
         sellByReturnAmount(expectedRet, index, amount * 105 / 100);
     }
+    
+    function _beforeBuy() internal;
+    
+    function _beforSell() internal;
 
     function sqrt(uint x) private pure returns (uint y) {
         uint z = (x + 1) / 2;
