@@ -33,11 +33,11 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
     }
 
     function setMinLiq(uint256 minShareLiqValue) public {
-        minShareLiq = minShareLiqValue;
+        marketMinShareLiq = minShareLiqValue;
     }
 
     function getMinLiq() external view returns (uint256 )  {
-        return minShareLiq;
+        return marketMinShareLiq;
     }
 
     function createMarketProposalWithCollateralTest(string memory marketQuestionID,
@@ -52,7 +52,8 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, fees);
 
-        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,minShareLiq, governanceAdd, questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, minHoldingToDispute, disputeThreshold, governanceAdd, questionId);
+        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCasteResolvingPeriod);
 
         proposalIds[questionId] = address(fpMarket);
         // Add liquidity
@@ -82,23 +83,13 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
 
-        fpMarket.init2(marketQuestionID, msg.sender, getCurrentTime(), participationEndTime, resolvingEndTime,minShareLiq, governanceAdd, questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, minHoldingToDispute, disputeThreshold, governanceAdd, questionId);
+        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCasteResolvingPeriod);
 
         proposalIds[questionId] = address(fpMarket);
 
         return fpMarket;
     }
-
-//    function collateralBalanceList() external view returns (accountBalance[] memory collateralBalances){
-//        address[] memory recipients = collateralToken.recipients_list();
-//        collateralBalances = new accountBalance[](recipients.length);
-//        for (uint256 i = 0; i < recipients.length; i++) {
-//            collateralBalances[i] = accountBalance({
-//                account : recipients[i],
-//                balance : collateralToken.balanceOf(recipients[i])
-//            });
-//        }
-//    }
 
     function getCurrentMarketQuestionId() external view returns (bytes32) {
         return bytes32(marketsCount);

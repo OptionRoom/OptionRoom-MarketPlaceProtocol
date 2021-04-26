@@ -7,8 +7,8 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
     uint256 public marketMinShareLiq = 100e18;
     uint256 public marketPendingPeriod = 600;
     uint256 public marketDisputePeriod = 600;
-    uint256 public marketReCasteResolvingPeriod = 600;
-    uint256 public disputeThreshold = 100e18; 
+    uint256 public marketReCastResolvingPeriod = 600;
+    uint256 public disputeThreshold = 100e18;
     uint256 public minHoldingToDispute = 10e18;
 
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
@@ -25,24 +25,24 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
     function setMarketMinShareLiq(uint256 minLiq) public {
         marketMinShareLiq = minLiq;
     }
-    
+
     function setMarketPendingPeriod(uint256 p) public{
         marketPendingPeriod = p;
     }
-    
+
     function setMarketDisputePeriod(uint256 p) public{
         marketPendingPeriod = p;
     }
-    
-    function setMarketReCasteResolvingPeriod(uint256 p) public{
-        marketReCasteResolvingPeriod = p;
+
+    function setMarketReCastResolvingPeriod(uint256 p) public{
+        marketReCastResolvingPeriod = p;
     }
-    
+
     function setDisputeThreshold(uint256 t) public{
         disputeThreshold = t;
     }
-    
-    function setMminHoldingToDispute(uint256 m) public{
+
+    function setMinHoldingToDispute(uint256 m) public{
         minHoldingToDispute = m;
     }
 
