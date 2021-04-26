@@ -57,7 +57,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
 
         fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, minHoldingToDispute, disputeThreshold, governanceAdd, questionId);
-        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCasteResolvingPeriod);
+        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
         proposalIds[questionId] = address(fpMarket);
         // Add liquidity
         collateralToken.transferFrom(msg.sender,address(this),initialLiq);

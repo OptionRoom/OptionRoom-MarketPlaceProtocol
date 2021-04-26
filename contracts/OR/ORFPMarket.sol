@@ -35,7 +35,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     uint256 public marketPendingPeriod;
     uint256 public marketDisputePeriod ;
-    uint256 public marketReCasteResolvingPeriod;
+    uint256 public marketReCastResolvingPeriod;
     uint256 public marketCreatedTime;
     uint256 public marketParticipationEndTime;
     uint256 public marketResolvingEndTime;
@@ -81,7 +81,7 @@ contract ORFPMarket is FixedProductMarketMaker {
             uint256 _marketResolvingEndTime,
             uint256 _marketPendingPeriod,
             uint256 _marketDisputePeriod,
-            uint256 _marketReCasteResolvingPeriod
+            uint256 _marketReCastResolvingPeriod
     ) public{
         require(setTimesFlag == false, "Times already set");
         setTimesFlag = true;
@@ -90,7 +90,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         marketResolvingEndTime= _marketResolvingEndTime;
         marketPendingPeriod = _marketPendingPeriod;
         marketDisputePeriod = _marketDisputePeriod;
-        marketReCasteResolvingPeriod = _marketReCasteResolvingPeriod;
+        marketReCastResolvingPeriod = _marketReCastResolvingPeriod;
 
 //        ct = marketCreatedTime;
     }
@@ -161,7 +161,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         }
 
         if(marketDisputedFlag){
-             if(time < resolvingDisputeEndTime + marketReCasteResolvingPeriod){
+             if(time < resolvingDisputeEndTime + marketReCastResolvingPeriod){
                  return MarketState.ResolvingAfterDispute;
              }
         }
