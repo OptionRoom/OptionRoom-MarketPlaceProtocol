@@ -189,9 +189,11 @@ contract ORFPMarket is FixedProductMarketMaker {
         } else {
             require(address(ORGovernance) != address(0),"Governance not assigned");
             marketPendingVoters.push(account);
-            marketPendingVotersInfo[account].selection = approveSelection;
+            
             marketPendingVotersInfo[account].power = ORGovernance.getPowerCount(msg.sender);
         }
+        
+        marketPendingVotersInfo[account].selection = approveSelection;
 
         marketPendingVotesCount[approveSelection] += marketPendingVotersInfo[account].power;
     }
@@ -261,9 +263,11 @@ contract ORFPMarket is FixedProductMarketMaker {
         }else{
             require(address(ORGovernance) != address(0),"Governance not assigned");
             marketResolvingVoters.push(account);
-            marketResolvingVotersInfo[account].selection = outcomeIndex;
+            
             marketResolvingVotersInfo[account].power = ORGovernance.getPowerCount(msg.sender);
         }
+        
+        marketResolvingVotersInfo[account].selection = outcomeIndex;
 
         marketResolvingVotesCount[outcomeIndex] += marketResolvingVotersInfo[account].power;
     }

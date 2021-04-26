@@ -5,9 +5,9 @@ import "./FixedProductMarketMakerFactoryOR.sol";
 contract ORPredictionMarket is FixedProductMarketMakerFactory {
 
     uint256 public marketMinShareLiq = 100e18;
-    uint256 public marketPendingPeriod = 600;
-    uint256 public marketDisputePeriod = 600;
-    uint256 public marketReCastResolvingPeriod = 600;
+    uint256 public marketPendingPeriod = 1800;
+    uint256 public marketDisputePeriod = 4 * 1800;
+    uint256 public marketReCastResolvingPeriod = 4 * 1800;
     uint256 public disputeThreshold = 100e18;
     uint256 public minHoldingToDispute = 10e18;
 
