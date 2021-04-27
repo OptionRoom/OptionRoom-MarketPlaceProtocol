@@ -339,8 +339,12 @@ contract ORFPMarket is FixedProductMarketMaker {
         return positionIds;
     }
 
-    function getGovernanceVotingResults() public view returns (uint256[] memory governanceVotes) {
+    function getApprovingResult() public view returns (uint256[] memory) {
         return marketPendingVotesCount;
+    }
+    
+    function getResolvingResult() public view returns (uint256[] memory) {
+        return marketResolvingVotesCount;
     }
 
     function getMarketQuestionID() public view returns(string memory){
