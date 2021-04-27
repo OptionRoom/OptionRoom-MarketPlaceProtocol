@@ -82,7 +82,12 @@ contract('MarketMakerStates', function([, creator, oracle, investor1, trader, in
   let orgTimeStamp;
   it('Should pass because we are in the voting period', async function() {
     orgTimeStamp = fixedProductMarketMaker.getCurrentTime();
+
     await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
+
+    let votingResults = await fixedProductMarketMaker.getApprovingResult();
+    expect(new BigNumber(votingResults[0]).isEqualTo(new BigNumber(0))).to.equal(true);
+    expect(new BigNumber(votingResults[1]).isEqualTo(new BigNumber(5))).to.equal(true);
   });
 
   it('Should revert because the market is in pending state', async function() {
@@ -100,53 +105,69 @@ contract('MarketMakerStates', function([, creator, oracle, investor1, trader, in
   });
 
 
-  it('Should revert because already voted', async function() {
-    const REVERT = "user already voted";
-
+  it('Should return the correct voting values if you vote yes again', async function() {
     await fixedProductMarketMaker.resetTimeIncrease();
     await helper.revertToSnapshot(orgTimeStamp);
 
-    try {
-      await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
-      throw null;
-    }
-    catch (error) {
-      assert(error, "Expected an error but did not get one");
-      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
-    }
+    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
+
+    let votingResults = await fixedProductMarketMaker.getApprovingResult();
+    expect(new BigNumber(votingResults[0]).isEqualTo(new BigNumber(0))).to.equal(true);
+    expect(new BigNumber(votingResults[1]).isEqualTo(new BigNumber(5))).to.equal(true);
   });
 
-  it('Should return the correct number of governance votes', async function() {
-    // await helper.revertToSnapshot(orgTimeStamp);
-    let governanceVotes = await fixedProductMarketMaker.getGovernanceVotingResults();
-    expect(governanceVotes[0].toString()).to.equal("5");
-    expect(governanceVotes[1].toString()).to.equal("0");
+  it('Should revert the yes vote and fill the no vote', async function() {
+    await fixedProductMarketMaker.resetTimeIncrease();
+    await helper.revertToSnapshot(orgTimeStamp);
+
+    await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: investor1 });
+
+    let votingResults = await fixedProductMarketMaker.getApprovingResult();
+
+    expect(new BigNumber(votingResults[0]).isEqualTo(new BigNumber(5))).to.equal(true);
+    expect(new BigNumber(votingResults[1]).isEqualTo(new BigNumber(0))).to.equal(true);
   });
 
-  it('Multiple different governance should be able to vote', async function() {
+  it('Should return the same results if user tries to vote no again', async function() {
+    await fixedProductMarketMaker.resetTimeIncrease();
+    await helper.revertToSnapshot(orgTimeStamp);
+
+    await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: investor1 });
+
+    let votingResults = await fixedProductMarketMaker.getApprovingResult();
+    expect(new BigNumber(votingResults[0]).isEqualTo(new BigNumber(5))).to.equal(true);
+    expect(new BigNumber(votingResults[1]).isEqualTo(new BigNumber(0))).to.equal(true);
+  });
+
+
+  it('Should allow multiple different governance should be able to vote', async function() {
     await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor2 });
     await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: trader });
     await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: oracle });
   });
 
-  it('Should return the correct number of governance after multiple votes', async function() {
-    let governanceVotes = await fixedProductMarketMaker.getGovernanceVotingResults();
-    expect(governanceVotes[0].toString()).to.equal("6");
-    expect(governanceVotes[1].toString()).to.equal("5");
-  });
+  it('Should return the correct number of votes for the approval of the governance', async function() {
+    let governanceVotes = await fixedProductMarketMaker.getApprovingResult();
+    expect(new BigNumber(governanceVotes[0]).isEqualTo(new BigNumber(10))).to.equal(true);
+    expect(new BigNumber(governanceVotes[1]).isEqualTo(new BigNumber(1))).to.equal(true);
 
+    // To be able to conduct resolving we will do this
+    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor2 });
+    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: trader });
+    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: oracle });
+  });
 
   it('Should return the 1-1 result', async function() {
     let outcome = await fixedProductMarketMaker.getResolvingOutcome();
     // We know the market is not in resolving yet.
-    expect(outcome[0].toString()).to.equal("1");
-    expect(outcome[1].toString()).to.equal("1");
+    expect(new BigNumber(outcome[0]).isEqualTo(new BigNumber(1))).to.equal(true);
+    expect(new BigNumber(outcome[1]).isEqualTo(new BigNumber(1))).to.equal(true);
   });
 
 
   it('Should revert because we are not in resolving period', async function() {
-    const REVERT = "market is not in resolving period";
-    ;
+    const REVERT = "Market is not in resolving/ResolvingAfterDispute states";
+
     try {
       await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
       throw null;
@@ -157,41 +178,51 @@ contract('MarketMakerStates', function([, creator, oracle, investor1, trader, in
     }
   });
 
+  let firstTimeResolve;
   it('Should be able to cast a resolving vote for gov', async function() {
-    let days = 3*24*60*60
+    await fixedProductMarketMaker.resetTimeIncrease();
+    await helper.revertToSnapshot(orgTimeStamp);
+
+    let days = ((86400 * 3) + 10);
+
     await fixedProductMarketMaker.increaseTime(days);
+    firstTimeResolve = await fixedProductMarketMaker.getCurrentTime();
+
     await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
   });
 
-  it('Should revert because gov already voted', async function() {
-    const REVERT = "already voted";
-    try {
-      await fixedProductMarketMaker.castGovernanceResolvingVote(0, { from: investor1 });
-      throw null;
-    }
-    catch (error) {
-      assert(error, "Expected an error but did not get one");
-      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
-    }
+  it('Should return a resolved result after a vote', async function() {
+    let outcome = await fixedProductMarketMaker.getResolvingOutcome();
+    // We know the market is not in resolving yet.
+    expect(new BigNumber(outcome[0]).isEqualTo(new BigNumber(1))).to.equal(true);
+    expect(new BigNumber(outcome[1]).isEqualTo(new BigNumber(0))).to.equal(true);
   });
 
   it('Should allow multiple voters for the resolve', async function() {
+    await fixedProductMarketMaker.resetTimeIncrease();
+    await helper.revertToSnapshot(orgTimeStamp);
+
+    let days = ((86400 * 3) + 10);
+
+    await fixedProductMarketMaker.increaseTime(days);
+
     await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: investor2 });
     await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: trader });
     await fixedProductMarketMaker.castGovernanceResolvingVote(1, { from: oracle });
   });
 
-  it('Should return winning result in this case for option 1', async function() {
+  it('Should return not resolved after the voting', async function() {
     let outcome = await fixedProductMarketMaker.getResolvingOutcome();
-    expect(outcome[0].toString()).to.equal("0");
-    expect(outcome[1].toString()).to.equal("1");
+    // We know the market is not in resolving yet.
+    expect(new BigNumber(outcome[0]).isEqualTo(new BigNumber(0))).to.equal(true);
+    expect(new BigNumber(outcome[1]).isEqualTo(new BigNumber(1))).to.equal(true);
   });
 
-  it('Should return the correct percentage.', async function() {
-    let outcome = await fixedProductMarketMaker.getPercentage();
-    let outcomeOne = new BigNumber(outcome[0]);
-    let outcomeTwo = new BigNumber(outcome[1]);
-    expect(outcomeOne.isEqualTo(new BigNumber(500000))).to.equal(true);
-    expect(outcomeTwo.isEqualTo(new BigNumber(500000))).to.equal(true);
-  });
+  // it('Should return the correct percentage.', async function() {
+  //   let outcome = await fixedProductMarketMaker.getPercentage();
+  //   let outcomeOne = new BigNumber(outcome[0]);
+  //   let outcomeTwo = new BigNumber(outcome[1]);
+  //   expect(outcomeOne.isEqualTo(new BigNumber(500000))).to.equal(true);
+  //   expect(outcomeTwo.isEqualTo(new BigNumber(500000))).to.equal(true);
+  // });
 })
