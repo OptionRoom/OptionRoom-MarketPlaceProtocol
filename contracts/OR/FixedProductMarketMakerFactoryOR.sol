@@ -128,14 +128,8 @@ contract FixedProductMarketMakerFactory is CloneFactory {
         return marketsCount; 
     }
     
-   
     function getCurrentTime() public view returns (uint256) {
         return block.timestamp ;
-        //return ct;
     }
-     
-    //function increaseTime(uint256 t) public{
-        //ct+=t;
-    //}
 
 }

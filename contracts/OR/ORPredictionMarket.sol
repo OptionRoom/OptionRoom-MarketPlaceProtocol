@@ -9,7 +9,6 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
     uint256 public marketDisputePeriod = 4 * 1800;
     uint256 public marketReCastResolvingPeriod = 4 * 1800;
     uint256 public disputeThreshold = 100e18;
-    uint256 public minHoldingToDispute = 10e18;
 
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
 
@@ -42,10 +41,6 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         disputeThreshold = t;
     }
 
-    function setMinHoldingToDispute(uint256 m) public{
-        minHoldingToDispute = m;
-    }
-
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
@@ -56,7 +51,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
 
-        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, minHoldingToDispute, disputeThreshold, governanceAdd, questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, disputeThreshold, governanceAdd, questionId);
         fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
         proposalIds[questionId] = address(fpMarket);
         // Add liquidity

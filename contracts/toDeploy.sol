@@ -42,6 +42,16 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
     function setA2(address a) public{
         ct = ORConditionalTokens(a);
     }
+    
+    
+    uint256 crt =1000;
+    function getCurrentTime() public view returns (uint256) {
+        return crt;
+    }
+     
+    function increaseTime(uint256 t) public{
+        crt+=t;
+    }
 
 }
 
@@ -53,5 +63,7 @@ contract timeAA{
 
 
 contract AAA4Market is ORFPMarket{
+    
+    
 
 }
