@@ -11,6 +11,7 @@ const ConditionalTokens = artifacts.require('ConditionalTokens')
 const WETH9 = artifacts.require('WETH9')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
+const ORGovernanceMock = artifacts.require('ORGovernanceMock')
 
 var BigNumber = require('bignumber.js');
 
@@ -21,6 +22,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   let collateralToken
   let fixedProductMarketMakerFactory
   let fixedProductMarketMaker
+  let governanceMock
+  let marketPendingPeriod = 1800;
 
   let positionIds
   const feeFactor = toBN(3e15) // (0.3%)
@@ -34,9 +37,19 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     collateralToken = await WETH9.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
     let deployedMarketMakerContract = await ORFPMarket.deployed();
+    governanceMock = await ORGovernanceMock.deployed()
+
     await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(collateralToken.address);
+    await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
+
+    // Setting the voting power.
+    await governanceMock.setPower(5, {from: investor1});
+    await governanceMock.setPower(1, {from: investor2});
+    await governanceMock.setPower(2, {from: trader});
+    await governanceMock.setPower(3, {from: oracle});
+
   })
 
   it('can be created by factory', async function() {
@@ -102,6 +115,13 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     }
   });
 
+  // Doing the voting in order to start buying and selling !
+  it('Should vote for the approval of this created market', async function() {
+    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
+    await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: investor2 });
+    await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: oracle });
+  });
+
   let marketMakerPool;
   it('can buy tokens from it', async function() {
     const investmentAmount = toBN(1e18)
@@ -112,6 +132,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
     const feeAmount = investmentAmount.mul(feeFactor).div(toBN(1e18));
 
     const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex);
+
+    await fixedProductMarketMaker.increaseTime(marketPendingPeriod);
 
     await fixedProductMarketMaker.buy(investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
 
