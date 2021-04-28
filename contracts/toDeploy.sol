@@ -64,6 +64,19 @@ contract timeAA{
 
 contract AAA4Market is ORFPMarket{
     
+    constructor() public{
+         ct = marketCreatedTime;
+    }
     
+     ///// Internal testing to be cleaned later
+    uint256 ct;
+    function getCurrentTime() public view returns (uint256) {
+        //return block.timestamp ;
+        return ct;
+    }
+
+    function increaseTime(uint256 t) public{
+        ct+=t;
+    }
 
 }

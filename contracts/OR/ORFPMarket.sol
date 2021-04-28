@@ -94,7 +94,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         marketDisputePeriod = _marketDisputePeriod;
         marketReCastResolvingPeriod = _marketReCastResolvingPeriod;
 
-        //ct = marketCreatedTime;
     }
 
     function setConfig(
@@ -405,7 +404,15 @@ contract ORFPMarket is FixedProductMarketMaker {
         return balanceOf(account) * 100 * 10000 / totalSupply();
     }
 
-    //TODO just for testing remove them
+   
+     function getCurrentTime() public view returns (uint256) {
+         return block.timestamp;
+     }
+
+}
+
+//TODO just for testing remove them
+contract  ORFPMarketFotTest{
     uint256 timeIncrease;
 
     function increaseTime(uint256 t) public {
@@ -421,15 +428,4 @@ contract ORFPMarket is FixedProductMarketMaker {
         //return block.timestamp;
         return block.timestamp + timeIncrease;
     }
-    ///// Internal testing to be cleaned later
-/*    uint256 ct;
-    function getCurrentTime() public view returns (uint256) {
-        //return block.timestamp ;
-        return ct;
-    }
-
-    function increaseTime(uint256 t) public{
-        ct+=t;
-    }*/
-
 }
