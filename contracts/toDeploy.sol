@@ -43,22 +43,11 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
         ct = ORConditionalTokens(a);
     }
     
-    
-    uint256 crt =1000;
-    function getCurrentTime() public view returns (uint256) {
-        return crt;
-    }
-     
-    function increaseTime(uint256 t) public{
-        crt+=t;
-    }
 
 }
 
-contract timeAA{
-    function getCurrentTime() public view returns (uint256);
-     
-    function increaseTime(uint256 t) public;
+contract timeAA is CentralTimeForTesting{
+    //0x3c4Fca7B5944A750C3EBF732dBf04591aCbb821d
 }
 
 

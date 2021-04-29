@@ -10,5 +10,5 @@ interface IORGovernor {
     
     function addMarket( uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) external returns(uint256);
     
-    function state(address marketAddress) external view returns (ORMarketLib.MarketState);
+    function getMarketState(address marketAddress) external view returns (ORMarketLib.MarketState);
 }

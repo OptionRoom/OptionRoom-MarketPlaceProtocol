@@ -49,7 +49,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
      function state() public view returns (ORMarketLib.MarketState) {
-         return ORGovernor.state(address(this));
+         return ORGovernor.getMarketState(address(this));
      }
 
     function addLiquidity(uint256 amount) public {

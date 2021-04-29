@@ -92,7 +92,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
         payoutsMarkets[marketAddress] = true;
         IORMarketForMarketGovernor market = IORMarketForMarketGovernor(marketAddress);
         
-        require(state(marketAddress) == ORMarketLib.MarketState.Resolved, "market is not in resolved state");
+        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Resolved, "market is not in resolved state");
 
         IReportPayouts orConditionalTokens = IReportPayouts(address(market.getConditionalTokenAddress()));
         orConditionalTokens.reportPayouts(market.questionId(), getResolvingOutcome(marketAddress));
@@ -113,7 +113,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
         powerPerUser[account] = power;
     }
     
-    function state(address marketAddress) public view returns (ORMarketLib.MarketState) {
+    function getMarketState(address marketAddress) public view returns (ORMarketLib.MarketState) {
         
         MarketInfo memory marketInfo = marketsInfo[marketAddress];
         
@@ -166,7 +166,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
     
     function castGovernanceApprovalVote(address marketAddress,bool approveFlag) public {
         address account = msg.sender;
-        require(state(marketAddress) == ORMarketLib.MarketState.Pending, "Market is not in pending state");
+        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Pending, "Market is not in pending state");
         
         MarketVotersInfo storage marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == false, "user already voted");
@@ -193,7 +193,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
     
     function withdrawGovernanceApprovalVote(address marketAddress) public {
         address account = msg.sender;
-        require(state(marketAddress) == ORMarketLib.MarketState.Pending, "Market is not in pending state");
+        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Pending, "Market is not in pending state");
         
         MarketVotersInfo storage marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == true, "user did not vote");
@@ -208,7 +208,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
         address account = msg.sender;
-        ORMarketLib.MarketState marketState = state(marketAddress);
+        ORMarketLib.MarketState marketState = getMarketState(marketAddress);
 
         require(marketState == ORMarketLib.MarketState.Resolving || marketState == ORMarketLib.MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
         
@@ -241,7 +241,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
     
     function withdrawGovernanceResolvingVote(address marketAddress) public{
         address account = msg.sender;
-        ORMarketLib.MarketState marketState = state(marketAddress);
+        ORMarketLib.MarketState marketState = getMarketState(marketAddress);
         
         require(marketState == ORMarketLib.MarketState.Resolving || marketState == ORMarketLib.MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
         
@@ -257,7 +257,7 @@ contract ORMarketGovernor is IORGovernor, TimeDependent{
     }
     
     function disputeMarket(address marketAddress, string memory disputeReason) public{
-        require(state(marketAddress) == ORMarketLib.MarketState.DisputePeriod, "Market is not in dispute state");
+        require(getMarketState(marketAddress) == ORMarketLib.MarketState.DisputePeriod, "Market is not in dispute state");
         address account = msg.sender;
         uint[] memory balances = IORMarketForMarketGovernor(marketAddress).getBalances(account);
         uint256 userTotalBalances = balances[0] + balances[1];

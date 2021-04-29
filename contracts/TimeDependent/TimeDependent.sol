@@ -21,15 +21,20 @@ contract CentralTimeForTesting{
 
 
 contract TimeDependent{
-    CentralTimeForTesting centralTimeForTesting;
+    CentralTimeForTesting centralTimeForTesting = CentralTimeForTesting(0x3c4Fca7B5944A750C3EBF732dBf04591aCbb821d);
     
     function setCentralTimeForTesting(CentralTimeForTesting _centralTimeForTesting) public{
         centralTimeForTesting = _centralTimeForTesting;
     }
     
-    function getCurrentTime() public view returns(uint256){
+    function getCurrentTime1() public view returns(uint256){
         require(address(centralTimeForTesting) != address(0), "central time is not set");
         return centralTimeForTesting.getCurrentTime();
         //return block.timestamp;
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+       
+        return block.timestamp;
     }
 }
