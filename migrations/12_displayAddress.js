@@ -1,7 +1,7 @@
 module.exports = function(deployer) {
   deployer.then(async () => {
 
-	const GovernencyDemoArt = artifacts.require("AAA0GovernencyDemo");
+	const GovernencyDemoArt = artifacts.require("AAA0MarketGovernor");
     const demoGovernence = await GovernencyDemoArt.deployed();
 	console.log("demoGovernence.address (AAA0)");
 	console.log(demoGovernence.address);

@@ -52,7 +52,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, fees);
 
-        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, minHoldingToDispute, disputeThreshold, governanceAdd, questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq,  disputeThreshold, governanceAdd, questionId);
         fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
 
         proposalIds[questionId] = address(fpMarket);
@@ -83,7 +83,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
 
-        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, minHoldingToDispute, disputeThreshold, governanceAdd, questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq,  disputeThreshold, governanceAdd, questionId);
         fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
 
         proposalIds[questionId] = address(fpMarket);

@@ -2,11 +2,11 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
 import './OR/ORPredictionMarket.sol';
-import "./OR/ORGovernenceDemo.sol";
+import "./Governance/ORMarketGovernor.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 
-contract AAA0GovernencyDemo is ORGovernanceDemo {
+contract AAA0MarketGovernor is ORMarketGovernor {
 
 }
 
@@ -65,7 +65,7 @@ contract timeAA{
 contract AAA4Market is ORFPMarket{
     
     constructor() public{
-         ct = marketCreatedTime;
+         //todo ct = marketCreatedTime;
     }
     
      ///// Internal testing to be cleaned later

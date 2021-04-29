@@ -1,14 +1,11 @@
 pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
 import "./FixedProductMarketMakerFactoryOR.sol";
+import "./ORMarketLib.sol";
 
 contract ORPredictionMarket is FixedProductMarketMakerFactory {
 
-    uint256 public marketMinShareLiq = 100e18;
-    uint256 public marketPendingPeriod = 1800;
-    uint256 public marketDisputePeriod = 4 * 1800;
-    uint256 public marketReCastResolvingPeriod = 4 * 1800;
-    uint256 public disputeThreshold = 100e18;
+    
 
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
 
@@ -21,26 +18,6 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         governanceAdd = msg.sender;
     }
 
-    function setMarketMinShareLiq(uint256 minLiq) public {
-        marketMinShareLiq = minLiq;
-    }
-
-    function setMarketPendingPeriod(uint256 p) public{
-        marketPendingPeriod = p;
-    }
-
-    function setMarketDisputePeriod(uint256 p) public{
-        marketPendingPeriod = p;
-    }
-
-    function setMarketReCastResolvingPeriod(uint256 p) public{
-        marketReCastResolvingPeriod = p;
-    }
-
-    function setDisputeThreshold(uint256 t) public{
-        disputeThreshold = t;
-    }
-
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
@@ -51,9 +28,10 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
 
-        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq, disputeThreshold, governanceAdd, questionId);
-        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
+        fpMarket.setConfig(marketQuestionID, msg.sender, governanceAdd, getCurrentTime(), participationEndTime, resolvingEndTime, questionId);
+        
         proposalIds[questionId] = address(fpMarket);
+        
         // Add liquidity
         collateralToken.transferFrom(msg.sender,address(this),initialLiq);
         collateralToken.approve(address(fpMarket),initialLiq);
@@ -67,7 +45,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         _;
     }
 
-    function getMarketsCount(ORFPMarket.MarketState marketState) public view returns(uint256){
+    function getMarketsCount(ORMarketLib.MarketState marketState) public view returns(uint256){
         uint256 marketsInStateCount = 0;
         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
             if(fpMarkets[marketIndex].state() == marketState){
@@ -78,7 +56,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         return marketsInStateCount;
     }
 
-    function getMarkets(ORFPMarket.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+    function getMarkets(ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
         uint256 uLength;
 
         if(length <0){
@@ -110,7 +88,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory {
         return markets;
     }
 
-    function getMarketsQuestionIDs(ORFPMarket.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+    function getMarketsQuestionIDs(ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
         uint256 uLength;
 
         if(length <0){

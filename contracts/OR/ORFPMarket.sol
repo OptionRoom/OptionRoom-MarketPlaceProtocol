@@ -1,226 +1,56 @@
 pragma solidity ^0.5.1;
 
+import "./ORMarketLib.sol";
 import "./FixedProductMarketMakerOR.sol";
-import "./IORGovernance.sol";
+import "../Governance/IORMarketGovernor.sol";
 
 /**
     @title ORFPMarket Extended version of the FixedProductMarketMaker
 */
 contract ORFPMarket is FixedProductMarketMaker {
 
-    enum MarketState {
-        Invalid,
-        Pending, // governance voting for validation
-        Rejected,
-        Active,
-        Inactive,
-        Resolving, // governance voting for result
-        Resolved,  // can redeem
-        DisputePeriod, // Dispute
-        ResolvingAfterDispute
-
-    }
-
-    struct MarketVotersInfo{
-        bool voteFlag;
-        uint256 power;
-        uint8 selection;
-    }
-
-    struct MarketDisputersInfo{
-        uint256 indexZeroBalance;
-        uint256 indexOneBalance;
-        uint256 totalBalances;
-        string reason;
-    }
-    
-    event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
-
-    uint256 public marketPendingPeriod;
-    uint256 public marketDisputePeriod ;
-    uint256 public marketReCastResolvingPeriod;
-    uint256 public marketCreatedTime;
-    uint256 public marketParticipationEndTime;
-    uint256 public marketResolvingEndTime;
-
-    address[] public marketPendingVoters;
-    mapping(address => MarketVotersInfo) public marketPendingVotersInfo;
-    uint256[] public marketPendingVotesCount;
-
-
-    address[] public marketResolvingVoters;
-    mapping(address => MarketVotersInfo) public marketResolvingVotersInfo;
-    uint256[] public marketResolvingVotesCount;
-
-    uint256 public disputeThreshold;
-    uint256 public disputeTotalBalances;
-    address[] public marketDisputers;
-    mapping(address => MarketDisputersInfo) public marketDisputersInfo;
-
-
     address public proposer;
     bytes32 public questionId;
 
-
     uint256 public minShareLiq;
-
-
-    uint256 public lastResolvingVoteTime;
-    uint256 public lastDisputeResolvingVoteTime;
-
+    
     bool private initializationPhase2;
 
     string public marketQuestionID;
+    
+    IORGovernor public ORGovernor;
 
-    bool public marketDisputedFlag;
-
-    IORGovernance public ORGovernance;
-
-    bool setTimesFlag;
-    function setTimes(
-            uint256 _marketCreatedTime,
-            uint256 _marketParticipationEndTime,
-            uint256 _marketResolvingEndTime,
-            uint256 _marketPendingPeriod,
-            uint256 _marketDisputePeriod,
-            uint256 _marketReCastResolvingPeriod
-    ) public{
-        require(setTimesFlag == false, "Times already set");
-        setTimesFlag = true;
-        marketCreatedTime = _marketCreatedTime;
-        marketParticipationEndTime = _marketParticipationEndTime;
-        marketResolvingEndTime= _marketResolvingEndTime;
-        marketPendingPeriod = _marketPendingPeriod;
-        marketDisputePeriod = _marketDisputePeriod;
-        marketReCastResolvingPeriod = _marketReCastResolvingPeriod;
-
-    }
 
     function setConfig(
             string memory _marketQuestionID,
             address _proposer,
-            uint256 _minShareLiq,
-            uint256 _disputeThreshold,
-            address _governance,
+            address _governor,
+            uint256 _marketCreatedTime,
+            uint256 _marketParticipationEndTime,
+            uint256 _marketResolvingEndTime,
             bytes32 _questionId
     ) public {
         require(initializationPhase2 == false, "Initialization already called");
         initializationPhase2 = true;
+        ORGovernor = IORGovernor(_governor);
         marketQuestionID = _marketQuestionID;
-        minShareLiq = _minShareLiq;
         proposer = _proposer;
         questionId = _questionId;
-        ORGovernance = IORGovernance(_governance);
-
-        disputeThreshold = _disputeThreshold;
-
-        marketPendingVotesCount.push(0);
-        marketPendingVotesCount.push(0);
-
-        marketResolvingVotesCount.push(0);
-        marketResolvingVotesCount.push(0);
-    }
-
-
-
-    function state() public view returns (MarketState) {
-
-        uint256 time = getCurrentTime();
-
-        if (time < marketCreatedTime + marketPendingPeriod ) {
-            return MarketState.Pending;
-
-        } else if (marketPendingVotesCount[0] >= marketPendingVotesCount[1] ) {
-            return MarketState.Rejected;
-
-        } else if (time < marketParticipationEndTime) {
-            return MarketState.Active;
-
-        } else if ( time < marketResolvingEndTime){
-            return MarketState.Resolving;
-
-        } else if(marketResolvingVotesCount[0] == marketResolvingVotesCount[1]){
-            if(marketDisputedFlag){
-                return MarketState.ResolvingAfterDispute;
-            }
-            return MarketState.Resolving;
-
-        }
-
-        uint256 resolvingDisputeEndTime;
-        if(marketResolvingEndTime > lastResolvingVoteTime)
-        {
-            resolvingDisputeEndTime = marketResolvingEndTime + marketDisputePeriod;
-        }else{
-            resolvingDisputeEndTime = lastResolvingVoteTime + marketDisputePeriod;
-        }
-
-        if(time < resolvingDisputeEndTime){
-          return MarketState.DisputePeriod;
-        }
-
-        if(marketDisputedFlag){
-             if(time < resolvingDisputeEndTime + marketReCastResolvingPeriod){
-                 return MarketState.ResolvingAfterDispute;
-             }
-        }
-
-        return MarketState.Resolved;
-
+        
+        minShareLiq = ORGovernor.addMarket(_marketCreatedTime,_marketParticipationEndTime,_marketResolvingEndTime);
     }
 
     function _beforeBuy() internal {
-        require(state() == MarketState.Active, "Market is not in active state");
+        require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
     }
 
     function _beforeSell() internal {
-        require(state() == MarketState.Active, "Market is not in active state");
+        require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
     }
 
-    function castGovernanceApprovalVote(bool approveFlag) public {
-        address account = msg.sender;
-        require(state() == MarketState.Pending, "Market is not in pending state");
-        require(address(ORGovernance) != address(0),"Governance not assigned");
-        require(marketPendingVotersInfo[account].voteFlag == false, "user already voted");
-        
-        bool canVote;
-        uint256 votePower;
-        (canVote,votePower) = ORGovernance.getAccountInfo(account);
-        require(canVote == true, "user can not vote");
-        
-        uint8 approveSelection = 0;
-        if(approveFlag) { approveSelection = 1; }
-        
-        marketPendingVoters.push(account);
-        
-        marketPendingVotersInfo[account].voteFlag = true;
-        marketPendingVotersInfo[account].power = votePower;
-        marketPendingVotersInfo[account].selection = approveSelection;
-
-        marketPendingVotesCount[approveSelection] += marketPendingVotersInfo[account].power;
-    }
-    
-    function withdrawGovernanceApprovalVote() public {
-        address account = msg.sender;
-        require(state() == MarketState.Pending, "Market is not in pending state");
-        require(address(ORGovernance) != address(0),"Governance not assigned");
-        require(marketPendingVotersInfo[account].voteFlag == true, "user did not vote");
-        
-        marketPendingVotersInfo[account].voteFlag = false;
-        
-        uint8 approveSelection = marketPendingVotersInfo[account].selection;
-        marketPendingVotesCount[approveSelection] -= marketPendingVotersInfo[account].power;
-        marketPendingVotersInfo[account].power = 0;
-        
-    }
-
-    function isPendingVoter(address account) public view returns(bool votingFlag,uint8 approveFlag, uint256 power){
-        if(marketPendingVotersInfo[account].power != 0){
-            votingFlag = true;
-            approveFlag = marketPendingVotersInfo[account].selection;
-            power = marketPendingVotersInfo[account].power;
-        }
-    }
+     function state() public view returns (ORMarketLib.MarketState) {
+         return ORGovernor.state(address(this));
+     }
 
     function addLiquidity(uint256 amount) public {
         uint[] memory distributionHint;
@@ -261,100 +91,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         require(collateralToken.transfer(msg.sender, minBalance), "return transfer failed");
     }
 
-    function castGovernanceResolvingVote(uint8 outcomeIndex) public {
-        address account = msg.sender;
-        MarketState marketState = state();
-
-        require(marketState == MarketState.Resolving || marketState == MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
-        require(address(ORGovernance) != address(0),"Governance not assigned");
-        require(marketResolvingVotersInfo[account].voteFlag == false, "user already voted");
-        
-        bool canVote;
-        uint256 votePower;
-        (canVote,votePower) = ORGovernance.getAccountInfo(account);
-        require(canVote == true, "user can not vote");
-        
-        
-        if(marketState == MarketState.Resolving){
-            lastResolvingVoteTime = getCurrentTime();
-        }else{
-            lastDisputeResolvingVoteTime = getCurrentTime();
-        }
-        
-        marketResolvingVoters.push(account);
-        
-        marketResolvingVotersInfo[account].voteFlag = true;
-        marketResolvingVotersInfo[account].power = votePower;
-        marketResolvingVotersInfo[account].selection = outcomeIndex;
-
-        marketResolvingVotesCount[outcomeIndex] += marketResolvingVotersInfo[account].power;
-    }
-    
-    function withdrawGovernanceResolvingVote() public{
-        address account = msg.sender;
-        MarketState marketState = state();
-        
-        require(marketState == MarketState.Resolving || marketState == MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
-        require(address(ORGovernance) != address(0),"Governance not assigned");
-        require(marketResolvingVotersInfo[account].voteFlag == true, "user did not vote");
-        
-        marketResolvingVotersInfo[account].voteFlag = false;
-        
-        uint8 outcomeIndex = marketResolvingVotersInfo[account].selection;
-        marketResolvingVotesCount[outcomeIndex] -= marketResolvingVotersInfo[account].power;
-        marketResolvingVotersInfo[account].power = 0;
-    }
-
-    function isResolvingVoter(address account) public view returns(bool votingFlag,uint8 selection, uint256 power){
-        if(marketResolvingVotersInfo[account].power != 0){
-            votingFlag = true;
-            selection = marketResolvingVotersInfo[account].selection;
-            power = marketResolvingVotersInfo[account].power;
-        }
-    }
-
-    function getIndexSet() public pure returns (uint256[] memory indexSet) {
-        indexSet = new uint256[](2);
-        indexSet[0] = 1;
-        indexSet[1] = 2;
-    }
-
-    function disputeMarket(string memory disputeReason) public{
-        require(state() == MarketState.DisputePeriod, "Market is not in dispute state");
-        address account = msg.sender;
-        uint[] memory balances = getBalances(account);
-        uint256 userTotalBalances = balances[0] + balances[1];
-
-        require(userTotalBalances > 0, "Low holding to dispute");
-        require(marketDisputersInfo[account].totalBalances == 0, "User already dispute");
-
-        marketDisputers.push(account);
-        marketDisputersInfo[account].indexZeroBalance = balances[0];
-        marketDisputersInfo[account].indexOneBalance = balances[1];
-        marketDisputersInfo[account].totalBalances = userTotalBalances;
-        marketDisputersInfo[account].reason = disputeReason;
-        disputeTotalBalances += userTotalBalances;
-
-        if(disputeTotalBalances >= disputeThreshold){
-            marketDisputedFlag = true;
-        }
-        
-        emit DisputeSubmittedEvent(msg.sender,address(this),disputeTotalBalances,marketDisputedFlag);
-    }
-
-    function getResolvingOutcome() public view returns (uint256[] memory indexSet) {
-        indexSet = new uint256[](2);
-        indexSet[0] = 1;
-        indexSet[1] = 1;
-
-        if (marketResolvingVotesCount[0] > marketResolvingVotesCount[1]) {
-            indexSet[1] = 0;
-        }
-        if (marketResolvingVotesCount[1] > marketResolvingVotesCount[0]) {
-            indexSet[0] = 0;
-        }
-    }
-
     function getPercentage() public view returns (uint256[] memory percentage) {
         percentage = new uint256[](2);
         uint256[] memory balances = getPoolBalances();
@@ -374,27 +110,22 @@ contract ORFPMarket is FixedProductMarketMaker {
         return positionIds;
     }
 
-    function getApprovingResult() public view returns (uint256[] memory) {
-        return marketPendingVotesCount;
-    }
     
-    function getResolvingResult() public view returns (uint256[] memory) {
-        return marketResolvingVotesCount;
-    }
 
     function getMarketQuestionID() public view returns(string memory){
         return marketQuestionID;
     }
-
-
-    function getCurrentState() public view returns (MarketState yes) {
-        return state();
+    
+    
+    function getConditionalTokenAddress() public view returns(address){
+        return address(conditionalTokens);
     }
 
-    function beforeRemoveFunding(uint sharesToBurn) internal {
+
+    function _beforeRemoveFunding(uint sharesToBurn) internal {
         if(msg.sender == proposer) {
-            MarketState marketState = state();
-            if(marketState == MarketState.Pending || marketState == MarketState.Active){
+            ORMarketLib.MarketState marketState = state();
+            if(marketState == ORMarketLib.MarketState.Pending || marketState == ORMarketLib.MarketState.Active){
                 require(balanceOf(msg.sender).sub(sharesToBurn) >= minShareLiq, "The remaining shares dropped under the minimum");
             }
         }
@@ -403,11 +134,18 @@ contract ORFPMarket is FixedProductMarketMaker {
     function getSharesPercentage(address account) public view returns(uint256) {
         return balanceOf(account) * 100 * 10000 / totalSupply();
     }
-
+    
+    function getIndexSet() public pure returns (uint256[] memory indexSet) {
+        indexSet = new uint256[](2);
+        indexSet[0] = 1;
+        indexSet[1] = 2;
+    }
    
-     function getCurrentTime() public view returns (uint256) {
+    function getCurrentTime() public view returns (uint256) {
          return block.timestamp;
      }
+     
+     
 
 }
 

@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("AAA0GovernencyDemo"), {
+  deployer.deploy(artifacts.require("AAA0MarketGovernor"), {
   });
 };
