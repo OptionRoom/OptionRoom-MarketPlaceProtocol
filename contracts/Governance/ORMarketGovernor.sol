@@ -113,7 +113,7 @@ contract ORMarketGovernor is IORGovernor {
     }
     
     function getCurrentTime() public view returns(uint256){
-        return 0; //todo
+        return block.timestamp;
     }
     
     function state(address marketAddress) public view returns (ORMarketLib.MarketState) {
