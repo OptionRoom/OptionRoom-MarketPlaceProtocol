@@ -141,12 +141,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         indexSet[1] = 2;
     }
    
-    function getCurrentTime() public view returns (uint256) {
-         return block.timestamp;
-     }
-     
-     
-
 }
 
 //TODO just for testing remove them

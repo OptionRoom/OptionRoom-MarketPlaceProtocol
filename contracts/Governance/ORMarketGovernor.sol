@@ -1,6 +1,7 @@
 pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
 import "./IORMarketGovernor.sol";
+import "../TimeDependent/TimeDependent.sol";
 
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
@@ -12,7 +13,7 @@ interface IReportPayouts{
     function reportPayouts(bytes32 questionId, uint[] calldata payouts) external;
 }
 
-contract ORMarketGovernor is IORGovernor {
+contract ORMarketGovernor is IORGovernor, TimeDependent{
 
     struct MarketVotersInfo{
         uint256 power;
@@ -110,10 +111,6 @@ contract ORMarketGovernor is IORGovernor {
     // todo: not a real function, just to mimic the Governance power
     function setPower(address account, uint256 power) public{
         powerPerUser[account] = power;
-    }
-    
-    function getCurrentTime() public view returns(uint256){
-        return block.timestamp;
     }
     
     function state(address marketAddress) public view returns (ORMarketLib.MarketState) {
