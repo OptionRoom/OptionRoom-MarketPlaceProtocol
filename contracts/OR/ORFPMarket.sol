@@ -125,7 +125,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     function _beforeRemoveFunding(uint sharesToBurn) internal {
         if(msg.sender == proposer) {
             ORMarketLib.MarketState marketState = state();
-            if(marketState == ORMarketLib.MarketState.Pending || marketState == ORMarketLib.MarketState.Active){
+            if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
                 require(balanceOf(msg.sender).sub(sharesToBurn) >= minShareLiq, "The remaining shares dropped under the minimum");
             }
         }

@@ -35,15 +35,15 @@ contract ORMarketController is IORMarketController, TimeDependent{
         uint256 lastResolvingVoteTime;
         uint256 lastDisputeResolvingVoteTime;
         uint256 disputeTotalBalances;
-        uint256[2] pendingVotesCount;
+        uint256[2] validatingVotesCount;
         uint256[2] resolvingVotesCount;
         bool    disputedFlag;
     }
     
     mapping(address => MarketInfo) marketsInfo;
 
-    mapping(address => address[]) public marketPendingVoters;
-    mapping(address => mapping(address => MarketVotersInfo)) public marketPendingVotersInfo;
+    mapping(address => address[]) public marketValidatingVoters;
+    mapping(address => mapping(address => MarketVotersInfo)) public marketValidatingVotersInfo;
     
     mapping(address => address[]) public marketResolvingVoters;
     mapping(address => mapping(address => MarketVotersInfo)) public marketResolvingVotersInfo;
@@ -56,7 +56,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     mapping(address => bool) payoutsMarkets;
     
     uint256 public marketMinShareLiq = 100e18;
-    uint256 public marketPendingPeriod = 1800;
+    uint256 public marketValidatingPeriod = 1800;
     uint256 public marketDisputePeriod = 4 * 1800;
     uint256 public marketReCastResolvingPeriod = 4 * 1800;
     uint256 public disputeThreshold = 100e18;
@@ -121,10 +121,10 @@ contract ORMarketController is IORMarketController, TimeDependent{
         if(marketInfo.createdTime == 0){
             return ORMarketLib.MarketState.Invalid;
             
-        } else if (time <marketInfo.createdTime + marketPendingPeriod ) {
-            return ORMarketLib.MarketState.Pending;
+        } else if (time <marketInfo.createdTime + marketValidatingPeriod ) {
+            return ORMarketLib.MarketState.Validating;
 
-        } else if (marketInfo.pendingVotesCount[0] >= marketInfo.pendingVotesCount[1] ) {
+        } else if (marketInfo.validatingVotesCount[0] >= marketInfo.validatingVotesCount[1] ) {
             return ORMarketLib.MarketState.Rejected;
 
         } else if (time < marketInfo.participationEndTime) {
@@ -164,11 +164,11 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
     
     
-    function castGovernanceApprovalVote(address marketAddress,bool approveFlag) public {
+    function castGovernanceValidatingVote(address marketAddress,bool validationFlag) public {
         address account = msg.sender;
-        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Pending, "Market is not in pending state");
+        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
         
-        MarketVotersInfo storage marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
+        MarketVotersInfo storage marketVotersInfo = marketValidatingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == false, "user already voted");
         
         bool canVote;
@@ -176,32 +176,32 @@ contract ORMarketController is IORMarketController, TimeDependent{
         (canVote,votePower) = getAccountInfo(account);
         require(canVote == true, "user can not vote");
         
-        uint8 approveSelection = 0;
-        if(approveFlag) { approveSelection = 1; }
+        uint8 validationSelection = 0;
+        if(validationFlag) { validationSelection = 1; }
         
         if(marketVotersInfo.insertedFlag == 0){
             marketVotersInfo.insertedFlag = 1;
-            marketPendingVoters[marketAddress].push(account);
+            marketValidatingVoters[marketAddress].push(account);
         }
         
         marketVotersInfo.voteFlag = true;
         marketVotersInfo.power = votePower;
-        marketVotersInfo.selection = approveSelection;
+        marketVotersInfo.selection = validationSelection;
 
-        marketsInfo[marketAddress].pendingVotesCount[approveSelection] += votePower;
+        marketsInfo[marketAddress].validatingVotesCount[validationSelection] += votePower;
     }
     
-    function withdrawGovernanceApprovalVote(address marketAddress) public {
+    function withdrawGovernanceValidatingVote(address marketAddress) public {
         address account = msg.sender;
-        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Pending, "Market is not in pending state");
+        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
         
-        MarketVotersInfo storage marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
+        MarketVotersInfo storage marketVotersInfo = marketValidatingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == true, "user did not vote");
         
         marketVotersInfo.voteFlag = false;
         
-        uint8 approveSelection = marketVotersInfo.selection;
-        marketsInfo[marketAddress].pendingVotesCount[approveSelection] -= marketVotersInfo.power;
+        uint8 validationSelection = marketVotersInfo.selection;
+        marketsInfo[marketAddress].validatingVotesCount[validationSelection] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
         
     }
@@ -281,8 +281,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
     
     
-    function isPendingVoter(address marketAddress, address account) public view returns(MarketVotersInfo memory){
-        return marketPendingVotersInfo[marketAddress][account];
+    function isValidatingVoter(address marketAddress, address account) public view returns(MarketVotersInfo memory){
+        return marketValidatingVotersInfo[marketAddress][account];
     }
 
     function isResolvingVoter(address marketAddress, address account) public view returns(MarketVotersInfo memory){
@@ -306,17 +306,21 @@ contract ORMarketController is IORMarketController, TimeDependent{
         }
     }
     
+    function getMarketInfo(address marketAddress) public view returns (MarketInfo memory) {
+        return marketsInfo[marketAddress];
+    }
+    
     // market configuration
     function setMarketMinShareLiq(uint256 minLiq) public {
         marketMinShareLiq = minLiq;
     }
 
-    function setMarketPendingPeriod(uint256 p) public{
-        marketPendingPeriod = p;
+    function setMarketValidatingPeriod(uint256 p) public{
+        marketValidatingPeriod = p;
     }
 
     function setMarketDisputePeriod(uint256 p) public{
-        marketPendingPeriod = p;
+        marketDisputePeriod = p;
     }
 
     function setMarketReCastResolvingPeriod(uint256 p) public{
@@ -328,10 +332,10 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
     
 /*    
-    function isPendingVoter1(address marketAddress, address account) public view returns(bool votingFlag,uint8 approveFlag, uint256 power){
+    function isPendingVoter1(address marketAddress, address account) public view returns(bool votingFlag,uint8 validFlag, uint256 power){
         MarketVotersInfo memory marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
         if(marketVotersInfo.power != 0){
-            votingFlag = true;
+            validFlag = true;
             approveFlag = marketVotersInfo.selection;
             power = marketVotersInfo.power;
         }

@@ -3,7 +3,7 @@ pragma solidity ^0.5.1;
 library ORMarketLib{
     enum MarketState {
         Invalid,
-        Pending, // governance voting for validation
+        Validating, // governance voting for validation
         Rejected,
         Active,
         Inactive,
