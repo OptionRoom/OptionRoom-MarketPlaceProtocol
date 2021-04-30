@@ -4,14 +4,15 @@ var chai = require('chai');
 chai.use(require('chai-bignumber')());
 
 const { expectEvent } = require('openzeppelin-test-helpers')
-// const { getConditionId, getCollectionId, getPositionId } = require('@gnosis.pm/conditional-tokens-contracts/utils/id-helpers')(web3.utils)
 const { randomHex, toBN, fromAscii, toAscii } = web3.utils
+let ConditionalTokensContract = artifacts.require("../../contracts/OR/ORConditionalTokens.sol");
 
-const ConditionalTokens = artifacts.require('ConditionalTokens')
 const WETH9 = artifacts.require('WETH9')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
-const ORGovernanceMock = artifacts.require('ORGovernanceMock')
+const ORMarketController = artifacts.require('ORMarketController')
+const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
+
 
 var BigNumber = require('bignumber.js');
 const helper = require('ganache-time-traveler');
@@ -24,6 +25,7 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
   let fixedProductMarketMakerFactory
   let fixedProductMarketMaker
   let governanceMock
+  let centralTime;
 
   let marketPendingPeriod = 1800;
 
@@ -34,12 +36,21 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     return new Date(theDate.getTime() + days*24*60*60*1000);
   }
 
+  async  function createConditionalTokensContract(theDate, days) {
+    conditionalTokens = await ConditionalTokensContract.new();
+  }
+
   before(async function() {
-    conditionalTokens = await ConditionalTokens.deployed();
+    await createConditionalTokensContract();
     collateralToken = await WETH9.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
     let deployedMarketMakerContract = await ORFPMarket.deployed();
-    governanceMock = await ORGovernanceMock.deployed()
+    governanceMock = await ORMarketController.deployed()
+    centralTime = await CentralTimeForTesting.deployed();
+
+    // Assign the timer to the governance.
+    await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
+    await governanceMock.setCentralTimeForTesting(centralTime.address);
 
     await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
@@ -47,10 +58,10 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
 
     // Setting the voting power.
-    await governanceMock.setPower(5, {from: investor1});
-    await governanceMock.setPower(1, {from: investor2});
-    await governanceMock.setPower(2, {from: trader});
-    await governanceMock.setPower(3, {from: oracle});
+    await governanceMock.setPower(investor1, 5);
+    await governanceMock.setPower(investor2, 1);
+    await governanceMock.setPower(trader, 2);
+    await governanceMock.setPower(oracle, 3);
   })
 
   it('can be created by factory', async function() {
@@ -66,6 +77,9 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
       feeFactor,
       { from: creator }
     ]
+
+    await centralTime.initializeTime();
+
     const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
     const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs);
     expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
@@ -138,18 +152,23 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
   })
 
   it('Should vote for the approval of this created market', async function() {
-    await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
-    await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: investor2 });
-    await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: oracle });
+    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
+    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: investor2 });
+    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: oracle });
+
+    // await fixedProductMarketMaker.castGovernanceApprovalVote(true, { from: investor1 });
+    // await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: investor2 });
+    // await fixedProductMarketMaker.castGovernanceApprovalVote(false, { from: oracle });
   });
 
   it('can buy tokens from it', async function() {
     const investmentAmount = toBN(1e18)
     const buyOutcomeIndex = 1;
 
-    await fixedProductMarketMaker.increaseTime(marketPendingPeriod);
+    // await fixedProductMarketMaker.increaseTime(marketPendingPeriod);
+    await centralTime.increaseTime(marketPendingPeriod);
 
-    let state = await fixedProductMarketMaker.getCurrentState();
+    let state = await governanceMock.getMarketState(fixedProductMarketMaker.address);
     expect(new BigNumber(state).isEqualTo(new BigNumber(3))).to.equal(true);
 
     // we already have 2 yeses and 2 nos
@@ -190,7 +209,8 @@ contract('FixedProductMarketMakerBuySell', function([, creator, oracle, investor
     let traderNoBalanceBefore= (await fixedProductMarketMaker.getBalances(trader))[1];
     let expectedSellValue = await fixedProductMarketMaker.calcSellReturnInv(toBN(traderNoBalanceBefore), 1, { from: trader })
 
-    await fixedProductMarketMaker.increaseTime(marketPendingPeriod);
+    // await fixedProductMarketMaker.increaseTime(marketPendingPeriod);
+    await centralTime.increaseTime(marketPendingPeriod);
 
     await conditionalTokens.setApprovalForAll(fixedProductMarketMaker.address, true, { from: trader });
     await fixedProductMarketMaker.sell(expectedSellValue, 1, { from: trader })

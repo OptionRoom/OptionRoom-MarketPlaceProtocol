@@ -32,17 +32,8 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
         collateralToken = collateralTokenAddress;
     }
 
-    function setMinLiq(uint256 minShareLiqValue) public {
-        marketMinShareLiq = minShareLiqValue;
-    }
-
-    function getMinLiq() external view returns (uint256 )  {
-        return marketMinShareLiq;
-    }
-
     function createMarketProposalWithCollateralTest(string memory marketQuestionID,
-        uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken,
-        uint256 initialLiq, uint fees) public returns (ORFPMarket) {
+        uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq, uint fees) public returns (ORFPMarket) {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
 
@@ -52,11 +43,9 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, fees);
 
-        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq,  disputeThreshold, governanceAdd, questionId);
-        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
+        fpMarket.setConfig(marketQuestionID, msg.sender, governanceAdd, getCurrentTime(), participationEndTime, resolvingEndTime, questionId);
 
         proposalIds[questionId] = address(fpMarket);
-        // Add liquidity
 
         collateralToken.transferFrom(msg.sender,address(this),initialLiq);
         collateralToken.approve(address(fpMarket),initialLiq);
@@ -70,12 +59,9 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
     // Override this method to do the same as before at the
     // return value.
     function createMarketProposalTest(string memory marketQuestionID,
-        uint256 participationEndTime,
-        uint256 resolvingEndTime,
-        uint fees) public returns (ORFPMarket) {
+        uint256 participationEndTime, uint256 resolvingEndTime, uint fees) public returns (ORFPMarket) {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
-
 
         ct.prepareCondition(governanceAdd, questionId, 2);
         bytes32[]  memory conditionIds = new bytes32[](1);
@@ -83,8 +69,7 @@ contract PredictionMarketFactoryMock is ORPredictionMarket {
 
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20(collateralToken), conditionIds, fees);
 
-        fpMarket.setConfig(marketQuestionID, msg.sender, marketMinShareLiq,  disputeThreshold, governanceAdd, questionId);
-        fpMarket.setTimes(getCurrentTime(),participationEndTime,resolvingEndTime, marketPendingPeriod, marketDisputePeriod, marketReCastResolvingPeriod);
+        fpMarket.setConfig(marketQuestionID, msg.sender, governanceAdd, getCurrentTime(), participationEndTime, resolvingEndTime, questionId);
 
         proposalIds[questionId] = address(fpMarket);
 

@@ -1,17 +1,18 @@
 var chai = require('chai');
 
-//use default BigNumber
 chai.use(require('chai-bignumber')());
 
 const { expectEvent } = require('openzeppelin-test-helpers')
 const { toBN } = web3.utils
 
-const ConditionalTokens = artifacts.require('ConditionalTokens')
+let ConditionalTokensContract = artifacts.require("../../contracts/OR/ORConditionalTokens.sol");
+
 const WETH9 = artifacts.require('WETH9')
 const ERC20DemoToken = artifacts.require('ERC20DemoToken')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
-const ORGovernanceMock = artifacts.require('ORGovernanceMock')
+const ORMarketController = artifacts.require('ORMarketController')
+const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
 
 contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trader, investor2]) {
   let conditionalTokens
@@ -19,38 +20,49 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   let collateralToken2
   let fixedProductMarketMakerFactory
   let governanceMock
+  let centralTime;
   let marketMakers = [];
 
   const questionString = "Test"
   const feeFactor = toBN(0) // (0.3%)
 
+  async  function createConditionalTokensContract(theDate, days) {
+    conditionalTokens = await ConditionalTokensContract.new();
+  }
+
   // let positionIds
   before(async function() {
-    conditionalTokens = await ConditionalTokens.deployed();
+    await createConditionalTokensContract();
+
     collateralToken1 = await WETH9.deployed();
     collateralToken2 = await ERC20DemoToken.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
-    governanceMock = await ORGovernanceMock.deployed()
+    governanceMock = await ORMarketController.deployed()
+    centralTime = await CentralTimeForTesting.deployed();
+
+    // Assign the timer to the governance.
+    await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
+    await governanceMock.setCentralTimeForTesting(centralTime.address);
+
+    // Assign the timer to the governance.
+    await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
+    await governanceMock.setCentralTimeForTesting(centralTime.address);
+
     let deployedMarketMakerContract = await ORFPMarket.deployed();
     await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
 
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
     await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
 
-    // Setting the voting power.
-    await governanceMock.setPower(5, {from: investor1});
-    await governanceMock.setPower(1, {from: investor2});
-    await governanceMock.setPower(2, {from: trader});
-    await governanceMock.setPower(3, {from: oracle});
+    await governanceMock.setPower(investor1, 5);
+    await governanceMock.setPower(investor2, 1);
+    await governanceMock.setPower(trader, 2);
+    await governanceMock.setPower(oracle, 3);
   })
 
   function addDays(theDate, days) {
     return new Date(theDate.getTime() + days*24*60*60*1000);
   }
-
-  it('can be created by factory', async function() {
-    // await fixedProductMarketMakerFactory.resetCurrentTime();
-  })
 
   const addedFunds1 = toBN(10e18)
   const addedFunds = toBN(1e18)

@@ -1,25 +1,27 @@
 var chai = require('chai');
 
-//use default BigNumber
 chai.use(require('chai-bignumber')());
 
 const { expectEvent } = require('openzeppelin-test-helpers')
 const { toBN } = web3.utils
 
-const ConditionalTokens = artifacts.require('ConditionalTokens')
+let ConditionalTokensContract = artifacts.require("../../contracts/OR/ORConditionalTokens.sol");
+
 const WETH9 = artifacts.require('WETH9')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
-const ORGovernanceMock = artifacts.require('ORGovernanceMock')
 const BigNumber = require('bignumber.js');
 
-contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trader, investor2]) {
+const ORMarketController = artifacts.require('ORMarketController')
+const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
+
+contract('FixedProductMarketMaker: test min liquidity', function([, creator, oracle, investor1, trader, investor2]) {
   let conditionalTokens
   let collateralToken
   let fixedProductMarketMakerFactory
   let governanceMock
   let marketMakers = [];
-
+  let centralTime;
   let fixedProductMarketMaker
 
   let pendingMarketMakersMap = new Map()
@@ -27,29 +29,41 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   const questionString = "Test"
   const feeFactor = toBN(3e15) // (0.3%)
 
-  const minLiquidityFunding = toBN(1e18)
+  // const minLiquidityFunding = toBN(1e18)
+  const minLiquidityFunding = toBN(100e18)
   const addedFunds = toBN(2e18)
 
+  async  function createConditionalTokensContract(theDate, days) {
+    conditionalTokens = await ConditionalTokensContract.new();
+  }
 
   // let positionIds
   before(async function() {
-    conditionalTokens = await ConditionalTokens.deployed();
+    await createConditionalTokensContract();
     collateralToken = await WETH9.deployed();
     fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
-    governanceMock = await ORGovernanceMock.deployed()
+    governanceMock = await ORMarketController.deployed()
+
+    centralTime = await CentralTimeForTesting.deployed();
+
+    // Assign the timer to the governance.
+    await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
+    await governanceMock.setCentralTimeForTesting(centralTime.address);
+
     let deployedMarketMakerContract = await ORFPMarket.deployed();
     await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
     await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(collateralToken.address);
     await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
 
-    await fixedProductMarketMakerFactory.setMinLiq(minLiquidityFunding);
+    // set the min liquidity from here
+    await governanceMock.setMarketMinShareLiq(minLiquidityFunding);
 
     // Setting the voting power.
-    await governanceMock.setPower(5, {from: investor1});
-    await governanceMock.setPower(1, {from: investor2});
-    await governanceMock.setPower(2, {from: trader});
-    await governanceMock.setPower(3, {from: oracle});
+    await governanceMock.setPower(investor1, 5);
+    await governanceMock.setPower(investor2, 1);
+    await governanceMock.setPower(trader, 2);
+    await governanceMock.setPower(oracle, 3);
   })
 
   function addDays(theDate, days) {
@@ -68,6 +82,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
       feeFactor,
       { from: creator }
     ]
+    await centralTime.initializeTime();
+
     const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
     const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs);
     expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
@@ -91,7 +107,8 @@ contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trad
   });
 
   it('can be funded', async function() {
-    const minLiq = await fixedProductMarketMakerFactory.getMinLiq();
+    const minLiq = await governanceMock.marketMinShareLiq.call();
+
     // Checking that the value is the min liquidity
     expect(new BigNumber(minLiq).isEqualTo(new BigNumber(minLiquidityFunding))).to.equal(true);
   });
