@@ -1,6 +1,6 @@
 pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
-import "./IORMarketGovernor.sol";
+import "./IORMarketController.sol";
 import "../TimeDependent/TimeDependent.sol";
 
 interface IORMarketForMarketGovernor{
@@ -13,7 +13,7 @@ interface IReportPayouts{
     function reportPayouts(bytes32 questionId, uint[] calldata payouts) external;
 }
 
-contract ORMarketGovernor is IORGovernor, TimeDependent{
+contract ORMarketController is IORMarketController, TimeDependent{
 
     struct MarketVotersInfo{
         uint256 power;

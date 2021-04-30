@@ -2,7 +2,7 @@ pragma solidity ^0.5.1;
 
 import "./ORMarketLib.sol";
 import "./FixedProductMarketMakerOR.sol";
-import "../Governance/IORMarketGovernor.sol";
+import "../Governance/IORMarketController.sol";
 
 /**
     @title ORFPMarket Extended version of the FixedProductMarketMaker
@@ -18,7 +18,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     string public marketQuestionID;
     
-    IORGovernor public ORGovernor;
+    IORMarketController public marketController;
 
 
     function setConfig(
@@ -32,12 +32,12 @@ contract ORFPMarket is FixedProductMarketMaker {
     ) public {
         require(initializationPhase2 == false, "Initialization already called");
         initializationPhase2 = true;
-        ORGovernor = IORGovernor(_governor);
+        marketController = IORMarketController(_governor);
         marketQuestionID = _marketQuestionID;
         proposer = _proposer;
         questionId = _questionId;
         
-        minShareLiq = ORGovernor.addMarket(_marketCreatedTime,_marketParticipationEndTime,_marketResolvingEndTime);
+        minShareLiq = marketController.addMarket(_marketCreatedTime,_marketParticipationEndTime,_marketResolvingEndTime);
     }
 
     function _beforeBuy() internal {
@@ -49,7 +49,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
      function state() public view returns (ORMarketLib.MarketState) {
-         return ORGovernor.getMarketState(address(this));
+         return marketController.getMarketState(address(this));
      }
 
     function addLiquidity(uint256 amount) public {

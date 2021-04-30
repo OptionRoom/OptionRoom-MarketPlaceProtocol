@@ -2,11 +2,11 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
 import './OR/ORPredictionMarket.sol';
-import "./Governance/ORMarketGovernor.sol";
+import "./Governance/ORMarketController.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 
-contract AAA0MarketGovernor is ORMarketGovernor {
+contract AAA0MarketGovernor is ORMarketController {
 
 }
 

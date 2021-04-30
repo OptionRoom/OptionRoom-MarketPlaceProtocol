@@ -2,7 +2,7 @@ pragma solidity ^0.5.1;
 
 import "../OR/ORMarketLib.sol";
 
-interface IORGovernor {
+interface IORMarketController {
 
     function payoutsAction(address marketAddress) external;
     
