@@ -68,7 +68,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     uint256 public marketDisputePeriod = 4 * 1800;
     uint256 public marketReCastResolvingPeriod = 4 * 1800;
     uint256 public disputeThreshold = 100e18;
-    
+   
     uint256 public validationRewardPerDay = 1700e18; // todo
     uint256 public validationLastRewardsDistributedDay;
     mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
@@ -77,16 +77,25 @@ contract ORMarketController is IORMarketController, TimeDependent{
     mapping(address => uint256) validationLastClaimedDayPerUser;
     
     
+    uint256 public resolveRewardPerDay = 1700e18; // todo
+    uint256 public resolveLastRewardsDistributedDay;
+    mapping(uint256 => uint256) resolveTotalPowerCastedPerDay;
+    mapping(uint256 => uint256) resolveRewardsPerDay;
+    mapping(uint256 => mapping(address => uint256)) resolveTotalPowerCastedPerDayPerUser;
+    mapping(address => uint256) resolveLastClaimedDayPerUser;
+    
+    
     event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
     
     mapping(address => uint256) powerPerUser;
     
     constructor() public{
-        validationLastRewardsDistributedDay = getCurrentTime() /1 days;
-				   
+        uint256 cDay = getCurrentTime() / 1 days;
+        validationLastRewardsDistributedDay =cDay;
+        resolveLastRewardsDistributedDay = cDay;
     }
     
-    
+   
     function ValidationInstallRewards() public{
         uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
         if(dayPefore > validationLastRewardsDistributedDay){
@@ -96,8 +105,18 @@ contract ORMarketController is IORMarketController, TimeDependent{
             validationLastRewardsDistributedDay = dayPefore;
         }
     }
+  
+    function ResolveInstallRewards() public{
+        uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
+        if(dayPefore > resolveLastRewardsDistributedDay){
+            for(uint256 index=dayPefore; index > resolveLastRewardsDistributedDay; index--){
+                resolveRewardsPerDay[index] = resolveRewardPerDay;
+            }
+            resolveLastRewardsDistributedDay = dayPefore;
+        }
+    }
     
-    function ValidationGetRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
+    function ValidationRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
         uint256 cDay = getCurrentTime() /1 days;
         uint256 tCPtoday = validationTotalPowerCastedPerDay[cDay];
         if(tCPtoday != 0){
@@ -110,6 +129,24 @@ contract ORMarketController is IORMarketController, TimeDependent{
         for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
             if(validationTotalPowerCastedPerDay[cDay] != 0){
                 rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18/ validationTotalPowerCastedPerDay[cDay];
+            }
+        }
+        rewardsCanClaim = rewardsCanClaim / 1e18;
+    }
+    
+    function ResolveRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
+        uint256 cDay = getCurrentTime() /1 days;
+        uint256 tCPtoday = resolveTotalPowerCastedPerDay[cDay];
+        if(tCPtoday != 0){
+            uint256 userTotalPowerVotesToday = resolveTotalPowerCastedPerDayPerUser[cDay][account];
+            todayReward = resolveRewardPerDay * userTotalPowerVotesToday * 1e18/ tCPtoday;
+            todayReward = todayReward / 1e18;
+        }
+        
+        uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
+        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
+            if(resolveTotalPowerCastedPerDay[cDay] != 0){
+                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18/ resolveTotalPowerCastedPerDay[cDay];
             }
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
@@ -130,6 +167,27 @@ contract ORMarketController is IORMarketController, TimeDependent{
         }
         
         validationLastClaimedDayPerUser[account] = cDay -1;
+        
+        // todo: ask the reward center to send rewardsCanClaim
+        rewardCenter.sendReward(account,rewardsCanClaim);
+        
+    }
+    
+    function ResolveWithdrawUserRewards() public {
+        //todo: check if ther is punlty
+        
+        address account = msg.sender;
+        uint256 cDay = getCurrentTime() /1 days;
+        
+        uint256 rewardsCanClaim;
+        uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
+        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
+            if(resolveTotalPowerCastedPerDay[cDay] != 0){
+                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18/ resolveTotalPowerCastedPerDay[cDay];
+            }
+        }
+        
+        resolveLastClaimedDayPerUser[account] = cDay -1;
         
         // todo: ask the reward center to send rewardsCanClaim
         rewardCenter.sendReward(account,rewardsCanClaim);
@@ -277,6 +335,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
+        ResolveInstallRewards(); // first user in a day will mark the previous day to be distrubted
+        
         address account = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
 
@@ -300,6 +360,10 @@ contract ORMarketController is IORMarketController, TimeDependent{
         if(marketVotersInfo.insertedFlag == 0){
             marketVotersInfo.insertedFlag = 1;
             marketResolvingVoters[marketAddress].push(account);
+            
+            uint256 cDay = getCurrentTime() /1 days;
+            resolveTotalPowerCastedPerDay[cDay]+= votePower;
+            resolveTotalPowerCastedPerDayPerUser[cDay][account]+= votePower;
         }
         
         marketVotersInfo.voteFlag = true;
