@@ -16,7 +16,7 @@ const ORMarketController = artifacts.require('ORMarketController')
 const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
 
 const ORMarketLib = artifacts.require('ORMarketLib')
-
+var BigNumber = require('bignumber.js');
 contract('FixedProductMarketMaker: create multiple markets test', function([, creator, oracle, investor1, trader, investor2]) {
   let conditionalTokens
   let collateralToken
@@ -72,7 +72,7 @@ contract('FixedProductMarketMaker: create multiple markets test', function([, cr
   }
 
 
-  async function createNewMarket() {
+  async function createNewMarket(creatorAddress) {
     let now = new Date();
     let resolvingEndDate = addDays(now, 5);
     let endTime = Math.floor(addDays(now,3).getTime() / 1000);
@@ -82,7 +82,7 @@ contract('FixedProductMarketMaker: create multiple markets test', function([, cr
       endTime,
       resolvingEndTime,
       feeFactor,
-      { from: creator }
+      { from: creatorAddress }
     ]
 
     await centralTime.initializeTime();
@@ -90,7 +90,7 @@ contract('FixedProductMarketMaker: create multiple markets test', function([, cr
     const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
     const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs);
     expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
-      creator,
+      creator: creatorAddress,
       fixedProductMarketMaker: fixedProductMarketMakerAddress,
       conditionalTokens: conditionalTokens.address,
       collateralToken: collateralToken.address,
@@ -103,10 +103,10 @@ contract('FixedProductMarketMaker: create multiple markets test', function([, cr
     pendingMarketMakersMap.set(fixedProductMarketMaker.address,fixedProductMarketMaker );
   }
 
-  it('Should return correct active markets count', async function() {
-    await createNewMarket();
-    await createNewMarket();
-    await createNewMarket();
+  it('Should create and return correct validating markets count', async function() {
+    await createNewMarket(creator);
+    await createNewMarket(creator);
+    await createNewMarket(creator);
     let marketsCount = await fixedProductMarketMakerFactory.getMarketsCount(ORMarketLib.MarketState.Validating);
     expect(marketsCount.toString()).to.equal("3");
   });
@@ -161,6 +161,34 @@ contract('FixedProductMarketMaker: create multiple markets test', function([, cr
     let firstAddressInMap = pendingMarketMakersMap.keys().next().value
 
     expect(firstFoundMarket).to.equal(firstAddressInMap);
+  });
+
+
+  it('Should return markets for the proposer', async function() {
+    await centralTime.resetTimeIncrease();
+
+    // Create another three markets for another account
+    await createNewMarket(investor1);
+    await createNewMarket(investor1);
+    await createNewMarket(investor1);
+
+    await centralTime.increaseTime(marketValidatingPeriod + 100);
+
+    let creatorMarketsCount = await fixedProductMarketMakerFactory.getMarketCountByProposer(creator);
+    let creatorRejectedMarketsCount = await fixedProductMarketMakerFactory.getMarketCountByProposerNState(creator, ORMarketLib.MarketState.Rejected);
+    let creatorResolvingMarketsCount = await fixedProductMarketMakerFactory.getMarketCountByProposerNState(creator, ORMarketLib.MarketState.Active);
+
+    let investor1MarketsCount = await fixedProductMarketMakerFactory.getMarketCountByProposer(investor1);
+    let investor1RejectedMarketsCount = await fixedProductMarketMakerFactory.getMarketCountByProposerNState(investor1, ORMarketLib.MarketState.Rejected);
+
+    expect(new BigNumber(creatorMarketsCount).isEqualTo(3)).to.equal(true);
+    expect(new BigNumber(investor1MarketsCount).isEqualTo(3)).to.equal(true);
+    expect(new BigNumber(investor1RejectedMarketsCount).isEqualTo(3)).to.equal(true);
+
+
+    expect(new BigNumber(creatorRejectedMarketsCount).isEqualTo(2)).to.equal(true);
+    expect(new BigNumber(creatorResolvingMarketsCount).isEqualTo(1)).to.equal(true);
+
   });
 
 })
