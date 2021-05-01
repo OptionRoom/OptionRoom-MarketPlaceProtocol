@@ -2,6 +2,7 @@ pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
 import "./IORMarketController.sol";
 import "../TimeDependent/TimeDependent.sol";
+import "../RewardCenter/IRewardCenter.sol";
 
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
@@ -13,11 +14,6 @@ interface IReportPayouts{
     function reportPayouts(bytes32 questionId, uint[] calldata payouts) external;
 }
 
-contract RewardCenterDummy{
-    function sendReward(address account, uint256 ammount) public{
-        
-    }
-}
 
 contract ORMarketController is IORMarketController, TimeDependent{
 
@@ -46,7 +42,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         bool    disputedFlag;
     }
     
-    RewardCenterDummy rewardCenter = new RewardCenterDummy();
+    IRewardCenter rewardCenter ;
     
     mapping(address => MarketInfo) marketsInfo;
 
@@ -94,6 +90,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
         validationLastRewardsDistributedDay =cDay;
         resolveLastRewardsDistributedDay = cDay;
     }
+    
+     
     
    
     function ValidationInstallRewards() public{
@@ -155,6 +153,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     function validationWithdrawUserRewards() public {
         //todo: check if ther is punlty
         
+        require(address(rewardCenter) != address(0), "Reward center is not set");
         address account = msg.sender;
         uint256 cDay = getCurrentTime() /1 days;
         
@@ -175,6 +174,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
     
     function ResolveWithdrawUserRewards() public {
         //todo: check if ther is punlty
+        
+        require(address(rewardCenter) != address(0), "Reward center is not set");
         
         address account = msg.sender;
         uint256 cDay = getCurrentTime() /1 days;
@@ -225,15 +226,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
 
    
-    // todo: not a real function, just to mimic the Governance power
-    function setSenderPower(uint256 power) public {
-        powerPerUser[msg.sender] = power;
-    }
-    
-    // todo: not a real function, just to mimic the Governance power
-    function setPower(address account, uint256 power) public{
-        powerPerUser[account] = power;
-    }
+   
     
     function getMarketState(address marketAddress) public view returns (ORMarketLib.MarketState) {
         
@@ -444,6 +437,17 @@ contract ORMarketController is IORMarketController, TimeDependent{
         return marketsInfo[marketAddress];
     }
     
+    
+     // todo: not a real function, just to mimic the Governance power
+    function setSenderPower(uint256 power) public {
+        powerPerUser[msg.sender] = power;
+    }
+    
+    // todo: not a real function, just to mimic the Governance power
+    function setPower(address account, uint256 power) public{
+        powerPerUser[account] = power;
+    }
+    
     // market configuration
     function setMarketMinShareLiq(uint256 minLiq) public {
         marketMinShareLiq = minLiq;
@@ -463,6 +467,10 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     function setDisputeThreshold(uint256 t) public{
         disputeThreshold = t;
+    }
+    
+    function setRewardCenter(address rc) public{
+        rewardCenter = IRewardCenter(rc);
     }
     
 /*    
