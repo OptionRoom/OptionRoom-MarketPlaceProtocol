@@ -13,6 +13,12 @@ interface IReportPayouts{
     function reportPayouts(bytes32 questionId, uint[] calldata payouts) external;
 }
 
+contract RewardCenterDummy{
+    function sendReward(address account, uint256 ammount) public{
+        
+    }
+}
+
 contract ORMarketController is IORMarketController, TimeDependent{
 
     struct MarketVotersInfo{
@@ -40,6 +46,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
         bool    disputedFlag;
     }
     
+    RewardCenterDummy rewardCenter = new RewardCenterDummy();
+    
     mapping(address => MarketInfo) marketsInfo;
 
     mapping(address => address[]) public marketValidatingVoters;
@@ -55,22 +63,77 @@ contract ORMarketController is IORMarketController, TimeDependent{
     
     mapping(address => bool) payoutsMarkets;
     
-    uint256 public marketMinShareLiq = 100e18;
+    uint256 public marketMinShareLiq = 100e18; //TODO
     uint256 public marketValidatingPeriod = 1800;
     uint256 public marketDisputePeriod = 4 * 1800;
     uint256 public marketReCastResolvingPeriod = 4 * 1800;
     uint256 public disputeThreshold = 100e18;
     
+    uint256 public validationRewardPerDay = 1700e18; // todo
+    uint256 public validationLastRewardsDistributedDay;
+    mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
+    mapping(uint256 => uint256) validationRewardsPerDay;
+    mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
+    mapping(address => uint256) validationLastClaimedDayPerUser;
     
     
     event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
     
     mapping(address => uint256) powerPerUser;
     
+    constructor() public{
+        validationLastRewardsDistributedDay = getCurrentTime() /1 days;
+				   
+    }
     
-    function getPowerCount(address account) external returns (uint256) {
-        //return powerPerUser[account]; todo
-        return 100;
+    
+    function ValidationInstallRewards() public{
+        uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
+        if(dayPefore > validationLastRewardsDistributedDay){
+            for(uint256 index=dayPefore; index > validationLastRewardsDistributedDay; index--){
+                validationRewardsPerDay[index] = validationRewardPerDay;
+            }
+            validationLastRewardsDistributedDay = dayPefore;
+        }
+    }
+    
+    function ValidationGetRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
+        uint256 cDay = getCurrentTime() /1 days;
+        uint256 tCPtoday = validationTotalPowerCastedPerDay[cDay];
+        if(tCPtoday != 0){
+            uint256 userTotalPowerVotesToday = validationTotalPowerCastedPerDayPerUser[cDay][account];
+            todayReward = validationRewardPerDay * userTotalPowerVotesToday * 1e18/ tCPtoday;
+            todayReward = todayReward / 1e18;
+        }
+        
+        uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
+        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
+            if(validationTotalPowerCastedPerDay[cDay] != 0){
+                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18/ validationTotalPowerCastedPerDay[cDay];
+            }
+        }
+        rewardsCanClaim = rewardsCanClaim / 1e18;
+    }
+    
+    function validationWithdrawUserRewards() public {
+        //todo: check if ther is punlty
+        
+        address account = msg.sender;
+        uint256 cDay = getCurrentTime() /1 days;
+        
+        uint256 rewardsCanClaim;
+        uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
+        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
+            if(validationTotalPowerCastedPerDay[cDay] != 0){
+                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18/ validationTotalPowerCastedPerDay[cDay];
+            }
+        }
+        
+        validationLastClaimedDayPerUser[account] = cDay -1;
+        
+        // todo: ask the reward center to send rewardsCanClaim
+        rewardCenter.sendReward(account,rewardsCanClaim);
+        
     }
     
     function addMarket(uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) external returns(uint256){
@@ -99,6 +162,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
     
     function getAccountInfo(address account) public returns(bool canVote, uint256 votePower){
+        //return (true, powerPerUser[account]);  todo
         return (true, 100);
     }
 
@@ -165,6 +229,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
     
     
     function castGovernanceValidatingVote(address marketAddress,bool validationFlag) public {
+        ValidationInstallRewards(); // first user in a day will mark the previous day to be distrubted
+         
         address account = msg.sender;
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
         
@@ -179,9 +245,13 @@ contract ORMarketController is IORMarketController, TimeDependent{
         uint8 validationSelection = 0;
         if(validationFlag) { validationSelection = 1; }
         
-        if(marketVotersInfo.insertedFlag == 0){
+        if(marketVotersInfo.insertedFlag == 0){ // action on 1'st vote for the user
             marketVotersInfo.insertedFlag = 1;
             marketValidatingVoters[marketAddress].push(account);
+            
+            uint256 cDay = getCurrentTime() /1 days;
+            validationTotalPowerCastedPerDay[cDay]+= votePower;
+            validationTotalPowerCastedPerDayPerUser[cDay][account]+= votePower;
         }
         
         marketVotersInfo.voteFlag = true;
