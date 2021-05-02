@@ -132,7 +132,11 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
     function getSharesPercentage(address account) public view returns(uint256) {
-        return balanceOf(account) * 100 * 10000 / totalSupply();
+        uint256  totalSupply = totalSupply();
+        if(totalSupply == 0){
+            return 0;
+        }
+        return balanceOf(account) * 100 * 10000 / totalSupply;
     }
     
     function getIndexSet() public pure returns (uint256[] memory indexSet) {
