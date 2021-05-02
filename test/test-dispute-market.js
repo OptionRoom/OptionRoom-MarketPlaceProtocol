@@ -33,7 +33,6 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
   let marketReCastResolvingPeriod = 4 * 1800;
 
   let disputeThreshold = toBN(100e18);
-  let minHoldingToDispute = toBN(10e18);
 
   let centralTime;
 
