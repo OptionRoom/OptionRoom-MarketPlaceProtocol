@@ -59,21 +59,22 @@ contract ORMarketController is IORMarketController, TimeDependent{
     
     mapping(address => bool) payoutsMarkets;
     
-    uint256 public marketMinShareLiq = 100e18; //TODO
-    uint256 public marketValidatingPeriod = 1800;
-    uint256 public marketDisputePeriod = 4 * 1800;
-    uint256 public marketReCastResolvingPeriod = 4 * 1800;
-    uint256 public disputeThreshold = 100e18;
-   
     uint256 public validationRewardPerDay = 1700e18; // todo
+    uint256 public resolveRewardPerDay = 1700e18; // todo
+
+    uint256 public marketMinShareLiq = 100e18; //TODO
+    uint256 public marketValidatingPeriod = 1800; // todo
+    uint256 public marketDisputePeriod = 4 * 1800; // todo
+    uint256 public marketReCastResolvingPeriod = 4 * 1800;
+    uint256 public disputeThreshold = 100e18; // todo
+   
+
     uint256 public validationLastRewardsDistributedDay;
     mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
     mapping(uint256 => uint256) validationRewardsPerDay;
     mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
     mapping(address => uint256) validationLastClaimedDayPerUser;
     
-    
-    uint256 public resolveRewardPerDay = 1700e18; // todo
     uint256 public resolveLastRewardsDistributedDay;
     mapping(uint256 => uint256) resolveTotalPowerCastedPerDay;
     mapping(uint256 => uint256) resolveRewardsPerDay;
@@ -91,10 +92,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         resolveLastRewardsDistributedDay = cDay;
     }
     
-     
-    
-   
-    function ValidationInstallRewards() public{
+    function validationInstallRewards() public{
         uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
         if(dayPefore > validationLastRewardsDistributedDay){
             for(uint256 index=dayPefore; index > validationLastRewardsDistributedDay; index--){
@@ -104,7 +102,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         }
     }
   
-    function ResolveInstallRewards() public{
+    function resolveInstallRewards() public{
         uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
         if(dayPefore > resolveLastRewardsDistributedDay){
             for(uint256 index=dayPefore; index > resolveLastRewardsDistributedDay; index--){
@@ -114,7 +112,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         }
     }
     
-    function ValidationRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
+    function validationRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
         uint256 cDay = getCurrentTime() /1 days;
         uint256 tCPtoday = validationTotalPowerCastedPerDay[cDay];
         if(tCPtoday != 0){
@@ -132,7 +130,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         rewardsCanClaim = rewardsCanClaim / 1e18;
     }
     
-    function ResolveRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
+    function resolveRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
         uint256 cDay = getCurrentTime() /1 days;
         uint256 tCPtoday = resolveTotalPowerCastedPerDay[cDay];
         if(tCPtoday != 0){
@@ -172,7 +170,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         
     }
     
-    function ResolveWithdrawUserRewards() public {
+    function resolveWithdrawUserRewards() public {
         //todo: check if ther is punlty
         
         require(address(rewardCenter) != address(0), "Reward center is not set");
@@ -280,7 +278,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     
     
     function castGovernanceValidatingVote(address marketAddress,bool validationFlag) public {
-        ValidationInstallRewards(); // first user in a day will mark the previous day to be distrubted
+        validationInstallRewards(); // first user in a day will mark the previous day to be distrubted
          
         address account = msg.sender;
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
@@ -328,7 +326,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
-        ResolveInstallRewards(); // first user in a day will mark the previous day to be distrubted
+        resolveInstallRewards(); // first user in a day will mark the previous day to be distrubted
         
         address account = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
