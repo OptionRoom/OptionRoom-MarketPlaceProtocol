@@ -176,13 +176,25 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
     await centralTime.resetTimeIncrease();
     await centralTime.increaseTime(days);
     const createTx = await governanceMock.disputeMarket(fixedProductMarketMaker.address, "Might just pass", { from: trader });
+    let marketsInfo = await governanceMock.getMarketInfo(fixedProductMarketMaker.address);
+    let dis = marketsInfo['disputeTotalBalances'].toString();
     expectEvent.inLogs(createTx.logs, 'DisputeSubmittedEvent', {
       disputer: trader,
       market: fixedProductMarketMaker.address,
+      disputeTotalBalances: dis,
+      reachThresholdFlag: (marketsInfo['disputedFlag'] == 'true' ),
     });
 
     state = await governanceMock.getMarketState(fixedProductMarketMaker.address);
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.DisputePeriod))).to.equal(true);
+
+    const callArgs = [
+      fixedProductMarketMaker.address,
+      trader
+    ]
+    
+    // some question about this one...
+    let disputersInfo =await  governanceMock.marketDisputersInfo.call(fixedProductMarketMaker.address, trader);
   });
 
 
@@ -191,6 +203,20 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
 
     try {
       await governanceMock.disputeMarket(fixedProductMarketMaker.address, "I will try again", { from: trader });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
+  });
+
+
+  it('Should revert because address do not have any balance', async function() {
+    const REVERT = "Low holding to dispute";
+
+    try {
+      await governanceMock.disputeMarket(fixedProductMarketMaker.address, "I will try again", { from: oracle });
       throw null;
     }
     catch (error) {

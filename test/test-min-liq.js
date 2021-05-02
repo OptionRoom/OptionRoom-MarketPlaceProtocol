@@ -11,11 +11,12 @@ const WETH9 = artifacts.require('WETH9')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
 const BigNumber = require('bignumber.js');
+const ORMarketLib = artifacts.require('ORMarketLib')
 
 const ORMarketController = artifacts.require('ORMarketController')
 const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
 
-contract('FixedProductMarketMaker: test min liquidity', function([, creator, oracle, investor1, trader, investor2]) {
+contract('FixedProductMarketMaker: test min liquidity and withdrawal', function([, creator, oracle, investor1, trader, investor2]) {
   let conditionalTokens
   let collateralToken
   let fixedProductMarketMakerFactory
@@ -29,9 +30,12 @@ contract('FixedProductMarketMaker: test min liquidity', function([, creator, ora
   const questionString = "Test"
   const feeFactor = toBN(3e15) // (0.3%)
 
+  let marketValidationPeriod = 1800;
+
   // const minLiquidityFunding = toBN(1e18)
-  const minLiquidityFunding = toBN(100e18)
+  const minLiquidityFunding = toBN(1e18)
   const addedFunds = toBN(2e18)
+  const toRemoveFunds1 = toBN(1e18)
 
   async  function createConditionalTokensContract(theDate, days) {
     conditionalTokens = await ConditionalTokensContract.new();
@@ -101,23 +105,25 @@ contract('FixedProductMarketMaker: test min liquidity', function([, creator, ora
 
   it('can be funded', async function() {
     await createNewMarket();
-    await collateralToken.deposit({ value: addedFunds, from: investor1 });
-    await collateralToken.approve(fixedProductMarketMaker.address, addedFunds, { from: investor1 });
-    await fixedProductMarketMaker.addLiquidity(addedFunds, { from: investor1 });
+    await collateralToken.deposit({ value: addedFunds, from: creator });
+    await collateralToken.approve(fixedProductMarketMaker.address, addedFunds, { from: creator });
+    await fixedProductMarketMaker.addLiquidity(addedFunds, { from: creator });
   });
 
-  it('can be funded', async function() {
+  it('Should return the correct values for market min liq and controller min liq', async function() {
     const minLiq = await governanceMock.marketMinShareLiq.call();
+    const marketCreatedMinLiq = await fixedProductMarketMaker.minShareLiq.call();
 
     // Checking that the value is the min liquidity
     expect(new BigNumber(minLiq).isEqualTo(new BigNumber(minLiquidityFunding))).to.equal(true);
+    expect(new BigNumber(marketCreatedMinLiq).isEqualTo(new BigNumber(minLiquidityFunding))).to.equal(true);
   });
 
-  it('Should fail to withdraw because we are trying to remove more than initial liq', async function() {
-    const REVERT = "burn amount exceeds balance";
+  it('Should fail to withdraw trying to remove more liquidity than min liquidity', async function() {
+    const REVERT = "The remaining shares dropped under the minimum";
 
     try {
-      await fixedProductMarketMaker.removeLiquidity(addedFunds, { from: investor1 });
+      await fixedProductMarketMaker.removeLiquidity(addedFunds,false, { from: creator });
       throw null;
     }
     catch (error) {
@@ -126,8 +132,27 @@ contract('FixedProductMarketMaker: test min liquidity', function([, creator, ora
     }
   });
 
-  it('Should withdraw because we are trying to get less then the min liquidity', async function() {
-    let accountBalance =  await fixedProductMarketMaker.balanceOf(investor1);
-    await fixedProductMarketMaker.removeLiquidity(toBN(1e17), false, { from : investor1 });
+  it('Should withdraw, amount is lesser then the min liquidity and state in validation.', async function() {
+    // let accountBalance =  await fixedProductMarketMaker.balanceOf(creator);
+    await fixedProductMarketMaker.removeLiquidity(toRemoveFunds1, false, { from : creator });
+  });
+
+
+  it('Should fail to withdraw trying to remove more liquidity than min liquidity', async function() {
+    const REVERT = "The remaining shares dropped under the minimum";
+
+    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: investor1 });
+    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: oracle });
+    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor2 });
+    
+    await centralTime.increaseTime(marketValidationPeriod + 100);
+
+    let state = await governanceMock.getMarketState(fixedProductMarketMaker.address);
+    
+    // Rejected...
+    expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Rejected))).to.equal(true);
+    
+    // Got to manage to remove all of the rest of the liquidity because we are rejected.
+    await fixedProductMarketMaker.removeLiquidity(toRemoveFunds1, false, { from: creator });
   });
 })
