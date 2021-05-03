@@ -13,6 +13,7 @@ const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMo
 const ORFPMarket = artifacts.require('ORFPMarket')
 const ORMarketController = artifacts.require('ORMarketController')
 const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
+const ORMarketLib = artifacts.require('ORMarketLib')
 
 var BigNumber = require('bignumber.js');
 const helper = require('ganache-time-traveler');

@@ -1,0 +1,144 @@
+var chai = require('chai');
+
+//use default BigNumber
+chai.use(require('chai-bignumber')());
+
+const { expectEvent } = require('openzeppelin-test-helpers')
+const { toBN } = web3.utils
+
+let ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
+let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
+
+const WETH9 = artifacts.require('WETH9')
+const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
+const ORFPMarket = artifacts.require('ORFPMarket')
+const ORMarketController = artifacts.require('ORMarketController')
+const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
+
+const ORMarketLib = artifacts.require('ORMarketLib')
+var BigNumber = require('bignumber.js');
+
+
+let conditionalTokens
+let collateralToken
+var fixedProductMarketMakerFactory
+let fixedProductMarketMaker
+let governanceMock
+let orgTimeSnapShot
+
+let centralTime
+let marketLibrary;
+
+const {
+  marketValidationPeriod,
+  marketResolvingPeriod,
+  marketDisputePeriod,
+  marketReCastResolvingPeriod,
+} = require('./constants')
+
+let disputeThreshold = toBN(100e18)
+let minHoldingToDispute = toBN(10e18)
+
+const questionString = 'Test'
+const feeFactor = toBN(3e15) // (0.3%)
+
+let positionIds
+
+async function prepareContracts(creator, oracle, investor1, trader, investor2) {
+  conditionalTokens = await ConditionalTokensContract.new();
+  marketLibrary = await MarketLibContract.new();
+  collateralToken = await WETH9.deployed();
+  fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
+  governanceMock = await ORMarketController.deployed()
+  centralTime = await CentralTimeForTesting.deployed();
+
+  // Assign the timer to the governance.
+  await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
+  await governanceMock.setCentralTimeForTesting(centralTime.address);
+
+  let deployedMarketMakerContract = await ORFPMarket.deployed();
+  await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
+  await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
+  await fixedProductMarketMakerFactory.assignCollateralTokenAddress(collateralToken.address);
+  await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
+
+  // Setting the voting power.
+  await governanceMock.setPower(investor1, 5);
+  await governanceMock.setPower(investor2, 1);
+  await governanceMock.setPower(trader, 2);
+  await governanceMock.setPower(oracle, 3);
+  
+  return governanceMock;
+}
+async function createNewMarket(creator) {
+
+  let now = new Date()
+  let resolvingEndDate = addDays(now, 5)
+  let endTime = Math.floor(addDays(now, 3).getTime() / 1000)
+  let resolvingEndTime = Math.floor(resolvingEndDate.getTime() / 1000)
+
+  const createArgs = [
+    questionString,
+    endTime,
+    resolvingEndTime,
+    feeFactor,
+    { from: creator },
+  ]
+  
+  await centralTime.initializeTime();
+  
+  const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
+  const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs)
+  expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
+    creator,
+    fixedProductMarketMaker: fixedProductMarketMakerAddress,
+    conditionalTokens: conditionalTokens.address,
+    collateralToken: collateralToken.address,
+  })
+
+  return await ORFPMarket.at(fixedProductMarketMakerAddress)
+}
+
+function addDays(theDate, days) {
+  return new Date(theDate.getTime() + days * 24 * 60 * 60 * 1000)
+}
+
+async function invokeFactoryMethod(func,...args) {
+  fixedProductMarketMakerFactory[func](...args);
+}
+
+async function callViewFactoryMethod(func,args) {
+  return fixedProductMarketMakerFactory[func](...args);
+}
+
+
+async  function callControllerMethod(func,sender, args) {
+  if (args)
+    return  await governanceMock[func].call(...args);
+  else
+    return  await governanceMock[func].call();
+}
+
+async function executeControllerMethod(func,args) {
+  governanceMock[func]( ...args);
+}
+
+async function moveToActive() {
+  centralTime.increaseTime(marketValidationPeriod + 10);
+}
+
+async function resetTimeIncrease() {
+  centralTime.resetTimeIncrease();
+}
+
+module.exports = {
+  prepareContracts,
+  createNewMarket,
+  addDays,
+  invokeFactoryMethod,
+  callViewFactoryMethod,
+  callControllerMethod,
+  moveToActive,
+  executeControllerMethod,
+  resetTimeIncrease,
+}
