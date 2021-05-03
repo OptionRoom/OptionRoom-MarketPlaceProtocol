@@ -17,15 +17,15 @@ contract('FixedProductMarketMaker: create multiple markets test', function([, cr
   })
 
   it('Should create and return correct validating markets count', async function() {
-    let marketCreated = await createNewMarket(creator);
+    let marketCreated = (await createNewMarket(creator))[0];
     marketMakers.push(marketCreated);
     pendingMarketMakersMap.set(marketCreated.address,marketCreated );
 
-    let marketCreated1 = await createNewMarket(creator);
+    let marketCreated1 = (await createNewMarket(creator))[0];
     marketMakers.push(marketCreated1);
     pendingMarketMakersMap.set(marketCreated1.address,marketCreated1 );
 
-    let marketCreated2 = await createNewMarket(creator);
+    let marketCreated2 = (await createNewMarket(creator))[0];
     marketMakers.push(marketCreated2);
     pendingMarketMakersMap.set(marketCreated2.address,marketCreated2 );
 

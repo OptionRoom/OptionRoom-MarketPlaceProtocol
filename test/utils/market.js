@@ -8,8 +8,8 @@ const { toBN } = web3.utils
 
 let ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
 let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
+let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
 
-const WETH9 = artifacts.require('WETH9')
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
 const ORMarketController = artifacts.require('ORMarketController')
@@ -47,7 +47,8 @@ let positionIds
 async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   conditionalTokens = await ConditionalTokensContract.new();
   marketLibrary = await MarketLibContract.new();
-  collateralToken = await WETH9.deployed();
+  
+  collateralToken = await CollatContract.new() ;//await WETH9.deployed();
   fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
   governanceMock = await ORMarketController.deployed()
   centralTime = await CentralTimeForTesting.deployed();
@@ -70,6 +71,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   
   return governanceMock;
 }
+
 async function createNewMarket(creator) {
 
   let now = new Date()
@@ -96,7 +98,10 @@ async function createNewMarket(creator) {
     collateralToken: collateralToken.address,
   })
 
-  return await ORFPMarket.at(fixedProductMarketMakerAddress)
+
+  let marketToReturn = await ORFPMarket.at(fixedProductMarketMakerAddress)
+  positionIds = await marketToReturn.getPositionIds();
+  return [marketToReturn, collateralToken, positionIds];
 }
 
 function addDays(theDate, days) {
@@ -111,16 +116,25 @@ async function callViewFactoryMethod(func,args) {
   return fixedProductMarketMakerFactory[func](...args);
 }
 
-
-async  function callControllerMethod(func,sender, args) {
-  if (args)
-    return  await governanceMock[func].call(...args);
-  else
-    return  await governanceMock[func].call();
+async function callControllerMethod(func, args) {
+    return governanceMock[func].call(...args);
 }
 
 async function executeControllerMethod(func,args) {
   governanceMock[func]( ...args);
+}
+
+
+async function conditionalApproveForAll(market,account) {
+   conditionalTokens.setApprovalForAll(market.address, true, { from: account });
+}
+
+async function conditionalBalanceOf(account, positionId) {
+  return conditionalTokens.balanceOf(account, positionId);
+}
+
+async function executeMarketMethod(market, func,args) {
+  return market[func](...args);
 }
 
 async function moveToActive() {
@@ -129,6 +143,18 @@ async function moveToActive() {
 
 async function resetTimeIncrease() {
   centralTime.resetTimeIncrease();
+}
+
+// async function fillCollateral(market, funds, investor) {
+//   collateralToken.deposit({ value: funds, from: investor });
+// }
+//
+// async function approveMarket(market, funds, investor) {
+//   collateralToken.approve(market.address, funds, { from: investor });
+// }
+
+async function getCollateralBalance(account) {
+  return collateralToken.balanceOf(account);
 }
 
 module.exports = {
@@ -141,4 +167,9 @@ module.exports = {
   moveToActive,
   executeControllerMethod,
   resetTimeIncrease,
+  conditionalApproveForAll,
+  conditionalBalanceOf,
+  // fillCollateral,
+  // approveMarket,
+  getCollateralBalance,
 }
