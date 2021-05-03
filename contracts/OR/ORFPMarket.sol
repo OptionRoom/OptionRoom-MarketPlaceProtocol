@@ -40,12 +40,14 @@ contract ORFPMarket is FixedProductMarketMaker {
         minShareLiq = marketController.addMarket(_marketCreatedTime,_marketParticipationEndTime,_marketResolvingEndTime);
     }
 
-    function _beforeBuy() internal {
-        require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
+    function _beforeBuy(address account, uint256 amount) internal {
+        //require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
+        marketController.addTrade(account,amount,true);
     }
 
-    function _beforeSell() internal {
-        require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
+    function _beforeSell(address account, uint256 amount) internal {
+        //require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
+        marketController.addTrade(account,amount,false);
     }
 
      function state() public view returns (ORMarketLib.MarketState) {

@@ -61,12 +61,15 @@ contract ORMarketController is IORMarketController, TimeDependent{
     
     uint256 public validationRewardPerDay = 1700e18; // todo
     uint256 public resolveRewardPerDay = 1700e18; // todo
+    uint256 public tradeRewardPerDay = 1700e18; // todo
 
     uint256 public marketMinShareLiq = 100e18; //TODO
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
     uint256 public marketReCastResolvingPeriod = 4 * 1800;
     uint256 public disputeThreshold = 100e18; // todo
+    
+    bool public includeSellInTradeFlag = true; //todo
    
 
     uint256 public validationLastRewardsDistributedDay;
@@ -81,7 +84,12 @@ contract ORMarketController is IORMarketController, TimeDependent{
     mapping(uint256 => mapping(address => uint256)) resolveTotalPowerCastedPerDayPerUser;
     mapping(address => uint256) resolveLastClaimedDayPerUser;
     
-    
+    uint256 public tradeLastRewardsDistributedDay;
+    mapping(uint256 => uint256) tradeTotalVolumePerDay;
+    mapping(uint256 => uint256) tradeRewardsPerDay;
+    mapping(uint256 => mapping(address => uint256)) tradeTotalVolumePerDayPerUser;
+    mapping(address => uint256) tradeLastClaimedDayPerUser;
+
     event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
     
     mapping(address => uint256) powerPerUser;
@@ -111,7 +119,17 @@ contract ORMarketController is IORMarketController, TimeDependent{
             resolveLastRewardsDistributedDay = dayPefore;
         }
     }
-    
+
+    function tradeInstallRewards() public{
+        uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
+        if(dayPefore > tradeLastRewardsDistributedDay){
+            for(uint256 index=dayPefore; index > tradeLastRewardsDistributedDay; index--){
+                tradeRewardsPerDay[index] = tradeRewardPerDay;
+            }
+            tradeLastRewardsDistributedDay = dayPefore;
+        }
+    }
+
     function validationRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
         uint256 cDay = getCurrentTime() /1 days;
         uint256 tCPtoday = validationTotalPowerCastedPerDay[cDay];
@@ -143,6 +161,24 @@ contract ORMarketController is IORMarketController, TimeDependent{
         for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
             if(resolveTotalPowerCastedPerDay[cDay] != 0){
                 rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18/ resolveTotalPowerCastedPerDay[cDay];
+            }
+        }
+        rewardsCanClaim = rewardsCanClaim / 1e18;
+    }
+
+    function tradeRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
+        uint256 cDay = getCurrentTime() /1 days;
+        uint256 tCPtoday = tradeTotalVolumePerDay[cDay];
+        if(tCPtoday != 0){
+            uint256 userTotalVolumeToday = tradeTotalVolumePerDayPerUser[cDay][account];
+            todayReward = tradeRewardPerDay * userTotalVolumeToday * 1e18/ tCPtoday;
+            todayReward = todayReward / 1e18;
+        }
+        
+        uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
+        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
+            if(tradeTotalVolumePerDay[cDay] != 0){
+                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18/ tradeTotalVolumePerDay[cDay];
             }
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
@@ -192,6 +228,29 @@ contract ORMarketController is IORMarketController, TimeDependent{
         rewardCenter.sendReward(account,rewardsCanClaim);
         
     }
+
+    function tradeWithdrawUserRewards() public {
+        //todo: check if ther is punlty
+        
+        require(address(rewardCenter) != address(0), "Reward center is not set");
+        
+        address account = msg.sender;
+        uint256 cDay = getCurrentTime() /1 days;
+        
+        uint256 rewardsCanClaim;
+        uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
+        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
+            if(tradeTotalVolumePerDay[cDay] != 0){
+                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18/ tradeTotalVolumePerDay[cDay];
+            }
+        }
+        
+        tradeLastClaimedDayPerUser[account] = cDay -1;
+        
+        // todo: ask the reward center to send rewardsCanClaim
+        rewardCenter.sendReward(account,rewardsCanClaim);
+        
+    }
     
     function addMarket(uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) external returns(uint256){
         
@@ -223,9 +282,6 @@ contract ORMarketController is IORMarketController, TimeDependent{
         return (true, 100);
     }
 
-   
-   
-    
     function getMarketState(address marketAddress) public view returns (ORMarketLib.MarketState) {
         
         MarketInfo memory marketInfo = marketsInfo[marketAddress];
@@ -323,6 +379,20 @@ contract ORMarketController is IORMarketController, TimeDependent{
         marketsInfo[marketAddress].validatingVotesCount[validationSelection] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
         
+    }
+
+    function addTrade(address account, uint256 amount, bool byeFlag) public{
+        
+        address market = msg.sender;
+        ORMarketLib.MarketState marketState = getMarketState(market);
+        require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
+        
+        if(byeFlag  || includeSellInTradeFlag){
+            uint256 cDay = getCurrentTime() / 1 days;
+            
+            tradeTotalVolumePerDay[cDay]+= amount;
+            tradeTotalVolumePerDayPerUser[cDay][account]+= amount;
+        }
     }
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
