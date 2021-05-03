@@ -19,7 +19,8 @@ contract ORFPMarket is FixedProductMarketMaker {
     string public marketQuestionID;
     
     IORMarketController public marketController;
-
+    
+    mapping(address => bool) public traders;
 
     function setConfig(
             string memory _marketQuestionID,
@@ -43,11 +44,19 @@ contract ORFPMarket is FixedProductMarketMaker {
     function _beforeBuy(address account, uint256 amount) internal {
         //require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
         marketController.addTrade(account,amount,true);
+        
+        if(traders[account] == false){
+            traders[account] == true;
+        }
     }
 
     function _beforeSell(address account, uint256 amount) internal {
         //require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
         marketController.addTrade(account,amount,false);
+        
+        if(traders[account] == false){
+            traders[account] == true;
+        }
     }
 
      function state() public view returns (ORMarketLib.MarketState) {

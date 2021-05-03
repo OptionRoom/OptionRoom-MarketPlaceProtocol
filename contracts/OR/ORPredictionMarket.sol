@@ -78,6 +78,28 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
 
         return marketsInStateCount;
     }
+    
+    function getMarketCountByTrader(address trader) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
+    
+    function getMarketCountByTraderNState(address trader, ORMarketLib.MarketState marketState) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
 
     function getMarkets(ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
         uint256 uLength;
@@ -144,6 +166,37 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
         return markets;
     }
     
+    function getMarketsByTrader(address trader, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByTrader(trader);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
     
     function getMarketsByProposerNState(address account, ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
         uint256 uLength;
@@ -162,6 +215,38 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
         uint256 marketInStateIndex = 0;
          for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
             if(fpMarkets[marketIndex].proposer() == account && fpMarkets[marketIndex].state() == marketState){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
+    
+    function getMarketsByTraderNState(address trader, ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByTraderNState(trader,marketState);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
                 if(marketInStateIndex >= startIndex){
                     uint256 currentIndex = marketInStateIndex - startIndex;
                     if(currentIndex >=  uLength){
@@ -264,6 +349,40 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
         uint256 marketInStateIndex = 0;
          for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
             if(fpMarkets[marketIndex].proposer() == account && fpMarkets[marketIndex].state() == marketStat){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return (markets,questionsIDs);
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return (markets,questionsIDs);
+    }
+    
+    function getMarketsQuestionIDsByTraderNState(address trader, ORMarketLib.MarketState marketStat, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByTraderNState(trader,marketStat);
+            if(startIndex >= mc){
+                return (markets,questionsIDs);
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        questionsIDs = new string[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketStat){
                 if(marketInStateIndex >= startIndex){
                     uint256 currentIndex = marketInStateIndex - startIndex;
                     if(currentIndex >=  uLength){
