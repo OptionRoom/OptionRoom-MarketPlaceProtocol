@@ -73,7 +73,6 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
 }
 
 async function createNewMarket(creator) {
-
   let now = new Date()
   let resolvingEndDate = addDays(now, 5)
   let endTime = Math.floor(addDays(now, 3).getTime() / 1000)
@@ -141,17 +140,23 @@ async function moveToActive() {
   centralTime.increaseTime(marketValidationPeriod + 10);
 }
 
+async function moveToResolving() {
+  centralTime.increaseTime(marketResolvingPeriod + 10);
+}
+
+async function moveToResolved() {
+  centralTime.increaseTime(marketResolvingPeriod + 10);
+}
+
+
+async function increaseTime(time) {
+  centralTime.increaseTime(time);
+}
+
+
 async function resetTimeIncrease() {
   centralTime.resetTimeIncrease();
 }
-
-// async function fillCollateral(market, funds, investor) {
-//   collateralToken.deposit({ value: funds, from: investor });
-// }
-//
-// async function approveMarket(market, funds, investor) {
-//   collateralToken.approve(market.address, funds, { from: investor });
-// }
 
 async function getCollateralBalance(account) {
   return collateralToken.balanceOf(account);
@@ -164,12 +169,13 @@ module.exports = {
   invokeFactoryMethod,
   callViewFactoryMethod,
   callControllerMethod,
+  increaseTime,
   moveToActive,
+  moveToResolving,
+  moveToResolved,
   executeControllerMethod,
   resetTimeIncrease,
   conditionalApproveForAll,
   conditionalBalanceOf,
-  // fillCollateral,
-  // approveMarket,
   getCollateralBalance,
 }
