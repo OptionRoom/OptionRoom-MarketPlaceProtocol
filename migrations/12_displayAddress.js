@@ -1,10 +1,10 @@
 module.exports = function(deployer) {
   deployer.then(async () => {
 
-	const GovernencyDemoArt = artifacts.require("AAA0MarketGovernor");
-    const demoGovernence = await GovernencyDemoArt.deployed();
-	console.log("demoGovernence.address (AAA0)");
-	console.log(demoGovernence.address);
+	//const GovernencyDemoArt = artifacts.require("AAA0MarketGovernor");
+    //const demoGovernence = await GovernencyDemoArt.deployed();
+	//console.log("demoGovernence.address (AAA0)");
+	//console.log(demoGovernence.address);
 
     const DemoTokenArt = artifacts.require("AAA1DemoToken1");
     const demoToken = await DemoTokenArt.deployed();
@@ -26,7 +26,7 @@ module.exports = function(deployer) {
     const factoryC = await FactoryArt.deployed();
 
     await factoryC.setTemplateAddress(markettemplate.address);
-    await factoryC.setA0(demoGovernence.address);
+    //await factoryC.setA0(demoGovernence.address);
 	await factoryC.setA1(demoToken.address);
 	await factoryC.setA2(CondTokenArt.address);
 

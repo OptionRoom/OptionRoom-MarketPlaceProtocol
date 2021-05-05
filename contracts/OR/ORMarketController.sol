@@ -252,14 +252,13 @@ contract ORMarketController is IORMarketController, TimeDependent{
         
     }
     
-    function addMarket(uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) external returns(uint256){
+    function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
         
-        MarketInfo storage marketInfo = marketsInfo[msg.sender];
+        MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;
         marketInfo.participationEndTime = _marketParticipationEndTime;
         marketInfo.resolvingEndTime = _marketResolvingEndTime;
         
-        return marketMinShareLiq;
     }
 
     function payoutsAction(address marketAddress) external {

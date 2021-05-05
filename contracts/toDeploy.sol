@@ -2,7 +2,7 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
 import './OR/ORPredictionMarket.sol';
-import "./Governance/ORMarketController.sol";
+import "./OR/ORMarketController.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 
@@ -31,9 +31,9 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
     }
     */
 
-    function setA0(address a) public{
+    /*function setA0(address a) public{
         governanceAdd = a;
-    }
+    }*/
 
     function setA1(address a) public{
         collateralToken = a;

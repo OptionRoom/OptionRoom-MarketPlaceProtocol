@@ -3,33 +3,35 @@ pragma experimental ABIEncoderV2;
 import "./FixedProductMarketMakerFactoryOR.sol";
 import "./ORMarketLib.sol";
 import "../TimeDependent/TimeDependent.sol";
+import "./ORMarketController.sol";
 
-contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
+contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent , ORMarketController{
 
     
 
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
 
-    address governanceAdd;
+    //address governanceAdd;
 
     mapping(bytes32 => address) public proposalIds;
 
     constructor() public {
 
-        governanceAdd = msg.sender;
+        //governanceAdd = msg.sender;
     }
 
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
 
-        ct.prepareCondition(governanceAdd, questionId, 2);
+        ct.prepareCondition(address(this), questionId, 2);
         bytes32[]  memory conditionIds = new bytes32[](1);
-        conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
+        conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
 
+        
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
-
-        fpMarket.setConfig(marketQuestionID, msg.sender, governanceAdd, getCurrentTime(), participationEndTime, resolvingEndTime, questionId);
+        addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
+        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), marketMinShareLiq ,questionId);
         
         proposalIds[questionId] = address(fpMarket);
         
@@ -41,10 +43,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
         //TODO: check collateralToken is from the list
     }
 
-    modifier governance {
-        require(msg.sender == governanceAdd);
-        _;
-    }
+    
 
     function getMarketsCount(ORMarketLib.MarketState marketState) public view returns(uint256){
         uint256 marketsInStateCount = 0;

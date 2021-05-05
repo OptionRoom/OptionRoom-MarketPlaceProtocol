@@ -6,10 +6,6 @@ interface IORMarketController {
 
     function payoutsAction(address marketAddress) external;
     
-    function getAccountInfo(address account) external returns(bool canVote, uint256 votePower);
-    
-    function addMarket( uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) external returns(uint256);
-    
     function addTrade(address account, uint256 amount, bool byeFlag) external;
     
     function getMarketState(address marketAddress) external view returns (ORMarketLib.MarketState);
