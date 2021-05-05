@@ -37,6 +37,7 @@ contract AAA3MarketFactory1 is ORPredictionMarket{
 
     function setA1(address a) public{
         collateralToken = a;
+        
     }
 
     function setA2(address a) public{

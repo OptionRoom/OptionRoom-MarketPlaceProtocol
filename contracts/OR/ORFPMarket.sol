@@ -40,8 +40,8 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
     function _beforeBuy(address account, uint256 amount) internal {
-        //require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
-        marketController.addTrade(account,amount,true);
+        
+        marketController.addTrade(account,amount,true); // controller check for state
         
         if(traders[account] == false){
             traders[account] == true;
@@ -49,8 +49,8 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
     function _beforeSell(address account, uint256 amount) internal {
-        //require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
-        marketController.addTrade(account,amount,false);
+        
+        marketController.addTrade(account,amount,false);  // controller check for state
         
         if(traders[account] == false){
             traders[account] == true;
@@ -62,14 +62,18 @@ contract ORFPMarket is FixedProductMarketMaker {
      }
 
     function addLiquidity(uint256 amount) public {
+        addLiquidityTo(msg.sender,amount);
+    }
+    
+    function addLiquidityTo(address beneficiary, uint256 amount) public {
         uint[] memory distributionHint;
         if (totalSupply() > 0) {
-            addFunding(amount, distributionHint);
+            addFundingTo(beneficiary,amount, distributionHint);
         } else {
             distributionHint = new uint[](2);
             distributionHint[0] = 1;
             distributionHint[1] = 1;
-            addFunding(amount, distributionHint);
+            addFundingTo(beneficiary,amount, distributionHint);
         }
     }
 

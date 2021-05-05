@@ -64,9 +64,10 @@ contract ORMarketController is IORMarketController, TimeDependent{
     uint256 public tradeRewardPerDay = 1700e18; // todo
 
     uint256 public marketMinShareLiq = 100e18; //TODO
+    uint256 public marketFee = 20000000000000000;  //2%
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
-    uint256 public marketReCastResolvingPeriod = 4 * 1800;
+    uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
     
     bool public includeSellInTradeFlag = true; //todo
@@ -251,7 +252,7 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         
     }
     
-    function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
+    function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) public returns(uint256){
 
         MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;

@@ -5,42 +5,76 @@ import "./ORMarketLib.sol";
 import "../TimeDependent/TimeDependent.sol";
 import "./ORMarketController.sol";
 
-contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent , ORMarketController{
+contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
 
     
 
     ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026);
 
-    //address governanceAdd;
+    address governanceAdd;
+    
 
     mapping(bytes32 => address) public proposalIds;
 
     constructor() public {
 
         //governanceAdd = msg.sender;
+        
+        //ct.approveAll(address(this),true);
+    }
+    
+    function setMarketsController(address controllerAddres) public{
+        //todo set security
+        governanceAdd = controllerAddres;
     }
 
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
 
-        ct.prepareCondition(address(this), questionId, 2);
+        ct.prepareCondition(governanceAdd, questionId, 2);
         bytes32[]  memory conditionIds = new bytes32[](1);
-        conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
-
+        conditionIds[0] = ct.getConditionId(governanceAdd, questionId, 2);
+        ORMarketController marketController =  ORMarketController(governanceAdd);
         
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, 20000000000000000);
-        addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
-        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), marketMinShareLiq ,questionId);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketController.marketFee());
+        fpMarket.setConfig(marketQuestionID, msg.sender, governanceAdd, marketController.marketMinShareLiq() ,questionId);
+        marketController.addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
         
         proposalIds[questionId] = address(fpMarket);
         
-        // Add liquidity
-        collateralToken.transferFrom(msg.sender,address(this),initialLiq);
-        collateralToken.approve(address(fpMarket),initialLiq);
-        fpMarket.addLiquidity(initialLiq);
-        fpMarket.transfer(msg.sender,fpMarket.balanceOf(address(this)));
+        marketAddLiquidity(address(fpMarket),initialLiq);
         //TODO: check collateralToken is from the list
+    }
+    
+    
+    function marketAddLiquidity(address market,uint256 ammount) public{
+        ORFPMarket fpMarket = ORFPMarket(market);
+        IERC20 collateralToken = fpMarket.collateralToken();
+         // Add liquidity
+        collateralToken.transferFrom(msg.sender,address(this),ammount);
+        collateralToken.approve(address(fpMarket),ammount);
+        fpMarket.addLiquidity(ammount);
+        fpMarket.transfer(msg.sender,fpMarket.balanceOf(address(this)));
+    }
+    
+    
+    function marketBuy(address market,uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBu) public{
+        ORFPMarket fpMarket = ORFPMarket(market);
+        IERC20 collateralToken = fpMarket.collateralToken();
+        
+        collateralToken.transferFrom(msg.sender,address(this),investmentAmount);
+        collateralToken.approve(address(fpMarket),investmentAmount);
+        
+        fpMarket.buyTo(msg.sender,investmentAmount,outcomeIndex,minOutcomeTokensToBu);
+    }
+    
+    function marketSell(address market, uint256 amount, uint256 index) public{
+        ORFPMarket fpMarket = ORFPMarket(market);
+        uint256[] memory PositionIds = fpMarket.getPositionIds();
+        ct.setApprovalForAll(address(fpMarket),true);
+        ct.safeTransferFrom(msg.sender, address(this), PositionIds[index], amount, "");
+        fpMarket.sellTo(msg.sender,amount,index);
     }
 
     

@@ -208,7 +208,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
     }
 
-    function addFunding(uint addedFunds, uint[] memory distributionHint) internal
+    function addFundingTo(address beneficiary, uint addedFunds, uint[] memory distributionHint) internal
     {
         require(addedFunds > 0, "funding must be non-zero");
 
@@ -255,16 +255,20 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         require(collateralToken.approve(address(conditionalTokens), addedFunds), "approval for splits failed");
         splitPositionThroughAllConditions(addedFunds);
 
-        _mint(msg.sender, mintAmount);
+        _mint(beneficiary, mintAmount);
 
-        conditionalTokens.safeBatchTransferFrom(address(this), msg.sender, positionIds, sendBackAmounts, "");
+        conditionalTokens.safeBatchTransferFrom(address(this), beneficiary, positionIds, sendBackAmounts, "");
 
         // transform sendBackAmounts to array of amounts added
         for (uint i = 0; i < sendBackAmounts.length; i++) {
             sendBackAmounts[i] = addedFunds.sub(sendBackAmounts[i]);
         }
 
-        emit FPMMFundingAdded(msg.sender, sendBackAmounts, mintAmount);
+        emit FPMMFundingAdded(beneficiary, sendBackAmounts, mintAmount);
+    }
+    
+    function addFunding(uint addedFunds, uint[] memory distributionHint) internal{
+        addFundingTo(msg.sender,addedFunds,distributionHint);
     }
 
     function removeFunding(uint sharesToBurn) internal {
@@ -394,7 +398,11 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
 
 
     function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) external {
-        _beforeBuy(msg.sender, investmentAmount);
+        buyTo(msg.sender, investmentAmount, outcomeIndex, minOutcomeTokensToBuy);
+    }
+    
+    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
+        _beforeBuy(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
 
@@ -406,12 +414,12 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         require(collateralToken.approve(address(conditionalTokens), investmentAmountMinusFees), "approval for splits failed");
         splitPositionThroughAllConditions(investmentAmountMinusFees);
 
-        conditionalTokens.safeTransferFrom(address(this), msg.sender, positionIds[outcomeIndex], outcomeTokensToBuy, "");
+        conditionalTokens.safeTransferFrom(address(this), beneficiary, positionIds[outcomeIndex], outcomeTokensToBuy, "");
 
-        emit FPMMBuy(msg.sender, investmentAmount, feeAmount, outcomeIndex, outcomeTokensToBuy);
+        emit FPMMBuy(beneficiary, investmentAmount, feeAmount, outcomeIndex, outcomeTokensToBuy);
     }
 
-    function sellByReturnAmount(uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
+    function sellByReturnAmountTo(address beneficiary, uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
         uint outcomeTokensToSell = calcSellAmount(returnAmount, outcomeIndex);
         require(outcomeTokensToSell <= maxOutcomeTokensToSell, "maximum sell amount exceeded");
 
@@ -423,15 +431,19 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         uint returnAmountPlusFees = returnAmount.add(feeAmount);
         mergePositionsThroughAllConditions(returnAmountPlusFees);
 
-        require(collateralToken.transfer(msg.sender, returnAmount), "return transfer failed");
+        require(collateralToken.transfer(beneficiary, returnAmount), "return transfer failed");
 
         emit FPMMSell(msg.sender, returnAmount, feeAmount, outcomeIndex, outcomeTokensToSell);
     }
 
     function sell(uint256 amount, uint256 index) external {
+        sellTo(msg.sender,amount,index);
+    }
+    
+    function sellTo(address beneficiary, uint256 amount, uint256 index) public{
         uint256 expectedRet = calcSellReturnInv(amount, index);
-        _beforeSell(msg.sender, expectedRet);
-        sellByReturnAmount(expectedRet, index, amount * 105 / 100);
+        _beforeSell(beneficiary, expectedRet);
+        sellByReturnAmountTo(beneficiary,expectedRet, index, amount * 105 / 100);
     }
 
     function _beforeBuy(address account, uint256 amount) internal;
