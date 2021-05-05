@@ -54,8 +54,7 @@ contract ORPredictionMarket is FixedProductMarketMakerFactory, TimeDependent {
          // Add liquidity
         collateralToken.transferFrom(msg.sender,address(this),ammount);
         collateralToken.approve(address(fpMarket),ammount);
-        fpMarket.addLiquidity(ammount);
-        fpMarket.transfer(msg.sender,fpMarket.balanceOf(address(this)));
+        fpMarket.addLiquidityTo(msg.sender,ammount);
     }
     
     

@@ -184,7 +184,7 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         rewardsCanClaim = rewardsCanClaim / 1e18;
     }
     
-    function validationWithdrawUserRewards() public {
+    function validationClaimUserRewards() public {
         //todo: check if ther is punlty
         
         require(address(rewardCenter) != address(0), "Reward center is not set");
@@ -206,7 +206,7 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         
     }
     
-    function resolveWithdrawUserRewards() public {
+    function resolveClaimUserRewards() public {
         //todo: check if ther is punlty
         
         require(address(rewardCenter) != address(0), "Reward center is not set");
@@ -229,7 +229,7 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         
     }
 
-    function tradeWithdrawUserRewards() public {
+    function tradeClaimUserRewards() public {
         //todo: check if ther is punlty
         
         require(address(rewardCenter) != address(0), "Reward center is not set");
@@ -249,6 +249,21 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         
         // todo: ask the reward center to send rewardsCanClaim
         rewardCenter.sendReward(account,rewardsCanClaim);
+        
+    }
+    
+    
+    function claimRewards(bool ValidationRewardsFlag, bool resolveRewardsFlag, bool tradeRewardsFalg ) public{
+       
+        if(ValidationRewardsFlag){
+            validationClaimUserRewards();
+        }
+        if(resolveRewardsFlag){
+            resolveClaimUserRewards();
+        }
+        if(tradeRewardsFalg){
+            tradeClaimUserRewards();
+        }
         
     }
     
