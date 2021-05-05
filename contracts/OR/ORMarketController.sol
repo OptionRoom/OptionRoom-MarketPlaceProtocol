@@ -23,7 +23,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         uint8 selection;
         uint8 insertedFlag;
     }
-    
+
     struct MarketDisputersInfo{
         uint256[2] balances;
         string reason;
@@ -48,15 +48,15 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     mapping(address => address[]) public marketValidatingVoters;
     mapping(address => mapping(address => MarketVotersInfo)) public marketValidatingVotersInfo;
-    
+
     mapping(address => address[]) public marketResolvingVoters;
     mapping(address => mapping(address => MarketVotersInfo)) public marketResolvingVotersInfo;
-    
+
     mapping(address => address[]) public marketDisputers;
     mapping(address => mapping(address => MarketDisputersInfo)) public marketDisputersInfo;
-    
-    
-    
+
+
+
     mapping(address => bool) payoutsMarkets;
     
     uint256 public validationRewardPerDay = 1700e18; // todo
@@ -74,8 +74,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     uint256 public validationLastRewardsDistributedDay;
     mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
-    mapping(uint256 => uint256) validationRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
+mapping(uint256 => uint256) validationRewardsPerDay;
+mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
     mapping(address => uint256) validationLastClaimedDayPerUser;
     
     uint256 public resolveLastRewardsDistributedDay;
@@ -89,9 +89,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
     mapping(uint256 => uint256) tradeRewardsPerDay;
     mapping(uint256 => mapping(address => uint256)) tradeTotalVolumePerDayPerUser;
     mapping(address => uint256) tradeLastClaimedDayPerUser;
-
     event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
-    
+
     mapping(address => uint256) powerPerUser;
     
     constructor() public{
@@ -147,7 +146,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
     }
-    
+
     function resolveRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
         uint256 cDay = getCurrentTime() /1 days;
         uint256 tCPtoday = resolveTotalPowerCastedPerDay[cDay];
@@ -253,7 +252,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
     
     function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
-        
+
         MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;
         marketInfo.participationEndTime = _marketParticipationEndTime;
@@ -262,33 +261,33 @@ contract ORMarketController is IORMarketController, TimeDependent{
     }
 
     function payoutsAction(address marketAddress) external {
-       
+
         if (payoutsMarkets[marketAddress] == true) {
             return;
         }
 
         payoutsMarkets[marketAddress] = true;
         IORMarketForMarketGovernor market = IORMarketForMarketGovernor(marketAddress);
-        
+
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.Resolved, "market is not in resolved state");
 
         IReportPayouts orConditionalTokens = IReportPayouts(address(market.getConditionalTokenAddress()));
         orConditionalTokens.reportPayouts(market.questionId(), getResolvingOutcome(marketAddress));
     }
-    
+
     function getAccountInfo(address account) public returns(bool canVote, uint256 votePower){
         //return (true, powerPerUser[account]);  todo
         return (true, 100);
     }
 
     function getMarketState(address marketAddress) public view returns (ORMarketLib.MarketState) {
-        
+
         MarketInfo memory marketInfo = marketsInfo[marketAddress];
-        
+
         uint256 time = getCurrentTime();
         if(marketInfo.createdTime == 0){
             return ORMarketLib.MarketState.Invalid;
-            
+
         } else if (time <marketInfo.createdTime + marketValidatingPeriod ) {
             return ORMarketLib.MarketState.Validating;
 
@@ -330,25 +329,25 @@ contract ORMarketController is IORMarketController, TimeDependent{
         return ORMarketLib.MarketState.Resolved;
 
     }
-    
-    
+
+
     function castGovernanceValidatingVote(address marketAddress,bool validationFlag) public {
         validationInstallRewards(); // first user in a day will mark the previous day to be distrubted
          
         address account = msg.sender;
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
-        
+
         MarketVotersInfo storage marketVotersInfo = marketValidatingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == false, "user already voted");
-        
+
         bool canVote;
         uint256 votePower;
         (canVote,votePower) = getAccountInfo(account);
         require(canVote == true, "user can not vote");
-        
+
         uint8 validationSelection = 0;
         if(validationFlag) { validationSelection = 1; }
-        
+
         if(marketVotersInfo.insertedFlag == 0){ // action on 1'st vote for the user
             marketVotersInfo.insertedFlag = 1;
             marketValidatingVoters[marketAddress].push(account);
@@ -357,27 +356,27 @@ contract ORMarketController is IORMarketController, TimeDependent{
             validationTotalPowerCastedPerDay[cDay]+= votePower;
             validationTotalPowerCastedPerDayPerUser[cDay][account]+= votePower;
         }
-        
+
         marketVotersInfo.voteFlag = true;
         marketVotersInfo.power = votePower;
         marketVotersInfo.selection = validationSelection;
 
         marketsInfo[marketAddress].validatingVotesCount[validationSelection] += votePower;
     }
-    
+
     function withdrawGovernanceValidatingVote(address marketAddress) public {
         address account = msg.sender;
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
-        
+
         MarketVotersInfo storage marketVotersInfo = marketValidatingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == true, "user did not vote");
-        
+
         marketVotersInfo.voteFlag = false;
-        
+
         uint8 validationSelection = marketVotersInfo.selection;
         marketsInfo[marketAddress].validatingVotesCount[validationSelection] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
-        
+
     }
 
     function addTrade(address account, uint256 amount, bool byeFlag) public{
@@ -401,22 +400,22 @@ contract ORMarketController is IORMarketController, TimeDependent{
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
 
         require(marketState == ORMarketLib.MarketState.Resolving || marketState == ORMarketLib.MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
-        
+
         MarketVotersInfo storage marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == false, "user already voted");
-        
+
         bool canVote;
         uint256 votePower;
         (canVote,votePower) = getAccountInfo(account);
         require(canVote == true, "user can not vote");
-        
-        
+
+
         if(marketState == ORMarketLib.MarketState.Resolving){
              marketsInfo[marketAddress].lastResolvingVoteTime = getCurrentTime();
         }else{
              marketsInfo[marketAddress].lastDisputeResolvingVoteTime = getCurrentTime();
         }
-        
+
         if(marketVotersInfo.insertedFlag == 0){
             marketVotersInfo.insertedFlag = 1;
             marketResolvingVoters[marketAddress].push(account);
@@ -425,31 +424,31 @@ contract ORMarketController is IORMarketController, TimeDependent{
             resolveTotalPowerCastedPerDay[cDay]+= votePower;
             resolveTotalPowerCastedPerDayPerUser[cDay][account]+= votePower;
         }
-        
+
         marketVotersInfo.voteFlag = true;
         marketVotersInfo.power = votePower;
         marketVotersInfo.selection = outcomeIndex;
 
         marketsInfo[marketAddress].resolvingVotesCount[outcomeIndex] += votePower;
     }
-    
+
     function withdrawGovernanceResolvingVote(address marketAddress) public{
         address account = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
-        
+
         require(marketState == ORMarketLib.MarketState.Resolving || marketState == ORMarketLib.MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
-        
+
         MarketVotersInfo storage marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == true, "user did not vote");
-        
+
         marketVotersInfo.voteFlag = false;
-        
+
         uint8 outcomeIndex = marketVotersInfo.selection;
         marketsInfo[marketAddress].resolvingVotesCount[outcomeIndex] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
         //TODO: plenty
     }
-    
+
     function disputeMarket(address marketAddress, string memory disputeReason) public{
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.DisputePeriod, "Market is not in dispute state");
         address account = msg.sender;
@@ -457,9 +456,9 @@ contract ORMarketController is IORMarketController, TimeDependent{
         uint256 userTotalBalances = balances[0] + balances[1];
 
         require(userTotalBalances > 0, "Low holding to dispute");
-        
+
         MarketDisputersInfo storage disputersInfo = marketDisputersInfo[marketAddress][account];
-        require(disputersInfo.balances[0] > 0 || disputersInfo.balances[1] > 0, "User already dispute");
+        require(disputersInfo.balances[0] == 0 && disputersInfo.balances[1] == 0, "User already dispute");
 
         marketDisputers[marketAddress].push(account);
         disputersInfo.balances[0] = balances[0];
@@ -470,11 +469,11 @@ contract ORMarketController is IORMarketController, TimeDependent{
         if(marketsInfo[marketAddress].disputeTotalBalances >= disputeThreshold){
             marketsInfo[marketAddress].disputedFlag = true;
         }
-        
+
         emit DisputeSubmittedEvent(account,marketAddress,marketsInfo[marketAddress].disputeTotalBalances,marketsInfo[marketAddress].disputedFlag);
     }
-    
-    
+
+
     function isValidatingVoter(address marketAddress, address account) public view returns(MarketVotersInfo memory){
         return marketValidatingVotersInfo[marketAddress][account];
     }
@@ -482,11 +481,11 @@ contract ORMarketController is IORMarketController, TimeDependent{
     function isResolvingVoter(address marketAddress, address account) public view returns(MarketVotersInfo memory){
         return marketResolvingVotersInfo[marketAddress][account];
     }
-    
+
     function getResolvingVotesCount(address marketAddress) public view returns (uint256[2] memory) {
         return marketsInfo[marketAddress].resolvingVotesCount;
     }
-    
+
     function getResolvingOutcome(address marketAddress) public view returns (uint256[] memory indexSet) {
         indexSet = new uint256[](2);
         indexSet[0] = 1;
@@ -499,7 +498,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
             indexSet[0] = 0;
         }
     }
-    
+
     function getMarketInfo(address marketAddress) public view returns (MarketInfo memory) {
         return marketsInfo[marketAddress];
     }
@@ -535,12 +534,12 @@ contract ORMarketController is IORMarketController, TimeDependent{
     function setDisputeThreshold(uint256 t) public{
         disputeThreshold = t;
     }
-    
+
     function setRewardCenter(address rc) public{
         rewardCenter = IRewardCenter(rc);
     }
     
-/*    
+/*
     function isPendingVoter1(address marketAddress, address account) public view returns(bool votingFlag,uint8 validFlag, uint256 power){
         MarketVotersInfo memory marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
         if(marketVotersInfo.power != 0){
@@ -552,15 +551,15 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     function isResolvingVoter1(address marketAddress, address account) public view returns(bool votingFlag,uint8 selection, uint256 power){
         MarketVotersInfo memory marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
-        
+
         if(marketVotersInfo.power != 0){
             votingFlag = true;
             selection = marketVotersInfo.selection;
             power = marketVotersInfo.power;
         }
     }
-    
-    
+
+
 */
-    
+
 }
