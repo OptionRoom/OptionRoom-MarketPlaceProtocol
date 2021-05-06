@@ -6,7 +6,7 @@ const { prepareContracts, createNewMarket ,invokeFactoryMethod,
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js');
 
-contract('FixedProductMarketMaker: create multiple markets test', function([, creator, oracle, investor1, trader, investor2]) {
+contract('OR markets: create multiple markets test', function([, creator, oracle, investor1, trader, investor2]) {
 
   let marketMakers = [];
   let pendingMarketMakersMap = new Map()
