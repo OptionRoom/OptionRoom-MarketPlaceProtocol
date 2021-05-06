@@ -41,7 +41,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     function _beforeBuy(address account, uint256 amount) internal {
         
-        marketController.addTrade(account,amount,true); // controller check for state
+        require(msg.sender == address(marketController), "buy order is not from controller");
         
         if(traders[account] == false){
             traders[account] == true;
@@ -50,7 +50,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     function _beforeSell(address account, uint256 amount) internal {
         
-        marketController.addTrade(account,amount,false);  // controller check for state
+        require(msg.sender == address(marketController), "sell order is not from controller");
         
         if(traders[account] == false){
             traders[account] == true;

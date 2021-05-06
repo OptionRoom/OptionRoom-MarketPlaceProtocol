@@ -396,11 +396,6 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         ret = ret.mul(ONE.sub(fee)) / ONE;
     }
 
-
-    function buy(uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) external {
-        buyTo(msg.sender, investmentAmount, outcomeIndex, minOutcomeTokensToBuy);
-    }
-    
     function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
         _beforeBuy(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
@@ -436,9 +431,6 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         emit FPMMSell(msg.sender, returnAmount, feeAmount, outcomeIndex, outcomeTokensToSell);
     }
 
-    function sell(uint256 amount, uint256 index) external {
-        sellTo(msg.sender,amount,index);
-    }
     
     function sellTo(address beneficiary, uint256 amount, uint256 index) public{
         uint256 expectedRet = calcSellReturnInv(amount, index);
