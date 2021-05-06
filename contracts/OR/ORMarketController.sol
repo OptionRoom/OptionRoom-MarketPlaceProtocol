@@ -1,5 +1,6 @@
 pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
+import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IORMarketController.sol";
 import "../TimeDependent/TimeDependent.sol";
 import "../RewardCenter/IRewardCenter.sol";
@@ -16,6 +17,14 @@ interface IReportPayouts{
 
 
 contract ORMarketController is IORMarketController, TimeDependent{
+    using SafeMath for uint256;
+    
+    struct LPUserInfoPMarket{
+        uint256 totalVolume;
+        uint256 prevAccRewardsPerToken;
+        uint256 totalRewards;
+        uint256 claimedRewards;
+    }
 
     struct MarketVotersInfo{
         uint256 power;
@@ -54,14 +63,24 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     mapping(address => address[]) public marketDisputers;
     mapping(address => mapping(address => MarketDisputersInfo)) public marketDisputersInfo;
-
-
+    
+    uint256 public lpRewardPerBlock = lpRewardPerDay*1e18/5760;  // 1e18 math prec , 5,760 block per days
+    uint256 public lpAccRewardsPerToken;
+    uint256 public lpLastUpdateDate;
+    uint256 public lpTotalEfectiveVolume;
+    
+    mapping(address => uint256) public lpMarketsWeight;
+    mapping(address => uint256) public lpMarketsTotalVolume;
+    mapping(address => bool) public lpMarketsStopRewards;
+    
+    mapping(address => mapping(address => LPUserInfoPMarket)) public lpUsers;
 
     mapping(address => bool) payoutsMarkets;
     
     uint256 public validationRewardPerDay = 1700e18; // todo
     uint256 public resolveRewardPerDay = 1700e18; // todo
     uint256 public tradeRewardPerDay = 1700e18; // todo
+    uint256 public lpRewardPerDay = 1700e18; // todo
 
     uint256 public marketMinShareLiq = 100e18; //TODO
     uint256 public marketFee = 20000000000000000;  //2%
@@ -75,8 +94,8 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     uint256 public validationLastRewardsDistributedDay;
     mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
-mapping(uint256 => uint256) validationRewardsPerDay;
-mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
+    mapping(uint256 => uint256) validationRewardsPerDay;
+    mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
     mapping(address => uint256) validationLastClaimedDayPerUser;
     
     uint256 public resolveLastRewardsDistributedDay;
@@ -267,14 +286,126 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         
     }
     
+    function lpUpdateReward(address market, address account) public{
+        uint256 cBlockNumber = getBlockNumber();
+                
+        if(cBlockNumber > lpLastUpdateDate){
+            
+            uint256 addedRewardPerToken;
+            if(lpTotalEfectiveVolume != 0){
+                addedRewardPerToken = cBlockNumber.sub(lpLastUpdateDate).mul(lpRewardPerBlock).div(lpTotalEfectiveVolume);
+            }
+            lpAccRewardsPerToken = lpAccRewardsPerToken.add(addedRewardPerToken);
+            
+        }
+        
+        lpLastUpdateDate = cBlockNumber;
+        
+        
+        if(account != address(0))
+        {
+            LPUserInfoPMarket storage lpUser = lpUsers[market][account];
+            uint256 accRewardPerTokenForUser = lpAccRewardsPerToken.sub(lpUser.prevAccRewardsPerToken);
+            uint256 userEvectivetotalVolume = lpUser.totalVolume.mul(lpMarketsWeight[market]);
+            uint256 newRewardsForUser =  accRewardPerTokenForUser.mul(userEvectivetotalVolume);
+            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser);
+            
+            lpUser.prevAccRewardsPerToken = lpAccRewardsPerToken;
+        }
+        
+    }
+    
+    function setMarketWeight(address market, uint256 weight) public{
+        address account = msg.sender;
+        lpUpdateReward(market, account);
+        
+        lpTotalEfectiveVolume = lpTotalEfectiveVolume.sub(lpMarketsTotalVolume[market].mul(lpMarketsWeight[market]));
+        lpMarketsWeight[market] = weight;
+        
+        lpTotalEfectiveVolume = lpTotalEfectiveVolume.add(lpMarketsTotalVolume[market].mul(weight));
+    }
+    
+    function stake(address market, uint256 amount) public{
+        address account = msg.sender;
+        lpUpdateReward(market, account);
+        
+        LPUserInfoPMarket storage lpUser = lpUsers[market][account];
+        lpUser.totalVolume = lpUser.totalVolume.add(amount);
+        
+        lpMarketsTotalVolume[market] = lpMarketsTotalVolume[market].add(amount);
+        lpTotalEfectiveVolume = lpTotalEfectiveVolume.add(amount.mul(lpMarketsWeight[market]));
+    }
+    
+    function unstake(address market, uint256 amount) public{
+        address account = msg.sender;
+        lpUpdateReward(market, account);
+        
+        LPUserInfoPMarket storage lpUser = lpUsers[market][account];
+        lpUser.totalVolume = lpUser.totalVolume.sub(amount);
+        
+        lpMarketsTotalVolume[market] =lpMarketsTotalVolume[market].sub(amount);
+        lpTotalEfectiveVolume = lpTotalEfectiveVolume.sub(amount.mul(lpMarketsWeight[market]));
+    }
+    
+    function cliamLPReward(address market) public returns(uint256){
+        
+        // Todo: can not claimed in aproving state or rejcted state
+        LPUserInfoPMarket storage lpUser = lpUsers[market][msg.sender];
+        
+        uint256 amountToClaim = lpUser.totalRewards.sub(lpUser.claimedRewards);
+        lpUser.claimedRewards = lpUser.totalRewards;
+        
+        //todo ask reward center to send amountToClaim
+        return amountToClaim;
+    }
+    
+    function getLPReward(address market, address account, uint256 cBlockNumber) public view returns(uint256 pendingRewards, uint256 claimedRewards){
+       
+        //cBlockNumber = getBlockNumber();
+        
+        // update accRewardPerToken, in case totalVolume is zero; do not increment accRewardPerToken
+        
+        uint256 lpAccRewardsPerTokenView = lpAccRewardsPerToken;
+        if(cBlockNumber > lpLastUpdateDate){
+            
+            uint256 addedRewardPerToken;
+            if(lpTotalEfectiveVolume != 0){
+                addedRewardPerToken = cBlockNumber.sub(lpLastUpdateDate).mul(lpRewardPerBlock).div(lpTotalEfectiveVolume);
+            }
+            lpAccRewardsPerTokenView = lpAccRewardsPerTokenView.add(addedRewardPerToken);
+            
+        }
+        
+        //lpLastUpdateDate = cBlockNumber;
+        
+        
+        if(account != address(0))
+        {
+            LPUserInfoPMarket memory lpUser = lpUsers[market][account];
+            //UserInfoPPool memory user = users[market][account];
+            uint256 accRewardPerTokenForUser = lpAccRewardsPerTokenView.sub(lpUser.prevAccRewardsPerToken);
+            uint256 userEvectivetotalVolume = lpUser.totalVolume.mul(lpMarketsWeight[market]);
+            uint256 newRewardsForUser =  accRewardPerTokenForUser.mul(userEvectivetotalVolume);
+            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser);
+            
+            lpUser.prevAccRewardsPerToken = lpAccRewardsPerToken;
+            
+            claimedRewards = lpUser.claimedRewards;
+            pendingRewards = lpUser.totalRewards - claimedRewards;
+        }
+        
+    }
+    
     function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) public returns(uint256){
-
+        // security check
         MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;
         marketInfo.participationEndTime = _marketParticipationEndTime;
         marketInfo.resolvingEndTime = _marketResolvingEndTime;
         
     }
+    
+    
 
     function payoutsAction(address marketAddress) external {
 
@@ -396,7 +527,7 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
     }
 
     function addTrade(address account, uint256 amount, bool byeFlag) public{
-        
+        // security check
         address market = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(market);
         require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
@@ -411,6 +542,10 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
         resolveInstallRewards(); // first user in a day will mark the previous day to be distrubted
+        if(lpMarketsStopRewards[marketAddress] == false){ // first user vote for Resolving will stop the market from get rewards
+            lpMarketsStopRewards[marketAddress] == true;
+            setMarketWeight(marketAddress,0);
+        }
         
         address account = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
@@ -555,27 +690,19 @@ mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDay
         rewardCenter = IRewardCenter(rc);
     }
     
-/*
-    function isPendingVoter1(address marketAddress, address account) public view returns(bool votingFlag,uint8 validFlag, uint256 power){
-        MarketVotersInfo memory marketVotersInfo = marketPendingVotersInfo[marketAddress][account];
-        if(marketVotersInfo.power != 0){
-            validFlag = true;
-            approveFlag = marketVotersInfo.selection;
-            power = marketVotersInfo.power;
-        }
+    
+    //////////////////////
+    
+    uint256 cbn;
+
+    function getBlockNumber() public view returns (uint256) {
+        return cbn;
+        //return block.number;
+    }
+    
+    function increaseBlockNumber(uint256 n) public {
+        cbn+=n;
     }
 
-    function isResolvingVoter1(address marketAddress, address account) public view returns(bool votingFlag,uint8 selection, uint256 power){
-        MarketVotersInfo memory marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
-
-        if(marketVotersInfo.power != 0){
-            votingFlag = true;
-            selection = marketVotersInfo.selection;
-            power = marketVotersInfo.power;
-        }
-    }
-
-
-*/
 
 }
