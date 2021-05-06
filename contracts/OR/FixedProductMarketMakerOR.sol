@@ -211,6 +211,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     function addFundingTo(address beneficiary, uint addedFunds, uint[] memory distributionHint) internal
     {
         require(addedFunds > 0, "funding must be non-zero");
+        _beforeAddFundingTo(beneficiary,addedFunds);
 
         uint[] memory sendBackAmounts = new uint[](positionIds.length);
         uint poolShareSupply = totalSupply();
@@ -267,13 +268,10 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         emit FPMMFundingAdded(beneficiary, sendBackAmounts, mintAmount);
     }
     
-    function addFunding(uint addedFunds, uint[] memory distributionHint) internal{
-        addFundingTo(msg.sender,addedFunds,distributionHint);
-    }
 
-    function removeFunding(uint sharesToBurn) internal {
+    function removeFundingTo(address beneficiary, uint sharesToBurn) internal {
 
-        _beforeRemoveFunding(sharesToBurn);
+        _beforeRemoveFundingTo(beneficiary, sharesToBurn);
 
         uint[] memory poolBalances = getPoolBalances();
 
@@ -291,13 +289,12 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             collateralToken.balanceOf(address(this))
         );
 
-        conditionalTokens.safeBatchTransferFrom(address(this), msg.sender, positionIds, sendAmounts, "");
+        conditionalTokens.safeBatchTransferFrom(beneficiary, msg.sender, positionIds, sendAmounts, "");
 
         emit FPMMFundingRemoved(msg.sender, sendAmounts, collateralRemovedFromFeePool, sharesToBurn);
     }
-
-    function _beforeRemoveFunding(uint sharesToBurn) internal;
-
+    
+    
     function onERC1155Received(
         address operator,
         address,
@@ -397,7 +394,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     }
 
     function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
-        _beforeBuy(beneficiary, investmentAmount);
+        _beforeBuyTo(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
 
@@ -434,13 +431,17 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     
     function sellTo(address beneficiary, uint256 amount, uint256 index) public{
         uint256 expectedRet = calcSellReturnInv(amount, index);
-        _beforeSell(beneficiary, expectedRet);
+        _beforeSellTo(beneficiary, expectedRet);
         sellByReturnAmountTo(beneficiary,expectedRet, index, amount * 105 / 100);
     }
 
-    function _beforeBuy(address account, uint256 amount) internal;
+    function _beforeBuyTo(address account, uint256 amount) internal;
 
-    function _beforeSell(address account, uint256 amount) internal;
+    function _beforeSellTo(address account, uint256 amount) internal;
+    
+    function _beforeAddFundingTo(address beneficiary, uint addedFunds) internal;
+
+    function _beforeRemoveFundingTo(address beneficiary, uint sharesToBurn) internal;
 
     function sqrt(uint x) private pure returns (uint y) {
         uint z = (x + 1) / 2;

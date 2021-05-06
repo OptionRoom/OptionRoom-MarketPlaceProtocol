@@ -32,7 +32,7 @@ contract AAA3MarketController1 is ORMarketController{
     }*/
 
     function setA1(address a) public{
-        collateralToken = a;
+        collateralToken = a; 
         
     }
 

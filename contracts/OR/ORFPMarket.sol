@@ -38,32 +38,9 @@ contract ORFPMarket is FixedProductMarketMaker {
         
         minShareLiq = _minShareLiq;
     }
+    
+    
 
-    function _beforeBuy(address account, uint256 amount) internal {
-        
-        require(msg.sender == address(marketController), "buy order is not from controller");
-        
-        if(traders[account] == false){
-            traders[account] == true;
-        }
-    }
-
-    function _beforeSell(address account, uint256 amount) internal {
-        
-        require(msg.sender == address(marketController), "sell order is not from controller");
-        
-        if(traders[account] == false){
-            traders[account] == true;
-        }
-    }
-
-     function state() public view returns (ORMarketLib.MarketState) {
-         return marketController.getMarketState(address(this));
-     }
-
-    function addLiquidity(uint256 amount) public {
-        addLiquidityTo(msg.sender,amount);
-    }
     
     function addLiquidityTo(address beneficiary, uint256 amount) public {
         uint[] memory distributionHint;
@@ -77,8 +54,8 @@ contract ORFPMarket is FixedProductMarketMaker {
         }
     }
 
-    function removeLiquidity(uint256 shares, bool autoMerge) public {
-        removeFunding(shares);
+    function removeLiquidityTo(address beneficiary, uint256 shares, bool autoMerge) public {
+        removeFundingTo(beneficiary, shares);
         if(autoMerge == true){
             merge();
         }
@@ -135,14 +112,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
 
-    function _beforeRemoveFunding(uint sharesToBurn) internal {
-        if(msg.sender == proposer) {
-            ORMarketLib.MarketState marketState = state();
-            if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
-                require(balanceOf(msg.sender).sub(sharesToBurn) >= minShareLiq, "The remaining shares dropped under the minimum");
-            }
-        }
-    }
+    
 
     function getSharesPercentage(address account) public view returns(uint256) {
         uint256  totalSupply = totalSupply();
@@ -157,6 +127,38 @@ contract ORFPMarket is FixedProductMarketMaker {
         indexSet[0] = 1;
         indexSet[1] = 2;
     }
+    
+    
+    function _beforeAddFundingTo(address beneficiary, uint sharesToBurn) internal {
+        require(msg.sender == address(marketController), "buy order is not from controller");
+        
+    }
+    
+    function _beforeRemoveFundingTo(address beneficiary, uint sharesToBurn) internal{
+        require(msg.sender == address(marketController), "buy order is not from controller");
+    }
+
+    function _beforeBuyTo(address account, uint256 amount) internal {
+        
+        require(msg.sender == address(marketController), "buy order is not from controller");
+        
+        if(traders[account] == false){
+            traders[account] == true;
+        }
+    }
+
+    function _beforeSellTo(address account, uint256 amount) internal {
+        
+        require(msg.sender == address(marketController), "sell order is not from controller");
+        
+        if(traders[account] == false){
+            traders[account] == true;
+        }
+    }
+
+     function state() public view returns (ORMarketLib.MarketState) {
+         return marketController.getMarketState(address(this));
+     }
    
 }
 

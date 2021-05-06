@@ -19,8 +19,6 @@ interface IReportPayouts{
 
 contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory{
     using SafeMath for uint256;
-    
-    
 
     struct MarketVotersInfo{
         uint256 power;
@@ -345,13 +343,34 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     
-    function marketAddLiquidity(address market,uint256 ammount) public{
+    function marketAddLiquidity(address market,uint256 amount) public{
         ORFPMarket fpMarket = ORFPMarket(market);
         IERC20 collateralToken = fpMarket.collateralToken();
          // Add liquidity
-        collateralToken.transferFrom(msg.sender,address(this),ammount);
-        collateralToken.approve(address(fpMarket),ammount);
-        fpMarket.addLiquidityTo(msg.sender,ammount);
+        collateralToken.transferFrom(msg.sender,address(this),amount);
+        collateralToken.approve(address(fpMarket),amount);
+        fpMarket.addLiquidityTo(msg.sender,amount);
+    }
+    
+    function marketRemoveLiquidity(address market,uint256 sharesAmount, bool autoMerg) public{
+        
+        address beneficiary = msg.sender;
+        
+        ORFPMarket fpMarket = ORFPMarket(market);
+        
+        address proposer = fpMarket.proposer();
+        
+        fpMarket.transferFrom(beneficiary,address(this),sharesAmount);
+        fpMarket.approve(address(fpMarket),sharesAmount);
+        
+         if(beneficiary == proposer) {
+            ORMarketLib.MarketState marketState = getMarketState(market);
+            if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
+                require(fpMarket.balanceOf(beneficiary).sub(sharesAmount) >= marketMinShareLiq, "The remaining shares dropped under the minimum");
+            }
+        }
+        
+        fpMarket.removeLiquidityTo(beneficiary,sharesAmount, autoMerg);
     }
     
     
