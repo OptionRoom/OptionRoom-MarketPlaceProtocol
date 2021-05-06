@@ -1,14 +1,10 @@
 pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
-import './OR/ORPredictionMarket.sol';
 import "./OR/ORMarketController.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 
-contract AAA0MarketGovernor is ORMarketController {
-
-}
 
 contract AAA1DemoToken1 is DemoToken{
 
@@ -19,7 +15,7 @@ contract AAA2ConditnalToken1 is ORConditionalTokens{
 }
 
 
-contract AAA3MarketFactory1 is ORPredictionMarket{
+contract AAA3MarketController1 is ORMarketController{
     address public collateralToken;
     
    /*

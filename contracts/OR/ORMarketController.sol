@@ -3,7 +3,8 @@ pragma experimental ABIEncoderV2;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IORMarketController.sol";
 import "../TimeDependent/TimeDependent.sol";
-import "../RewardCenter/IRewardCenter.sol";
+
+import "./FixedProductMarketMakerFactoryOR.sol";
 
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
@@ -16,15 +17,10 @@ interface IReportPayouts{
 }
 
 
-contract ORMarketController is IORMarketController, TimeDependent{
+contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory{
     using SafeMath for uint256;
     
-    struct LPUserInfoPMarket{
-        uint256 totalVolume;
-        uint256 prevAccRewardsPerToken;
-        uint256 totalRewards;
-        uint256 claimedRewards;
-    }
+    
 
     struct MarketVotersInfo{
         uint256 power;
@@ -51,8 +47,6 @@ contract ORMarketController is IORMarketController, TimeDependent{
         bool    disputedFlag;
     }
     
-    IRewardCenter rewardCenter ;
-    
     mapping(address => MarketInfo) marketsInfo;
 
     mapping(address => address[]) public marketValidatingVoters;
@@ -64,335 +58,31 @@ contract ORMarketController is IORMarketController, TimeDependent{
     mapping(address => address[]) public marketDisputers;
     mapping(address => mapping(address => MarketDisputersInfo)) public marketDisputersInfo;
     
-    uint256 public lpRewardPerBlock = lpRewardPerDay*1e18/5760;  // 1e18 math prec , 5,760 block per days
-    uint256 public lpAccRewardsPerToken;
-    uint256 public lpLastUpdateDate;
-    uint256 public lpTotalEfectiveVolume;
-    
-    mapping(address => uint256) public lpMarketsWeight;
-    mapping(address => uint256) public lpMarketsTotalVolume;
-    mapping(address => bool) public lpMarketsStopRewards;
-    
-    mapping(address => mapping(address => LPUserInfoPMarket)) public lpUsers;
-
+   
     mapping(address => bool) payoutsMarkets;
     
     uint256 public validationRewardPerDay = 1700e18; // todo
     uint256 public resolveRewardPerDay = 1700e18; // todo
     uint256 public tradeRewardPerDay = 1700e18; // todo
-    uint256 public lpRewardPerDay = 1700e18; // todo
+   
 
     uint256 public marketMinShareLiq = 100e18; //TODO
-    uint256 public marketFee = 20000000000000000;  //2%
+    uint256 public marketFee = 20000000000000000;  //2% todo
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
     
-    bool public includeSellInTradeFlag = true; //todo
-   
-
-    uint256 public validationLastRewardsDistributedDay;
-    mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
-    mapping(uint256 => uint256) validationRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
-    mapping(address => uint256) validationLastClaimedDayPerUser;
+    ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026); //todo
+    mapping(bytes32 => address) public proposalIds;
     
-    uint256 public resolveLastRewardsDistributedDay;
-    mapping(uint256 => uint256) resolveTotalPowerCastedPerDay;
-    mapping(uint256 => uint256) resolveRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) resolveTotalPowerCastedPerDayPerUser;
-    mapping(address => uint256) resolveLastClaimedDayPerUser;
     
-    uint256 public tradeLastRewardsDistributedDay;
-    mapping(uint256 => uint256) tradeTotalVolumePerDay;
-    mapping(uint256 => uint256) tradeRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) tradeTotalVolumePerDayPerUser;
-    mapping(address => uint256) tradeLastClaimedDayPerUser;
     event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
 
     mapping(address => uint256) powerPerUser;
     
     constructor() public{
-        uint256 cDay = getCurrentTime() / 1 days;
-        validationLastRewardsDistributedDay =cDay;
-        resolveLastRewardsDistributedDay = cDay;
-    }
-    
-    function validationInstallRewards() public{
-        uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
-        if(dayPefore > validationLastRewardsDistributedDay){
-            for(uint256 index=dayPefore; index > validationLastRewardsDistributedDay; index--){
-                validationRewardsPerDay[index] = validationRewardPerDay;
-            }
-            validationLastRewardsDistributedDay = dayPefore;
-        }
-    }
-  
-    function resolveInstallRewards() public{
-        uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
-        if(dayPefore > resolveLastRewardsDistributedDay){
-            for(uint256 index=dayPefore; index > resolveLastRewardsDistributedDay; index--){
-                resolveRewardsPerDay[index] = resolveRewardPerDay;
-            }
-            resolveLastRewardsDistributedDay = dayPefore;
-        }
-    }
-
-    function tradeInstallRewards() public{
-        uint256 dayPefore = (getCurrentTime() / 1 days) - 1;
-        if(dayPefore > tradeLastRewardsDistributedDay){
-            for(uint256 index=dayPefore; index > tradeLastRewardsDistributedDay; index--){
-                tradeRewardsPerDay[index] = tradeRewardPerDay;
-            }
-            tradeLastRewardsDistributedDay = dayPefore;
-        }
-    }
-
-    function validationRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
-        uint256 cDay = getCurrentTime() /1 days;
-        uint256 tCPtoday = validationTotalPowerCastedPerDay[cDay];
-        if(tCPtoday != 0){
-            uint256 userTotalPowerVotesToday = validationTotalPowerCastedPerDayPerUser[cDay][account];
-            todayReward = validationRewardPerDay * userTotalPowerVotesToday * 1e18/ tCPtoday;
-            todayReward = todayReward / 1e18;
-        }
         
-        uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
-        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
-            if(validationTotalPowerCastedPerDay[cDay] != 0){
-                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18/ validationTotalPowerCastedPerDay[cDay];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-
-    function resolveRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
-        uint256 cDay = getCurrentTime() /1 days;
-        uint256 tCPtoday = resolveTotalPowerCastedPerDay[cDay];
-        if(tCPtoday != 0){
-            uint256 userTotalPowerVotesToday = resolveTotalPowerCastedPerDayPerUser[cDay][account];
-            todayReward = resolveRewardPerDay * userTotalPowerVotesToday * 1e18/ tCPtoday;
-            todayReward = todayReward / 1e18;
-        }
-        
-        uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
-        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
-            if(resolveTotalPowerCastedPerDay[cDay] != 0){
-                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18/ resolveTotalPowerCastedPerDay[cDay];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-
-    function tradeRewards(address account) public view returns(uint256 todayReward, uint256 rewardsCanClaim){
-        uint256 cDay = getCurrentTime() /1 days;
-        uint256 tCPtoday = tradeTotalVolumePerDay[cDay];
-        if(tCPtoday != 0){
-            uint256 userTotalVolumeToday = tradeTotalVolumePerDayPerUser[cDay][account];
-            todayReward = tradeRewardPerDay * userTotalVolumeToday * 1e18/ tCPtoday;
-            todayReward = todayReward / 1e18;
-        }
-        
-        uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
-        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
-            if(tradeTotalVolumePerDay[cDay] != 0){
-                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18/ tradeTotalVolumePerDay[cDay];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-    
-    function validationClaimUserRewards() public {
-        //todo: check if ther is punlty
-        
-        require(address(rewardCenter) != address(0), "Reward center is not set");
-        address account = msg.sender;
-        uint256 cDay = getCurrentTime() /1 days;
-        
-        uint256 rewardsCanClaim;
-        uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
-        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
-            if(validationTotalPowerCastedPerDay[cDay] != 0){
-                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18/ validationTotalPowerCastedPerDay[cDay];
-            }
-        }
-        
-        validationLastClaimedDayPerUser[account] = cDay -1;
-        
-        // todo: ask the reward center to send rewardsCanClaim
-        rewardCenter.sendReward(account,rewardsCanClaim);
-        
-    }
-    
-    function resolveClaimUserRewards() public {
-        //todo: check if ther is punlty
-        
-        require(address(rewardCenter) != address(0), "Reward center is not set");
-        
-        address account = msg.sender;
-        uint256 cDay = getCurrentTime() /1 days;
-        
-        uint256 rewardsCanClaim;
-        uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
-        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
-            if(resolveTotalPowerCastedPerDay[cDay] != 0){
-                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18/ resolveTotalPowerCastedPerDay[cDay];
-            }
-        }
-        
-        resolveLastClaimedDayPerUser[account] = cDay -1;
-        
-        // todo: ask the reward center to send rewardsCanClaim
-        rewardCenter.sendReward(account,rewardsCanClaim);
-        
-    }
-
-    function tradeClaimUserRewards() public {
-        //todo: check if ther is punlty
-        
-        require(address(rewardCenter) != address(0), "Reward center is not set");
-        
-        address account = msg.sender;
-        uint256 cDay = getCurrentTime() /1 days;
-        
-        uint256 rewardsCanClaim;
-        uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
-        for(uint256 index = LastClaimedDay + 1; index < cDay; index++){
-            if(tradeTotalVolumePerDay[cDay] != 0){
-                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18/ tradeTotalVolumePerDay[cDay];
-            }
-        }
-        
-        tradeLastClaimedDayPerUser[account] = cDay -1;
-        
-        // todo: ask the reward center to send rewardsCanClaim
-        rewardCenter.sendReward(account,rewardsCanClaim);
-        
-    }
-    
-    
-    function claimRewards(bool ValidationRewardsFlag, bool resolveRewardsFlag, bool tradeRewardsFalg ) public{
-       
-        if(ValidationRewardsFlag){
-            validationClaimUserRewards();
-        }
-        if(resolveRewardsFlag){
-            resolveClaimUserRewards();
-        }
-        if(tradeRewardsFalg){
-            tradeClaimUserRewards();
-        }
-        
-    }
-    
-    function lpUpdateReward(address market, address account) public{
-        uint256 cBlockNumber = getBlockNumber();
-                
-        if(cBlockNumber > lpLastUpdateDate){
-            
-            uint256 addedRewardPerToken;
-            if(lpTotalEfectiveVolume != 0){
-                addedRewardPerToken = cBlockNumber.sub(lpLastUpdateDate).mul(lpRewardPerBlock).div(lpTotalEfectiveVolume);
-            }
-            lpAccRewardsPerToken = lpAccRewardsPerToken.add(addedRewardPerToken);
-            
-        }
-        
-        lpLastUpdateDate = cBlockNumber;
-        
-        
-        if(account != address(0))
-        {
-            LPUserInfoPMarket storage lpUser = lpUsers[market][account];
-            uint256 accRewardPerTokenForUser = lpAccRewardsPerToken.sub(lpUser.prevAccRewardsPerToken);
-            uint256 userEvectivetotalVolume = lpUser.totalVolume.mul(lpMarketsWeight[market]);
-            uint256 newRewardsForUser =  accRewardPerTokenForUser.mul(userEvectivetotalVolume);
-            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser);
-            
-            lpUser.prevAccRewardsPerToken = lpAccRewardsPerToken;
-        }
-        
-    }
-    
-    function setMarketWeight(address market, uint256 weight) public{
-        address account = msg.sender;
-        lpUpdateReward(market, account);
-        
-        lpTotalEfectiveVolume = lpTotalEfectiveVolume.sub(lpMarketsTotalVolume[market].mul(lpMarketsWeight[market]));
-        lpMarketsWeight[market] = weight;
-        
-        lpTotalEfectiveVolume = lpTotalEfectiveVolume.add(lpMarketsTotalVolume[market].mul(weight));
-    }
-    
-    function stake(address market, uint256 amount) public{
-        address account = msg.sender;
-        lpUpdateReward(market, account);
-        
-        LPUserInfoPMarket storage lpUser = lpUsers[market][account];
-        lpUser.totalVolume = lpUser.totalVolume.add(amount);
-        
-        lpMarketsTotalVolume[market] = lpMarketsTotalVolume[market].add(amount);
-        lpTotalEfectiveVolume = lpTotalEfectiveVolume.add(amount.mul(lpMarketsWeight[market]));
-    }
-    
-    function unstake(address market, uint256 amount) public{
-        address account = msg.sender;
-        lpUpdateReward(market, account);
-        
-        LPUserInfoPMarket storage lpUser = lpUsers[market][account];
-        lpUser.totalVolume = lpUser.totalVolume.sub(amount);
-        
-        lpMarketsTotalVolume[market] =lpMarketsTotalVolume[market].sub(amount);
-        lpTotalEfectiveVolume = lpTotalEfectiveVolume.sub(amount.mul(lpMarketsWeight[market]));
-    }
-    
-    function cliamLPReward(address market) public returns(uint256){
-        
-        // Todo: can not claimed in aproving state or rejcted state
-        LPUserInfoPMarket storage lpUser = lpUsers[market][msg.sender];
-        
-        uint256 amountToClaim = lpUser.totalRewards.sub(lpUser.claimedRewards);
-        lpUser.claimedRewards = lpUser.totalRewards;
-        
-        //todo ask reward center to send amountToClaim
-        return amountToClaim;
-    }
-    
-    function getLPReward(address market, address account, uint256 cBlockNumber) public view returns(uint256 pendingRewards, uint256 claimedRewards){
-       
-        //cBlockNumber = getBlockNumber();
-        
-        // update accRewardPerToken, in case totalVolume is zero; do not increment accRewardPerToken
-        
-        uint256 lpAccRewardsPerTokenView = lpAccRewardsPerToken;
-        if(cBlockNumber > lpLastUpdateDate){
-            
-            uint256 addedRewardPerToken;
-            if(lpTotalEfectiveVolume != 0){
-                addedRewardPerToken = cBlockNumber.sub(lpLastUpdateDate).mul(lpRewardPerBlock).div(lpTotalEfectiveVolume);
-            }
-            lpAccRewardsPerTokenView = lpAccRewardsPerTokenView.add(addedRewardPerToken);
-            
-        }
-        
-        //lpLastUpdateDate = cBlockNumber;
-        
-        
-        if(account != address(0))
-        {
-            LPUserInfoPMarket memory lpUser = lpUsers[market][account];
-            //UserInfoPPool memory user = users[market][account];
-            uint256 accRewardPerTokenForUser = lpAccRewardsPerTokenView.sub(lpUser.prevAccRewardsPerToken);
-            uint256 userEvectivetotalVolume = lpUser.totalVolume.mul(lpMarketsWeight[market]);
-            uint256 newRewardsForUser =  accRewardPerTokenForUser.mul(userEvectivetotalVolume);
-            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser);
-            
-            lpUser.prevAccRewardsPerToken = lpAccRewardsPerToken;
-            
-            claimedRewards = lpUser.claimedRewards;
-            pendingRewards = lpUser.totalRewards - claimedRewards;
-        }
         
     }
     
@@ -479,8 +169,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
 
     function castGovernanceValidatingVote(address marketAddress,bool validationFlag) public {
-        validationInstallRewards(); // first user in a day will mark the previous day to be distrubted
-         
+       
         address account = msg.sender;
         require(getMarketState(marketAddress) == ORMarketLib.MarketState.Validating, "Market is not in validation state");
 
@@ -498,10 +187,6 @@ contract ORMarketController is IORMarketController, TimeDependent{
         if(marketVotersInfo.insertedFlag == 0){ // action on 1'st vote for the user
             marketVotersInfo.insertedFlag = 1;
             marketValidatingVoters[marketAddress].push(account);
-            
-            uint256 cDay = getCurrentTime() /1 days;
-            validationTotalPowerCastedPerDay[cDay]+= votePower;
-            validationTotalPowerCastedPerDayPerUser[cDay][account]+= votePower;
         }
 
         marketVotersInfo.voteFlag = true;
@@ -532,21 +217,11 @@ contract ORMarketController is IORMarketController, TimeDependent{
         ORMarketLib.MarketState marketState = getMarketState(market);
         require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
         
-        if(byeFlag  || includeSellInTradeFlag){
-            uint256 cDay = getCurrentTime() / 1 days;
-            
-            tradeTotalVolumePerDay[cDay]+= amount;
-            tradeTotalVolumePerDayPerUser[cDay][account]+= amount;
-        }
+       
     }
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
-        resolveInstallRewards(); // first user in a day will mark the previous day to be distrubted
-        if(lpMarketsStopRewards[marketAddress] == false){ // first user vote for Resolving will stop the market from get rewards
-            lpMarketsStopRewards[marketAddress] == true;
-            setMarketWeight(marketAddress,0);
-        }
-        
+       
         address account = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
 
@@ -570,10 +245,6 @@ contract ORMarketController is IORMarketController, TimeDependent{
         if(marketVotersInfo.insertedFlag == 0){
             marketVotersInfo.insertedFlag = 1;
             marketResolvingVoters[marketAddress].push(account);
-            
-            uint256 cDay = getCurrentTime() /1 days;
-            resolveTotalPowerCastedPerDay[cDay]+= votePower;
-            resolveTotalPowerCastedPerDayPerUser[cDay][account]+= votePower;
         }
 
         marketVotersInfo.voteFlag = true;
@@ -597,7 +268,7 @@ contract ORMarketController is IORMarketController, TimeDependent{
         uint8 outcomeIndex = marketVotersInfo.selection;
         marketsInfo[marketAddress].resolvingVotesCount[outcomeIndex] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
-        //TODO: plenty
+        //TODO: palanty
     }
 
     function disputeMarket(address marketAddress, string memory disputeReason) public{
@@ -653,7 +324,432 @@ contract ORMarketController is IORMarketController, TimeDependent{
     function getMarketInfo(address marketAddress) public view returns (MarketInfo memory) {
         return marketsInfo[marketAddress];
     }
+    ////////////////////////
+    function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
+        bytes32 questionId = bytes32(marketsCount);
+        require(proposalIds[questionId] == address(0), "proposal Id already used");
+
+        ct.prepareCondition(address(this), questionId, 2);
+        bytes32[]  memory conditionIds = new bytes32[](1);
+        conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
+        //ORMarketController marketController =  ORMarketController(governanceAdd);
+        
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketFee);
+        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), marketMinShareLiq ,questionId);
+        addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
+        
+        proposalIds[questionId] = address(fpMarket);
+        
+        marketAddLiquidity(address(fpMarket),initialLiq);
+        //TODO: check collateralToken is from the list
+    }
     
+    
+    function marketAddLiquidity(address market,uint256 ammount) public{
+        ORFPMarket fpMarket = ORFPMarket(market);
+        IERC20 collateralToken = fpMarket.collateralToken();
+         // Add liquidity
+        collateralToken.transferFrom(msg.sender,address(this),ammount);
+        collateralToken.approve(address(fpMarket),ammount);
+        fpMarket.addLiquidityTo(msg.sender,ammount);
+    }
+    
+    
+    function marketBuy(address market,uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBu) public{
+        ORFPMarket fpMarket = ORFPMarket(market);
+        IERC20 collateralToken = fpMarket.collateralToken();
+        
+        collateralToken.transferFrom(msg.sender,address(this),investmentAmount);
+        collateralToken.approve(address(fpMarket),investmentAmount);
+        
+        fpMarket.buyTo(msg.sender,investmentAmount,outcomeIndex,minOutcomeTokensToBu);
+    }
+    
+    function marketSell(address market, uint256 amount, uint256 index) public{
+        ORFPMarket fpMarket = ORFPMarket(market);
+        uint256[] memory PositionIds = fpMarket.getPositionIds();
+        ct.setApprovalForAll(address(fpMarket),true);
+        ct.safeTransferFrom(msg.sender, address(this), PositionIds[index], amount, "");
+        fpMarket.sellTo(msg.sender,amount,index);
+    }
+
+    
+
+    function getMarketsCount(ORMarketLib.MarketState marketState) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].state() == marketState){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
+    
+    function getMarketCountByProposer(address account) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].proposer() == account){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
+    
+    function getMarketCountByProposerNState(address account, ORMarketLib.MarketState marketState) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].proposer() == account && fpMarkets[marketIndex].state() == marketState){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
+    
+    function getMarketCountByTrader(address trader) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
+    
+    function getMarketCountByTraderNState(address trader, ORMarketLib.MarketState marketState) public view returns(uint256){
+        uint256 marketsInStateCount = 0;
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
+                marketsInStateCount++;
+            }
+        }
+
+        return marketsInStateCount;
+    }
+
+    function getMarkets(ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketsCount(marketState);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].state() == marketState){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
+    
+    
+    function getMarketsByProposer(address account, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByProposer(account);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].proposer() == account){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
+    
+    function getMarketsByTrader(address trader, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByTrader(trader);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
+    
+    function getMarketsByProposerNState(address account, ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByProposerNState(account,marketState);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].proposer() == account && fpMarkets[marketIndex].state() == marketState){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
+    
+    function getMarketsByTraderNState(address trader, ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByTraderNState(trader,marketState);
+            if(startIndex >= mc){
+                return markets;
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return markets;
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return markets;
+    }
+
+    function getMarketsQuestionIDs(ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketsCount(marketState);
+            if(startIndex >= mc){
+                return (markets,questionsIDs);
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        questionsIDs = new string[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].state() == marketState){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return (markets,questionsIDs);
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return (markets,questionsIDs);
+    }
+    
+    function getMarketsQuestionIDsByProposer(address account, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByProposer(account);
+            if(startIndex >= mc){
+                return (markets,questionsIDs);
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        questionsIDs = new string[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].proposer() == account){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return (markets,questionsIDs);
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return (markets,questionsIDs);
+    }
+    
+    
+    function getMarketsQuestionIDsByProposerNState(address account, ORMarketLib.MarketState marketStat, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByProposerNState(account,marketStat);
+            if(startIndex >= mc){
+                return (markets,questionsIDs);
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        questionsIDs = new string[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].proposer() == account && fpMarkets[marketIndex].state() == marketStat){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return (markets,questionsIDs);
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return (markets,questionsIDs);
+    }
+    
+    function getMarketsQuestionIDsByTraderNState(address trader, ORMarketLib.MarketState marketStat, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
+        uint256 uLength;
+
+        if(length <0){
+            uint256 mc = getMarketCountByTraderNState(trader,marketStat);
+            if(startIndex >= mc){
+                return (markets,questionsIDs);
+            }
+            uLength = mc - startIndex;
+        }else{
+            uLength = uint256(length);
+        }
+
+        markets = new ORFPMarket[](uLength);
+        questionsIDs = new string[](uLength);
+        uint256 marketInStateIndex = 0;
+         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketStat){
+                if(marketInStateIndex >= startIndex){
+                    uint256 currentIndex = marketInStateIndex - startIndex;
+                    if(currentIndex >=  uLength){
+                        return (markets,questionsIDs);
+                    }
+
+                    markets[currentIndex] = fpMarkets[marketIndex];
+                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
+                }
+                marketInStateIndex++;
+            }
+        }
+
+        return (markets,questionsIDs);
+    }
+
+    function getMarket(string memory marketQuestionID) public view returns(ORFPMarket  market){
+
+        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
+             string memory mqID = fpMarkets[marketIndex].getMarketQuestionID();
+             if(hashCompareWithLengthCheck(mqID,marketQuestionID) == true){
+                 return fpMarkets[marketIndex];
+             }
+        }
+    }
+
+    function hashCompareWithLengthCheck(string memory a, string memory b) internal pure returns (bool) {
+        bytes memory bytesA = bytes(a);
+        bytes memory bytesB = bytes(b);
+
+        if(bytesA.length != bytesB.length) {
+            return false;
+        } else {
+            return keccak256(bytesA) == keccak256(bytesB);
+        }
+    }
+    
+    ////////////////////////
     
      // todo: not a real function, just to mimic the Governance power
     function setSenderPower(uint256 power) public {
@@ -684,24 +780,6 @@ contract ORMarketController is IORMarketController, TimeDependent{
 
     function setDisputeThreshold(uint256 t) public{
         disputeThreshold = t;
-    }
-
-    function setRewardCenter(address rc) public{
-        rewardCenter = IRewardCenter(rc);
-    }
-    
-    
-    //////////////////////
-    
-    uint256 cbn;
-
-    function getBlockNumber() public view returns (uint256) {
-        return cbn;
-        //return block.number;
-    }
-    
-    function increaseBlockNumber(uint256 n) public {
-        cbn+=n;
     }
 
 
