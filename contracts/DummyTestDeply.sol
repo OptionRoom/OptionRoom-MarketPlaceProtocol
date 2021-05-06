@@ -12,7 +12,7 @@ contract AAA1DemoToken1 is DemoToken{
 
 contract AAA2ConditnalToken1 is ORConditionalTokens{
 
-}
+} 
 
 
 contract AAA3MarketController1 is ORMarketController{

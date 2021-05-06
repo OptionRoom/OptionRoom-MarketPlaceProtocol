@@ -138,21 +138,21 @@ contract ORFPMarket is FixedProductMarketMaker {
         require(msg.sender == address(marketController), "buy order is not from controller");
     }
 
-    function _beforeBuyTo(address account, uint256 amount) internal {
+    function _beforeBuyTo(address beneficiary, uint256 amount) internal {
         
         require(msg.sender == address(marketController), "buy order is not from controller");
         
-        if(traders[account] == false){
-            traders[account] == true;
+        if(traders[beneficiary] == false){
+            traders[beneficiary] == true;
         }
     }
 
-    function _beforeSellTo(address account, uint256 amount) internal {
+    function _beforeSellTo(address beneficiary, uint256 amount) internal {
         
         require(msg.sender == address(marketController), "sell order is not from controller");
         
-        if(traders[account] == false){
-            traders[account] == true;
+        if(traders[beneficiary] == false){
+            traders[beneficiary] == true;
         }
     }
 

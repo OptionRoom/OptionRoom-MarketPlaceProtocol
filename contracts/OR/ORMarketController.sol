@@ -2,6 +2,7 @@ pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IORMarketController.sol";
+import "../Governance/IORGovernor.sol";
 import "../TimeDependent/TimeDependent.sol";
 
 import "./FixedProductMarketMakerFactoryOR.sol";
@@ -45,6 +46,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         bool    disputedFlag;
     }
     
+    IORGovernor orGovernor;
+    
     mapping(address => MarketInfo) marketsInfo;
 
     mapping(address => address[]) public marketValidatingVoters;
@@ -76,15 +79,13 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     
     event DisputeSubmittedEvent(address indexed disputer, address indexed market, uint256 disputeTotalBalances, bool reachThresholdFlag);
-
-    mapping(address => uint256) powerPerUser;
     
     constructor() public{
         
         
     }
     
-    function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) public returns(uint256){
+    function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
         // security check
         MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;
@@ -93,6 +94,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
     }
     
+    
+    function setIORGoverner(address orGovernorAddress) public{
+        // todo set security check and modifier
+        orGovernor = IORGovernor(orGovernorAddress);
+    }
     
 
     function payoutsAction(address marketAddress) external {
@@ -111,8 +117,10 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
 
     function getAccountInfo(address account) public returns(bool canVote, uint256 votePower){
-        //return (true, powerPerUser[account]);  todo
-        return (true, 100);
+        bool governorFlag; bool suspendeFlag;
+        (governorFlag, suspendeFlag,  votePower) = orGovernor.getAccountInfo(account);
+        canVote = governorFlag && suspendeFlag;
+        return (canVote, votePower);
     }
 
     function getMarketState(address marketAddress) public view returns (ORMarketLib.MarketState) {
@@ -363,6 +371,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         fpMarket.transferFrom(beneficiary,address(this),sharesAmount);
         fpMarket.approve(address(fpMarket),sharesAmount);
         
+        // todo : wrong : proposer can send his share to other addres and withdraw them
          if(beneficiary == proposer) {
             ORMarketLib.MarketState marketState = getMarketState(market);
             if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
@@ -769,16 +778,6 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     ////////////////////////
-    
-     // todo: not a real function, just to mimic the Governance power
-    function setSenderPower(uint256 power) public {
-        powerPerUser[msg.sender] = power;
-    }
-    
-    // todo: not a real function, just to mimic the Governance power
-    function setPower(address account, uint256 power) public{
-        powerPerUser[account] = power;
-    }
     
     // market configuration
     function setMarketMinShareLiq(uint256 minLiq) public {

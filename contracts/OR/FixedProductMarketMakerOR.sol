@@ -289,9 +289,9 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             collateralToken.balanceOf(address(this))
         );
 
-        conditionalTokens.safeBatchTransferFrom(msg.sender, beneficiary, positionIds, sendAmounts, "");
+        conditionalTokens.safeBatchTransferFrom(address(this), beneficiary, positionIds, sendAmounts, "");
 
-        emit FPMMFundingRemoved(msg.sender, sendAmounts, collateralRemovedFromFeePool, sharesToBurn);
+        emit FPMMFundingRemoved(beneficiary, sendAmounts, collateralRemovedFromFeePool, sharesToBurn);
     }
     
     
