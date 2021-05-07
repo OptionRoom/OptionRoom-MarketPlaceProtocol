@@ -38,6 +38,22 @@ contract('Markets buy sell redeem test', function([, creator, oracle, investor1,
     expect((await fixedProductMarketMaker.balanceOf(investor1)).toString()).to.equal(addedFunds1.toString())
   })
 
+  it('Should be able to add more liquidity from another account', async function() {
+    await collateralToken.deposit({ value: addedFunds1, from: investor2 })
+    await collateralToken.approve(controller.address, addedFunds1, { from: investor2 })
+    await controller.marketAddLiquidity(fixedProductMarketMaker.address, addedFunds1, { from: investor2 })
+
+    // All of the amount have been converted...
+    expect((await collateralToken.balanceOf(investor2)).toString()).to.equal('0')
+    expect((await fixedProductMarketMaker.balanceOf(investor2)).toString()).to.equal(addedFunds1.toString())
+  })
+
+  it('Should be able to add more liquidity from another account', async function() {
+    await fixedProductMarketMaker.approve(controller.address, addedFunds1, { from: investor2 })
+    await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds1,false,  { from: investor2 })
+  })
+  
+
   it('Should return balance of account', async function() {
     // This should be zeros because we have the same ratios of the both options.
     let retArray = await fixedProductMarketMaker.getBalances(investor1)
