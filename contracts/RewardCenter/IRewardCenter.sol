@@ -7,4 +7,5 @@ interface IRewardCenter {
     
     function sendRoomRewardByERC20Value(address beneficiary, uint256 amount, IERC20 erc20, string calldata comment) external;
     
+    function sendReward(address account, uint256 rewardsCanClaim) external;
 }
