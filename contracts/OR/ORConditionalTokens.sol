@@ -1,7 +1,7 @@
 pragma solidity ^0.5.1;
 
 import {ConditionalTokens} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ConditionalTokens.sol";
-import {IORMarketController} from "../Governance/IORMarketController.sol";
+import {IORMarketController} from "../OR/IORMarketController.sol";
 import {ORFPMarket} from "./ORFPMarket.sol";
 
 contract ORConditionalTokens is ConditionalTokens {

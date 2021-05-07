@@ -2,7 +2,7 @@ pragma solidity ^0.5.1;
 
 import "./ORMarketLib.sol";
 import "./FixedProductMarketMakerOR.sol";
-import "../Governance/IORMarketController.sol";
+import "../OR/IORMarketController.sol";
 
 /**
     @title ORFPMarket Extended version of the FixedProductMarketMaker
@@ -19,53 +19,43 @@ contract ORFPMarket is FixedProductMarketMaker {
     string public marketQuestionID;
     
     IORMarketController public marketController;
-
+    
+    mapping(address => bool) public traders;
 
     function setConfig(
             string memory _marketQuestionID,
             address _proposer,
-            address _governor,
-            uint256 _marketCreatedTime,
-            uint256 _marketParticipationEndTime,
-            uint256 _marketResolvingEndTime,
+            address _controller,
+            uint256 _minShareLiq,
             bytes32 _questionId
     ) public {
         require(initializationPhase2 == false, "Initialization already called");
         initializationPhase2 = true;
-        marketController = IORMarketController(_governor);
+        marketController = IORMarketController(_controller);
         marketQuestionID = _marketQuestionID;
         proposer = _proposer;
         questionId = _questionId;
         
-        minShareLiq = marketController.addMarket(_marketCreatedTime,_marketParticipationEndTime,_marketResolvingEndTime);
+        minShareLiq = _minShareLiq;
     }
+    
+    
 
-    function _beforeBuy() internal {
-        require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
-    }
-
-    function _beforeSell() internal {
-        require(state() == ORMarketLib.MarketState.Active, "Market is not in active state");
-    }
-
-     function state() public view returns (ORMarketLib.MarketState) {
-         return marketController.getMarketState(address(this));
-     }
-
-    function addLiquidity(uint256 amount) public {
+    
+    function addLiquidityTo(address beneficiary, uint256 amount) public {
         uint[] memory distributionHint;
         if (totalSupply() > 0) {
-            addFunding(amount, distributionHint);
+            addFundingTo(beneficiary,amount, distributionHint);
         } else {
             distributionHint = new uint[](2);
             distributionHint[0] = 1;
             distributionHint[1] = 1;
-            addFunding(amount, distributionHint);
+            addFundingTo(beneficiary,amount, distributionHint);
         }
     }
 
-    function removeLiquidity(uint256 shares, bool autoMerge) public {
-        removeFunding(shares);
+    function removeLiquidityTo(address beneficiary, uint256 shares, bool autoMerge) public {
+        removeFundingTo(beneficiary, shares);
         if(autoMerge == true){
             merge();
         }
@@ -122,14 +112,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
 
 
-    function _beforeRemoveFunding(uint sharesToBurn) internal {
-        if(msg.sender == proposer) {
-            ORMarketLib.MarketState marketState = state();
-            if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
-                require(balanceOf(msg.sender).sub(sharesToBurn) >= minShareLiq, "The remaining shares dropped under the minimum");
-            }
-        }
-    }
+    
 
     function getSharesPercentage(address account) public view returns(uint256) {
         uint256  totalSupply = totalSupply();
@@ -144,6 +127,38 @@ contract ORFPMarket is FixedProductMarketMaker {
         indexSet[0] = 1;
         indexSet[1] = 2;
     }
+    
+    
+    function _beforeAddFundingTo(address beneficiary, uint sharesToBurn) internal {
+        require(msg.sender == address(marketController), "buy order is not from controller");
+        
+    }
+    
+    function _beforeRemoveFundingTo(address beneficiary, uint sharesToBurn) internal{
+        require(msg.sender == address(marketController), "buy order is not from controller");
+    }
+
+    function _beforeBuyTo(address beneficiary, uint256 amount) internal {
+        
+        require(msg.sender == address(marketController), "buy order is not from controller");
+        
+        if(traders[beneficiary] == false){
+            traders[beneficiary] == true;
+        }
+    }
+
+    function _beforeSellTo(address beneficiary, uint256 amount) internal {
+        
+        require(msg.sender == address(marketController), "sell order is not from controller");
+        
+        if(traders[beneficiary] == false){
+            traders[beneficiary] == true;
+        }
+    }
+
+     function state() public view returns (ORMarketLib.MarketState) {
+         return marketController.getMarketState(address(this));
+     }
    
 }
 

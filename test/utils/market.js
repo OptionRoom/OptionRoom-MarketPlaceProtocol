@@ -12,8 +12,8 @@ let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
-const ORMarketController = artifacts.require('ORMarketController')
-const CentralTimeForTesting = artifacts.require('CentralTimeForTesting')
+const RoomsGovernor = artifacts.require('ORGovernanceMock')
+const CentralTimeForTestingContract = artifacts.require('CentralTimeForTesting')
 
 const ORMarketLib = artifacts.require('ORMarketLib')
 var BigNumber = require('bignumber.js');
@@ -47,15 +47,15 @@ let positionIds
 async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   conditionalTokens = await ConditionalTokensContract.new();
   marketLibrary = await MarketLibContract.new();
+  centralTime = await CentralTimeForTestingContract.new();
   
   collateralToken = await CollatContract.new() ;//await WETH9.deployed();
   fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
-  governanceMock = await ORMarketController.deployed()
-  centralTime = await CentralTimeForTesting.deployed();
-
+  governanceMock = await RoomsGovernor.deployed()
+  
   // Assign the timer to the governance.
   await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
-  await governanceMock.setCentralTimeForTesting(centralTime.address);
+  // await governanceMock.setCentralTimeForTesting(centralTime.address);
 
   let deployedMarketMakerContract = await ORFPMarket.deployed();
   await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
@@ -69,7 +69,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return governanceMock;
+  return fixedProductMarketMakerFactory;
 }
 
 async function createNewMarket(creator) {
@@ -85,9 +85,9 @@ async function createNewMarket(creator) {
     feeFactor,
     { from: creator },
   ]
-  
+
   await centralTime.initializeTime();
-  
+
   const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
   const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
@@ -116,11 +116,11 @@ async function callViewFactoryMethod(func,args) {
 }
 
 async function callControllerMethod(func, args) {
-    return governanceMock[func].call(...args);
+    return fixedProductMarketMakerFactory[func].call(...args);
 }
 
 async function executeControllerMethod(func,args) {
-  governanceMock[func]( ...args);
+  fixedProductMarketMakerFactory[func]( ...args);
 }
 
 
@@ -148,6 +148,9 @@ async function moveToResolved() {
   centralTime.increaseTime(marketResolvingPeriod + 10);
 }
 
+async function moveToResolved11() {
+  return centralTime.getTimeIncrease();
+}
 
 async function increaseTime(time) {
   centralTime.increaseTime(time);
@@ -163,6 +166,7 @@ async function getCollateralBalance(account) {
 }
 
 module.exports = {
+  moveToResolved11,
   prepareContracts,
   createNewMarket,
   addDays,

@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("AAA3MarketFactory1"), {
+  deployer.deploy(artifacts.require("AAA3MarketController1"), {
   });
 };
