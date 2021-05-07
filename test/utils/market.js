@@ -9,6 +9,7 @@ const { toBN } = web3.utils
 let ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
 let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
 let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
+let CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
@@ -103,6 +104,44 @@ async function createNewMarket(creator) {
   return [marketToReturn, collateralToken, positionIds];
 }
 
+async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
+  let now = new Date()
+  let resolvingEndDate = addDays(now, 5)
+  let endTime = Math.floor(addDays(now, 3).getTime() / 1000)
+  let resolvingEndTime = Math.floor(resolvingEndDate.getTime() / 1000)
+
+  let col;
+  if (isERC20) {
+    col = await CollateralToken2Contract.new();
+    await col.mint(addedFunds, { from: creator })
+    await col.transfer(creator, addedFunds, { from: creator })
+  }  else {
+    col = collateralToken;
+    await col.deposit({ value: addedFunds, from: creator });
+  }
+
+  const createArgs = [
+    questionString,
+    endTime,
+    resolvingEndTime,
+    col.address,
+    addedFunds,
+    { from: creator }
+  ]
+
+  await centralTime.initializeTime();
+
+  await col.approve(fixedProductMarketMakerFactory.address, addedFunds, { from: creator })
+  
+  const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposal.call(...createArgs)
+  const createTx = await fixedProductMarketMakerFactory.createMarketProposal(...createArgs)
+  expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
+    creator,
+    conditionalTokens: conditionalTokens.address,
+    collateralToken: col.address,
+  })
+}
+
 function addDays(theDate, days) {
   return new Date(theDate.getTime() + days * 24 * 60 * 60 * 1000)
 }
@@ -126,6 +165,10 @@ async function executeControllerMethod(func,args) {
 
 async function conditionalApproveForAll(market,account) {
    conditionalTokens.setApprovalForAll(market.address, true, { from: account });
+}
+
+async function conditionalApproveFor(market,amount, account) {
+  conditionalTokens.approve(market.address,amount, true, { from: account });
 }
 
 async function conditionalBalanceOf(account, positionId) {
@@ -169,6 +212,7 @@ module.exports = {
   moveToResolved11,
   prepareContracts,
   createNewMarket,
+  createNewMarketWithCollateral,
   addDays,
   invokeFactoryMethod,
   callViewFactoryMethod,
@@ -181,5 +225,6 @@ module.exports = {
   resetTimeIncrease,
   conditionalApproveForAll,
   conditionalBalanceOf,
+  conditionalApproveFor,
   getCollateralBalance,
 }

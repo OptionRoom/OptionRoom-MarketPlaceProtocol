@@ -11,9 +11,9 @@ contract('OR markets: create multiple markets test', function([, creator, oracle
   let marketMakers = [];
   let pendingMarketMakersMap = new Map()
   
-  let gov;
+  let controller;
   before(async function() {
-    gov = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
   })
 
   it('Should create and return correct validating markets count', async function() {
