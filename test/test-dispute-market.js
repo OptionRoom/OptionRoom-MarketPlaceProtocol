@@ -30,10 +30,7 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
 
     // Start should be shown as rejected.
     let state = await controller.getMarketState(fixedProductMarketMaker.address);
-    console.log(state.toString());
-    // let time = await controller.getCurrentTime();
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Validating))).to.equal(true);
-    let marketsInfo = await controller.getMarketInfo(fixedProductMarketMaker.address);
 
     // approve it.
     await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address,true,  { from: investor2 });
@@ -42,11 +39,7 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
 
     await increaseTime(marketPendingPeriod);
     
-    let time = await controller.getCurrentTime();
-    console.log(time.toString());
     state = await controller.getMarketState(fixedProductMarketMaker.address);
-    console.log("state.toString()");
-    console.log(state.toString());
     expect(new BigNumber(state).isEqualTo(new BigNumber(3))).to.equal(true);
   });
 

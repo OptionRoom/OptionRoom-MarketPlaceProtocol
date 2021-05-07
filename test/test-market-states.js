@@ -13,12 +13,12 @@ var BigNumber = require('bignumber.js')
 contract('Option room: test proposal states', function([, creator, oracle, investor1, trader, investor2]) {
   let collateralToken
   let fixedProductMarketMaker
-  let governanceMock
+  let controller
 
   let marketPendingPeriod = 1800;
   
   before(async function() {
-    governanceMock = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
   })
 
   it('can be created by factory', async function() {
@@ -29,11 +29,11 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
   
   let orgTimeStamp;
   it('Should pass because we are in the voting period', async function() {
-    orgTimeStamp = governanceMock.getCurrentTime();
+    orgTimeStamp = controller.getCurrentTime();
 
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
 
-    let marketInformation = await governanceMock.getMarketInfo(fixedProductMarketMaker.address);
+    let marketInformation = await controller.getMarketInfo(fixedProductMarketMaker.address);
     let validatingVotesCount = marketInformation['validatingVotesCount'];
 
     expect(new BigNumber(validatingVotesCount[0]).isEqualTo(new BigNumber(0))).to.equal(true);
@@ -45,7 +45,7 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     let day = 1800 * 2;
     await increaseTime(day);
     try {
-      await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
+      await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
       throw null;
     }
     catch (error) {
@@ -60,7 +60,7 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     const REVERT = "user already voted";
 
     try {
-      await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
+      await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 });
       throw null;
     }
     catch (error) {
@@ -72,10 +72,10 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
   it('Should be to unvote', async function() {
     await resetTimeIncrease();
 
-    await governanceMock.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: investor1 });
-    // await governanceMock.withdrawGovernanceResolvingVote(fixedProductMarketMaker.address, { from: investor1 });
+    await controller.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: investor1 });
+    // await controller.withdrawGovernanceResolvingVote(fixedProductMarketMaker.address, { from: investor1 });
 
-    let marketInformation = await governanceMock.getMarketInfo(fixedProductMarketMaker.address);
+    let marketInformation = await controller.getMarketInfo(fixedProductMarketMaker.address);
     let validatingVotesCount = marketInformation['validatingVotesCount'];
 
     expect(new BigNumber(validatingVotesCount[0]).isEqualTo(new BigNumber(0))).to.equal(true);
@@ -88,7 +88,7 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     const REVERT = "user did not vote";
 
     try {
-      await governanceMock.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: investor1 });
+      await controller.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: investor1 });
       throw null;
     }
     catch (error) {
@@ -99,15 +99,15 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
 
 
   it('Should allow multiple different governance to vote and check their status', async function() {
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor2 });
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: trader });
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: oracle });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor2 });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: trader });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: oracle });
 
     // Checking the results of the votes.
-    let v2ValidatingVoter = await governanceMock.isValidatingVoter(fixedProductMarketMaker.address, investor2);
-    let traderValidatingVoter = await governanceMock.isValidatingVoter(fixedProductMarketMaker.address, trader);
-    let oracleValidatingVoter = await governanceMock.isValidatingVoter(fixedProductMarketMaker.address, oracle);
-    let creatorValidatingVoter = await governanceMock.isValidatingVoter(fixedProductMarketMaker.address, creator);
+    let v2ValidatingVoter = await controller.isValidatingVoter(fixedProductMarketMaker.address, investor2);
+    let traderValidatingVoter = await controller.isValidatingVoter(fixedProductMarketMaker.address, trader);
+    let oracleValidatingVoter = await controller.isValidatingVoter(fixedProductMarketMaker.address, oracle);
+    let creatorValidatingVoter = await controller.isValidatingVoter(fixedProductMarketMaker.address, creator);
 
     // We don't want to check on the third number as its insignificant to us.
     expect(new BigNumber(v2ValidatingVoter[0]).isEqualTo(new BigNumber(1))).to.equal(true);
@@ -129,7 +129,7 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
 
 
   it('Should check on the state change when voting from governance', async function() {
-    let marketInformation = await governanceMock.getMarketInfo(fixedProductMarketMaker.address);
+    let marketInformation = await controller.getMarketInfo(fixedProductMarketMaker.address);
     let validatingVotesCount = marketInformation['validatingVotesCount'];
 
     // Two voted no and 1 voted yes
@@ -140,23 +140,23 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     await increaseTime(marketPendingPeriod);
 
     // Start should be shown as rejected.
-    let state = await governanceMock.getMarketState(fixedProductMarketMaker.address);
+    let state = await controller.getMarketState(fixedProductMarketMaker.address);
     expect(new BigNumber(state).isEqualTo(new BigNumber(2))).to.equal(true);
 
     await resetTimeIncrease();
 
     // First try to reject it
-    await governanceMock.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: investor2 });
-    await governanceMock.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: trader });
-    await governanceMock.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: oracle });
+    await controller.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: investor2 });
+    await controller.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: trader });
+    await controller.withdrawGovernanceValidatingVote(fixedProductMarketMaker.address, { from: oracle });
 
     // approve it.
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address,true,  { from: investor2 });
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: trader });
-    await governanceMock.castGovernanceValidatingVote(fixedProductMarketMaker.address,true,  { from: oracle });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address,true,  { from: investor2 });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: trader });
+    await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address,true,  { from: oracle });
 
     await increaseTime(marketPendingPeriod);
-    state = await governanceMock.getMarketState(fixedProductMarketMaker.address);
+    state = await controller.getMarketState(fixedProductMarketMaker.address);
     expect(new BigNumber(state).isEqualTo(new BigNumber(3))).to.equal(true);
   });
 
@@ -166,18 +166,19 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     const buyOutcomeIndex = 1;
 
     await collateralToken.deposit({ value: addedFunds1, from: investor1 });
-    await collateralToken.approve(fixedProductMarketMaker.address, addedFunds1, { from: investor1 });
-    await fixedProductMarketMaker.addLiquidity(addedFunds1, { from: investor1 });
+    await collateralToken.approve(controller.address, addedFunds1, { from: investor1 });
+    await controller.marketAddLiquidity(fixedProductMarketMaker.address,addedFunds1, { from: investor1 });
 
     // we already have 2 yeses and 2 nos
     await collateralToken.deposit({ value: investmentAmount, from: trader });
-    await collateralToken.approve(fixedProductMarketMaker.address, investmentAmount, { from: trader });
+    await collateralToken.approve(controller.address, investmentAmount, { from: trader });
     const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex);
-    await fixedProductMarketMaker.buy(investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
+    await controller.marketBuy(fixedProductMarketMaker.address, 
+        investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
   })
 
   it('Should return the 1-1 result', async function() {
-    let outcome = await governanceMock.getResolvingOutcome(fixedProductMarketMaker.address);
+    let outcome = await controller.getResolvingOutcome(fixedProductMarketMaker.address);
     // We know the market is not in resolving yet.
     expect(new BigNumber(outcome[0]).isEqualTo(new BigNumber(1))).to.equal(true);
     expect(new BigNumber(outcome[1]).isEqualTo(new BigNumber(1))).to.equal(true);
@@ -188,7 +189,7 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     const REVERT = "Market is not in resolving/ResolvingAfterDispute states";
 
     try {
-      await governanceMock.castGovernanceResolvingVote(fixedProductMarketMaker.address, 0, { from: investor1 });
+      await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 0, { from: investor1 });
       throw null;
     }
     catch (error) {
@@ -205,24 +206,24 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
     let days = ((86400 * 3) + 10);
 
     await increaseTime(days);
-    await governanceMock.castGovernanceResolvingVote(fixedProductMarketMaker.address, 0, { from: investor1 });
+    await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 0, { from: investor1 });
   });
 
   it('Should return a resolved result after a vote', async function() {
-    let outcome = await governanceMock.getResolvingOutcome(fixedProductMarketMaker.address);
+    let outcome = await controller.getResolvingOutcome(fixedProductMarketMaker.address);
     // We know the market is not in resolving yet.
     expect(new BigNumber(outcome[0]).isEqualTo(new BigNumber(1))).to.equal(true);
     expect(new BigNumber(outcome[1]).isEqualTo(new BigNumber(0))).to.equal(true);
   });
 
   it('Should allow multiple voters for the resolve', async function() {
-    await governanceMock.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: investor2 });
-    await governanceMock.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: trader });
-    await governanceMock.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: oracle });
+    await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: investor2 });
+    await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: trader });
+    await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: oracle });
   });
 
   it('Should check the pending voters from gov', async function() {
-    let govPendingVotersResults = await governanceMock.isResolvingVoter(fixedProductMarketMaker.address, investor2);
+    let govPendingVotersResults = await controller.isResolvingVoter(fixedProductMarketMaker.address, investor2);
     let voteFlag = govPendingVotersResults["voteFlag"];
     let selection = govPendingVotersResults["selection"];
     let power = govPendingVotersResults["power"];
@@ -234,10 +235,10 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
 
   it('Should test marketPendingVotersInfo to return the correct information', async function() {
     // Checking the results of the votes.
-    let v2ResolvingVoter = await governanceMock.isResolvingVoter(fixedProductMarketMaker.address, investor2);
-    let traderResolvingVoter = await governanceMock.isResolvingVoter(fixedProductMarketMaker.address, trader);
-    let oracleResolvingVoter = await governanceMock.isResolvingVoter(fixedProductMarketMaker.address, oracle);
-    let creatorResolvingVoter = await governanceMock.isResolvingVoter(fixedProductMarketMaker.address, creator);
+    let v2ResolvingVoter = await controller.isResolvingVoter(fixedProductMarketMaker.address, investor2);
+    let traderResolvingVoter = await controller.isResolvingVoter(fixedProductMarketMaker.address, trader);
+    let oracleResolvingVoter = await controller.isResolvingVoter(fixedProductMarketMaker.address, oracle);
+    let creatorResolvingVoter = await controller.isResolvingVoter(fixedProductMarketMaker.address, creator);
 
     expect(new BigNumber(v2ResolvingVoter[0]).isEqualTo(new BigNumber(1))).to.equal(true);
     expect(v2ResolvingVoter[1]).to.equal(true);
@@ -257,14 +258,14 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
   });
 
   it('Should return not resolved after the voting', async function() {
-    let outcome = await governanceMock.getResolvingOutcome(fixedProductMarketMaker.address);
+    let outcome = await controller.getResolvingOutcome(fixedProductMarketMaker.address);
     // We know the market is not in resolving yet.
     expect(new BigNumber(outcome[0]).isEqualTo(new BigNumber(0))).to.equal(true);
     expect(new BigNumber(outcome[1]).isEqualTo(new BigNumber(1))).to.equal(true);
   });
 
   it('Should check the validating voters from gov', async function() {
-    let govPendingVotersResults = await governanceMock.isResolvingVoter(fixedProductMarketMaker.address, investor2);
+    let govPendingVotersResults = await controller.isResolvingVoter(fixedProductMarketMaker.address, investor2);
 
     let voteFlag = govPendingVotersResults["voteFlag"];
     let selection = govPendingVotersResults["selection"];
