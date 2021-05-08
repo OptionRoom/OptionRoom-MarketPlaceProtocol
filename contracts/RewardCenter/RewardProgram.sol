@@ -10,6 +10,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     using SafeMath for uint256;
 
     IRewardCenter rewardCenter;
+    address marketControllerAddress;
 
     struct LPUserInfoPMarket {
         uint256 totalVolume;
@@ -245,15 +246,17 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         if (account != address(0)) {
             LPUserInfoPMarket storage lpUser = lpUsers[market][account];
             uint256 accRewardPerTokenForUser = lpAccRewardsPerToken.sub(lpUser.prevAccRewardsPerToken);
+            
             uint256 userEffectiveTotalVolume = lpUser.totalVolume.mul(lpMarketsWeight[market]);
             uint256 newRewardsForUser = accRewardPerTokenForUser.mul(userEffectiveTotalVolume);
-            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser);
+            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser.div(1e18));
 
             lpUser.prevAccRewardsPerToken = lpAccRewardsPerToken;
         }
     }
 
     function setMarketWeight(address market, uint256 weight) public {
+        // todo sec chec
         address account = msg.sender;
         lpUpdateReward(market, account);
 
@@ -311,7 +314,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
 
 
-    function tradeAmount(address marketAddress, address account, uint256 amount, bool buyFlag) public {
+    function tradeAmount(address market, address account, uint256 amount, bool buyFlag) public {
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        
         if (buyFlag || includeSellInTradeFlag) {
             uint256 cDay = getCurrentTime() / 1 days;
 
@@ -320,8 +325,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
     }
 
-    function validationVote(address marketAddress, bool validationFlag, address account, uint256 votePower) public {
-        // todo sec
+    function validationVote(address market, bool validationFlag, address account, uint256 votePower) public {
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        
         validationInstallRewards();
         // first user in a day will mark the previous day to be distributed
 
@@ -331,14 +337,15 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
 
 
-    function resolveVote(address marketAddress, uint8 selection, address account, uint256 votePower) public {
-        // todo sec
+    function resolveVote(address market, uint8 selection, address account, uint256 votePower) public {
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        
         resolveInstallRewards();
         // first caller in a day will mark the previous day to be distributed
 
-        if (lpMarketsStopRewards[marketAddress] == false) {// first caller vote for Resolving will stop the market from get rewards
-            lpMarketsStopRewards[marketAddress] == true;
-            setMarketWeight(marketAddress, 0);
+        if (lpMarketsStopRewards[market] == false) {// first caller vote for Resolving will stop the market from get rewards
+            lpMarketsStopRewards[market] == true;
+            setMarketWeight(market, 0);
         }
 
         uint256 cDay = getCurrentTime() / 1 days;
@@ -347,6 +354,8 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
 
     function lpMarketAdd(address market, address account, uint256 amount) public {
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        
         lpUpdateReward(market, account);
 
         LPUserInfoPMarket storage lpUser = lpUsers[market][account];
@@ -357,6 +366,8 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
 
     function lpMarketRemove(address market, address account, uint256 amount) public {
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        
         lpUpdateReward(market, account);
 
         LPUserInfoPMarket storage lpUser = lpUsers[market][account];
@@ -365,11 +376,17 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         lpMarketsTotalVolume[market] = lpMarketsTotalVolume[market].sub(amount);
         lpTotalEffectiveVolume = lpTotalEffectiveVolume.sub(amount.mul(lpMarketsWeight[market]));
     }
+    
+    
+    function setMarketControllerAddress(address controllerAddress) public{
+        // sec only deployer
+        marketControllerAddress = controllerAddress;
+    }
 
 
     //////////////////////
 
-    uint256 cbn;
+    uint256 cbn; // todo
 
     function getBlockNumber() public view returns (uint256) {
         return cbn;

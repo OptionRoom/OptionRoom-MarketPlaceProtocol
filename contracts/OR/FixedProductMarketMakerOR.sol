@@ -208,7 +208,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
     }
 
-    function addFundingTo(address beneficiary, uint addedFunds, uint[] memory distributionHint) internal
+    function addFundingTo(address beneficiary, uint addedFunds, uint[] memory distributionHint) internal returns(uint)
     {
         require(addedFunds > 0, "funding must be non-zero");
         _beforeAddFundingTo(beneficiary,addedFunds);
@@ -266,6 +266,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
 
         emit FPMMFundingAdded(beneficiary, sendBackAmounts, mintAmount);
+        return mintAmount;
     }
     
 
@@ -429,10 +430,13 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
     }
 
     
-    function sellTo(address beneficiary, uint256 amount, uint256 index) public{
+    function sellTo(address beneficiary, uint256 amount, uint256 index) public returns(uint256){
         uint256 expectedRet = calcSellReturnInv(amount, index);
         _beforeSellTo(beneficiary, expectedRet);
         sellByReturnAmountTo(beneficiary,expectedRet, index, amount * 105 / 100);
+        
+        return expectedRet;
+        
     }
 
     function _beforeBuyTo(address account, uint256 amount) internal;

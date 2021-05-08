@@ -6,6 +6,7 @@ import "../Governance/IORGovernor.sol";
 import "../TimeDependent/TimeDependent.sol";
 
 import "./FixedProductMarketMakerFactoryOR.sol";
+import "../RewardCenter/IRewardProgram.sol";
 
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
@@ -47,6 +48,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     IORGovernor orGovernor;
+    IRewardProgram  public RP; //reward program
     
     mapping(address => MarketInfo) marketsInfo;
 
@@ -85,8 +87,13 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
     }
     
+    function setRewardCenter(address rewardProgramAddress) public{
+        //todo sec check
+        RP = IRewardProgram(rewardProgramAddress);
+    }
+    
     function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
-        // security check
+        // todo security check
         MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;
         marketInfo.participationEndTime = _marketParticipationEndTime;
@@ -193,6 +200,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         if(marketVotersInfo.insertedFlag == 0){ // action on 1'st vote for the user
             marketVotersInfo.insertedFlag = 1;
             marketValidatingVoters[marketAddress].push(account);
+            
+            RP.validationVote(marketAddress, validationFlag, msg.sender, votePower);
         }
 
         marketVotersInfo.voteFlag = true;
@@ -215,15 +224,6 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         marketsInfo[marketAddress].validatingVotesCount[validationSelection] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
 
-    }
-
-    function addTrade(address account, uint256 amount, bool byeFlag) public{
-        // security check
-        address market = msg.sender;
-        ORMarketLib.MarketState marketState = getMarketState(market);
-        require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
-        
-       
     }
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
@@ -251,6 +251,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         if(marketVotersInfo.insertedFlag == 0){
             marketVotersInfo.insertedFlag = 1;
             marketResolvingVoters[marketAddress].push(account);
+            
+            RP.resolveVote(marketAddress, outcomeIndex, msg.sender, votePower);
         }
 
         marketVotersInfo.voteFlag = true;
@@ -357,7 +359,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
          // Add liquidity
         collateralToken.transferFrom(msg.sender,address(this),amount);
         collateralToken.approve(address(fpMarket),amount);
-        fpMarket.addLiquidityTo(msg.sender,amount);
+        uint sharesAmount = fpMarket.addLiquidityTo(msg.sender,amount);
+        
+        RP.lpMarketAdd(market, msg.sender, sharesAmount);
     }
     
     function marketRemoveLiquidity(address market,uint256 sharesAmount, bool autoMerg) public{
@@ -380,10 +384,15 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         }
         
         fpMarket.removeLiquidityTo(beneficiary,sharesAmount, autoMerg);
+        
+        RP.lpMarketRemove(market, msg.sender, sharesAmount);
     }
     
-    
+   
     function marketBuy(address market,uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBu) public{
+        ORMarketLib.MarketState marketState = getMarketState(market);
+        require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
+        
         ORFPMarket fpMarket = ORFPMarket(market);
         IERC20 collateralToken = fpMarket.collateralToken();
         
@@ -391,14 +400,21 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         collateralToken.approve(address(fpMarket),investmentAmount);
         
         fpMarket.buyTo(msg.sender,investmentAmount,outcomeIndex,minOutcomeTokensToBu);
+        
+        RP.tradeAmount(market, msg.sender, investmentAmount, true);
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
+        ORMarketLib.MarketState marketState = getMarketState(market);
+        require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
+        
         ORFPMarket fpMarket = ORFPMarket(market);
         uint256[] memory PositionIds = fpMarket.getPositionIds();
         ct.setApprovalForAll(address(fpMarket),true);
         ct.safeTransferFrom(msg.sender, address(this), PositionIds[index], amount, "");
-        fpMarket.sellTo(msg.sender,amount,index);
+        uint256 tradeVolume = fpMarket.sellTo(msg.sender,amount,index);
+        
+        RP.tradeAmount(market, msg.sender, tradeVolume, false);
     }
 
     
