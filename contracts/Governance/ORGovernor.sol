@@ -1,25 +1,37 @@
 pragma solidity ^0.5.1;
 import "./IORGovernor.sol";
+import "../CourtStake/ICourtStake.sol";
+import "../TimeDependent/TimeDependent.sol";
 
-contract ORGovernor{
-    function getAccountInfo(address account) external returns(bool governorFlag, bool suspendedFlag, uint256 power){
-        //todo
-    }
-    function getSuspendReason(address account) external returns(string memory reason){
-        //todo
-    }
+contract ORGovernor is TimeDependent{
     
-    
-    
-    ////////
-    mapping(address => uint256) powerPerUser;
-     // todo: not a real function, just to mimic the Governance power
-    function setAccountPower(address account, uint256 power) public {
-        powerPerUser[account] = power;
+    ICourtStake courtStake;
+    mapping(address => uint256) suspended;
+    mapping(address => string) suspendReason;
+    function setCourtStake(address courtStakeAddress) public{
+        //sec unchecked
+        courtStake = ICourtStake(courtStakeAddress);
     }
     
-    // todo: not a real function, just to mimic the Governance power
-    function setPower(address account, uint256 power) public{
-        powerPerUser[account] = power;
+    function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
+        
+        uint256 cDay = getCurrentTime() / 1 days;
+        
+        if( suspended[account] > cDay){
+            return(true, true, 0);
+        }
+        
+        return(true,false, courtStake.getUserPower(account));
+    }
+    
+    function getSuspendReason(address account) external view returns(string memory reason){
+        return suspendReason[account];
+    }
+    
+    
+    function suspendAccount(address account, uint256 numOfDays, string memory reason) public{
+        //todo sec check
+        suspended[account] =  numOfDays + (getCurrentTime() /1 days);
+        suspendReason[account] = reason;
     }
 }
