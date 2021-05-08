@@ -2,6 +2,7 @@ pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
 import "./OR/ORMarketController.sol";
+import "./RewardCenter/RewardProgram.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 
@@ -45,6 +46,10 @@ contract AAA3MarketController1 is ORMarketController{
 
 contract timeAA is CentralTimeForTesting{
     //0x3c4Fca7B5944A750C3EBF732dBf04591aCbb821d
+}
+
+contract AAA5RewardProgram is RewardProgram{
+    
 }
 
 

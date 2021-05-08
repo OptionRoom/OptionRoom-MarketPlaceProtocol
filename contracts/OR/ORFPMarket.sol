@@ -42,16 +42,19 @@ contract ORFPMarket is FixedProductMarketMaker {
     
 
     
-    function addLiquidityTo(address beneficiary, uint256 amount) public {
+    function addLiquidityTo(address beneficiary, uint256 amount) public returns(uint) {
+        uint shares;
         uint[] memory distributionHint;
         if (totalSupply() > 0) {
-            addFundingTo(beneficiary,amount, distributionHint);
+            shares = addFundingTo(beneficiary,amount, distributionHint);
         } else {
             distributionHint = new uint[](2);
             distributionHint[0] = 1;
             distributionHint[1] = 1;
-            addFundingTo(beneficiary,amount, distributionHint);
+            shares= addFundingTo(beneficiary,amount, distributionHint);
         }
+        
+        return shares;
     }
 
     function removeLiquidityTo(address beneficiary, uint256 shares, bool autoMerge) public {

@@ -15,12 +15,18 @@ module.exports = function(deployer) {
 	const markettemplate = await markettemplateArt.deployed();
 	console.log("markettemplate.address (AAA4)");
 	console.log(markettemplate.address);
+	
+	const rewardProgramArt = artifacts.require("AAA5RewardProgram");
+	const rewardProgram = await rewardProgramArt.deployed();
+	console.log("AAA5RewardProgram.address (AAA5)");
+	console.log(rewardProgram.address);
 
 
     const FactoryArt = artifacts.require("AAA3MarketController1");
     const factoryC = await FactoryArt.deployed();
 
     await factoryC.setTemplateAddress(markettemplate.address);
+	await factoryC.setRewardCenter(rewardProgram.address);
 	await factoryC.setA1(demoToken.address);
 	await factoryC.setA2(CondTokenArt.address);
 
