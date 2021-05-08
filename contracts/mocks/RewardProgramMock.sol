@@ -12,6 +12,6 @@ contract RewardProgramMock is RewardProgram {
         uint256 cDay = getCurrentTime() / 1 days;
         validationLastRewardsDistributedDay = cDay;
         resolveLastRewardsDistributedDay = cDay;
+        deploymentDay = cDay;
     }
-    
 }

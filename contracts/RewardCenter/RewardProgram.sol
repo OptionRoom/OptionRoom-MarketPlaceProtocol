@@ -26,6 +26,8 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
     bool public includeSellInTradeFlag = true; //todo
 
+    uint256 deploymentDay = 0;
+
     uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days
     uint256 public lpAccRewardsPerToken;
     uint256 public lpLastUpdateDate;
@@ -66,6 +68,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         uint256 cDay = getCurrentTime() / 1 days;
         validationLastRewardsDistributedDay = cDay;
         resolveLastRewardsDistributedDay = cDay;
+        deploymentDay = cDay;
     }
     
     function validationInstallRewards() public {
@@ -108,6 +111,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
 
         uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
         for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
             if (validationTotalPowerCastedPerDay[cDay] != 0) {
                 rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18 / validationTotalPowerCastedPerDay[cDay];
@@ -126,6 +132,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
 
         uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
         for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
             if (resolveTotalPowerCastedPerDay[cDay] != 0) {
                 rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18 / resolveTotalPowerCastedPerDay[cDay];
@@ -144,6 +153,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
 
         uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
         for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
             if (tradeTotalVolumePerDay[cDay] != 0) {
                 rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18 / tradeTotalVolumePerDay[cDay];
