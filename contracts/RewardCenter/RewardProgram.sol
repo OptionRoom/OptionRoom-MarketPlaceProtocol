@@ -59,11 +59,15 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
 
     constructor() public {
+        initialize();
+    }
+
+    function initialize() internal {
         uint256 cDay = getCurrentTime() / 1 days;
         validationLastRewardsDistributedDay = cDay;
         resolveLastRewardsDistributedDay = cDay;
     }
-
+    
     function validationInstallRewards() public {
         uint256 dayBefore = (getCurrentTime() / 1 days) - 1;
         if (dayBefore > validationLastRewardsDistributedDay) {
