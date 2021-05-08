@@ -68,6 +68,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         uint256 cDay = getCurrentTime() / 1 days;
         validationLastRewardsDistributedDay = cDay;
         resolveLastRewardsDistributedDay = cDay;
+        tradeLastRewardsDistributedDay = cDay;
         deploymentDay = cDay;
     }
     
@@ -114,9 +115,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         if (LastClaimedDay < deploymentDay) {
             LastClaimedDay = deploymentDay;
         }
-        for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
-            if (validationTotalPowerCastedPerDay[cDay] != 0) {
-                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18 / validationTotalPowerCastedPerDay[cDay];
+        for (uint256 index = LastClaimedDay; index < cDay; index++) {
+            if (validationTotalPowerCastedPerDay[index] != 0) {
+                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18 / validationTotalPowerCastedPerDay[index];
             }
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
@@ -135,9 +136,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         if (LastClaimedDay < deploymentDay) {
             LastClaimedDay = deploymentDay;
         }
-        for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
-            if (resolveTotalPowerCastedPerDay[cDay] != 0) {
-                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18 / resolveTotalPowerCastedPerDay[cDay];
+        for (uint256 index = LastClaimedDay; index < cDay; index++) {
+            if (resolveTotalPowerCastedPerDay[index] != 0) {
+                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18 / resolveTotalPowerCastedPerDay[index];
             }
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
@@ -156,9 +157,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         if (LastClaimedDay < deploymentDay) {
             LastClaimedDay = deploymentDay;
         }
-        for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
-            if (tradeTotalVolumePerDay[cDay] != 0) {
-                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18 / tradeTotalVolumePerDay[cDay];
+        for (uint256 index = LastClaimedDay; index < cDay; index++) {
+            if (tradeTotalVolumePerDay[index] != 0) {
+                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18 / tradeTotalVolumePerDay[index];
             }
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
@@ -172,6 +173,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
         uint256 rewardsCanClaim;
         uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
         for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
             if (validationTotalPowerCastedPerDay[cDay] != 0) {
                 rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18 / validationTotalPowerCastedPerDay[cDay];
@@ -195,6 +199,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
         uint256 rewardsCanClaim;
         uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
         for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
             if (resolveTotalPowerCastedPerDay[cDay] != 0) {
                 rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18 / resolveTotalPowerCastedPerDay[cDay];
@@ -218,6 +225,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
         uint256 rewardsCanClaim;
         uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
         for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
             if (tradeTotalVolumePerDay[cDay] != 0) {
                 rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18 / tradeTotalVolumePerDay[cDay];
