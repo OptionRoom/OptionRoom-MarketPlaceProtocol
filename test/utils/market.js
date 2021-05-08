@@ -15,6 +15,7 @@ const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMo
 const ORFPMarket = artifacts.require('ORFPMarket')
 const RoomsGovernor = artifacts.require('ORGovernanceMock')
 const CentralTimeForTestingContract = artifacts.require('CentralTimeForTesting')
+const RewardProgram = artifacts.require('RewardProgramMock')
 
 const ORMarketLib = artifacts.require('ORMarketLib')
 var BigNumber = require('bignumber.js');
@@ -29,6 +30,8 @@ let orgTimeSnapShot
 
 let centralTime
 let marketLibrary;
+
+let rewardProgram;
 
 const {
   marketValidationPeriod,
@@ -53,11 +56,20 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   collateralToken = await CollatContract.new() ;//await WETH9.deployed();
   fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
   governanceMock = await RoomsGovernor.deployed()
-  
+
+  await centralTime.initializeTime();
+
   // Assign the timer to the governance.
   await fixedProductMarketMakerFactory.setCentralTimeForTesting(centralTime.address);
-  // await governanceMock.setCentralTimeForTesting(centralTime.address);
+  rewardProgram = await RewardProgram.deployed();
+  await rewardProgram.setCentralTimeForTesting(centralTime.address);
+  await rewardProgram.doInitialization();
 
+  await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
+
+
+  await fixedProductMarketMakerFactory.setRewardCenter(rewardProgram.address);
+  
   let deployedMarketMakerContract = await ORFPMarket.deployed();
   await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
   await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
