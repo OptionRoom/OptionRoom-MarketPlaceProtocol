@@ -33,7 +33,7 @@ contract PredictionMarketFactoryMock is ORMarketController {
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
         
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20( collateralToken ), conditionIds, marketFee);
-        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), marketMinShareLiq ,questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, address(this) ,questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
 
         proposalIds[questionId] = address(fpMarket);
