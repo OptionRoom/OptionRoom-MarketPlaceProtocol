@@ -63,11 +63,6 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
    
     mapping(address => bool) payoutsMarkets;
-    
-    uint256 public validationRewardPerDay = 1700e18; // todo
-    uint256 public resolveRewardPerDay = 1700e18; // todo
-    uint256 public tradeRewardPerDay = 1700e18; // todo
-   
 
     uint256 public marketMinShareLiq = 100e18; //TODO
     uint256 public marketFee = 20000000000000000;  //2% todo
@@ -343,7 +338,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         //ORMarketController marketController =  ORMarketController(governanceAdd);
         
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketFee);
-        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), marketMinShareLiq ,questionId);
+        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
         
         proposalIds[questionId] = address(fpMarket);
