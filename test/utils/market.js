@@ -10,6 +10,7 @@ let ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORCondi
 let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
 let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
 let CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
+let PermissionsController = artifacts.require("../../../contracts/Guardian/GnGOwnable.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
@@ -32,6 +33,7 @@ let centralTime
 let marketLibrary;
 
 let rewardProgram;
+let permissionsController;
 
 const {
   marketValidationPeriod,
@@ -48,6 +50,11 @@ const questionString = 'Test'
 const feeFactor = toBN(3e15) // (0.3%)
 
 let positionIds
+let deployer;
+
+function setDeployer(deployerAccount) {
+  deployer = deployerAccount;
+}
 
 async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   conditionalTokens = await ConditionalTokensContract.new();
@@ -55,6 +62,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   centralTime = await CentralTimeForTestingContract.new();
   
   collateralToken = await CollatContract.new() ;//await WETH9.deployed();
+
   fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
   governanceMock = await RoomsGovernor.deployed()
 
@@ -65,6 +73,10 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   rewardProgram = await RewardProgram.deployed();
   await rewardProgram.setCentralTimeForTesting(centralTime.address);
   await rewardProgram.doInitialization();
+
+  let deployer1 = await rewardProgram.guardianAddress.call();
+  console.log(deployer1);
+  console.log(deployer);
 
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
 
@@ -226,6 +238,7 @@ async function moveOneDay() {
 }
 
 module.exports = {
+  setDeployer,
   moveToResolved11,
   prepareContracts,
   createNewMarket,
