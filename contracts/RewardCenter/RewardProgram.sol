@@ -4,8 +4,9 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../TimeDependent/TimeDependent.sol";
 import "./IRewardCenter.sol";
 import "./IRewardProgram.sol";
+import "../Guardian/GnGOwnable.sol";
 
-contract RewardProgram is TimeDependent, IRewardProgram {
+contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
 
     using SafeMath for uint256;
 
@@ -36,7 +37,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
     uint256 deploymentDay = 0;
 
-    uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days //todo
+    uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days 
     uint256 public lpAccRewardsPerToken;
     uint256 public lpLastUpdateDate;
     uint256 public lpTotalEffectiveVolume;
@@ -98,8 +99,8 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
     }
 
-    function setMarketWeight(address market, uint256 weight) public {
-        // todo sec chec
+    function _setMarketWeight(address market, uint256 weight) internal {
+        
         address account = msg.sender;
         lpUpdateReward(market, account);
 
@@ -270,7 +271,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
 
     function gAdd(uint256 poolID,  address account, uint256 v) internal {
-       
+       require(msg.sender == marketControllerAddress , "caller is not market controller");
         
         gInstallRewards(poolID);
         // first user in a day will mark the previous day to be distributed
@@ -284,6 +285,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     
     function resolveVote(address market, uint8 selection, address account, uint256 votePower) external{
         gAdd( uint256(RewardType.Resolve) ,account, votePower);
+        _setMarketWeight(market,0); // when start Resolve the market, no need to give rewards for LP
     }
     
     function validationVote(address market, bool validationFlag, address account, uint256 votePower) external{
@@ -325,26 +327,37 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
     ////////////////////
     
-    function setMarketControllerAddress(address controllerAddress) public{
-        // sec only deployer
+    function setMarketControllerAddress(address controllerAddress) public onlyGovOrGur{
+
         marketControllerAddress = controllerAddress;
     }
     
-    function setValidationRewardPerDay(uint256 rewardPerDay) public{
-        //todo sec check
-        gRewardPerDay[0] = validationRewardPerDay;
+    function setValidationRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        validationRewardPerDay = rewardPerDay;
+        gRewardPerDay[uint256(RewardType.Validation)] = validationRewardPerDay;
     }
     
-    function setResolveRewardPerDay(uint256 rewardPerDay) public{
-        //todo sec check
-        gRewardPerDay[1] = resolveRewardPerDay;
+    function setResolveRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        resolveRewardPerDay = rewardPerDay;
+        gRewardPerDay[uint256(RewardType.Resolve)] = resolveRewardPerDay;
 
     }
     
-    function setTradeRewardPerDay(uint256 rewardPerDay) public{
-        //todo sec check
-        gRewardPerDay[2] = tradeRewardPerDay;
+    function setTradeRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        tradeRewardPerDay = rewardPerDay;
+        gRewardPerDay[uint256(RewardType.Trade)] = tradeRewardPerDay;
     }
+    
+    function setLPRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        lpRewardPerDay = rewardPerDay;
+        lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;
+    }
+    
+    function setMarketWeight(address market, uint256 weight) public onlyGovOrGur {
+        setMarketWeight(market,weight);
+    }
+    
+    
 
 
     //////////////////////
