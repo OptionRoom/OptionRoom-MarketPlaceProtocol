@@ -48,7 +48,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         
         address account = msg.sender;
         require(cDay >= suspended[account] , "user can not withdraw before suspended date");
-        require(stakedPerUser[account] >= amount, "amount excced stake amout");
+        require(stakedPerUser[account] >= amount, "amount exceed deposited amount");
         
         uint256 removeAmount = amount;
         while( removeAmount > 0){
