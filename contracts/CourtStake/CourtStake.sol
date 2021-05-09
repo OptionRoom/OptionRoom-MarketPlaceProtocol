@@ -68,6 +68,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
             i++;
         }
         
+        courtToken.transferFrom(address(this),msg.sender,amount);
         stakedPerUser[account] -= amount;
     }
     
