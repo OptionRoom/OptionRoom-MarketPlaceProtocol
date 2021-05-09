@@ -49,6 +49,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     IORGovernor orGovernor;
+    ConditionalTokens public ct; 
     IRewardProgram  public RP; //reward program
     
     mapping(address => MarketInfo) marketsInfo;
@@ -72,7 +73,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
     
-    ConditionalTokens public ct = ConditionalTokens(0x6A6B973E3AF061dB947673801e859159F963C026); //todo
+    
     mapping(bytes32 => address) public proposalIds;
     
     
@@ -83,10 +84,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
     }
     
-    function setRewardCenter(address rewardProgramAddress) public{
-        //todo sec check
-        RP = IRewardProgram(rewardProgramAddress);
-    }
+    
     
     function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
         // todo security check
@@ -98,10 +96,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     
-    function setIORGoverner(address orGovernorAddress) public{
-        // todo set security check and modifier
-        orGovernor = IORGovernor(orGovernorAddress);
-    }
+    
     
 
     function payoutsAction(address marketAddress) external {
@@ -411,6 +406,26 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         uint256 tradeVolume = fpMarket.sellTo(msg.sender,amount,index);
         
         RP.tradeAmount(market, msg.sender, tradeVolume, false);
+    }
+    
+    //
+    function setTemplateAddress(address templateAddress) public onlyGovOrGur{
+        
+        implementationMasterAddr = templateAddress;
+    }
+    
+    function setIORGoverner(address orGovernorAddress) public onlyGovOrGur{
+        
+        orGovernor = IORGovernor(orGovernorAddress);
+    }
+    
+    function setRewardCenter(address rewardProgramAddress) public onlyGovOrGur{
+       
+        RP = IRewardProgram(rewardProgramAddress);
+    }
+    
+    function setConditionalToken(address conditionalTokens) public onlyGovOrGur{
+        ct = ConditionalTokens(conditionalTokens);
     }
     
     // market configuration

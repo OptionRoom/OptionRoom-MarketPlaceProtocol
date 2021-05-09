@@ -1,12 +1,12 @@
 pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
 import "./ORMarketController.sol";
+import "../Guardian/GnGOwnable.sol";
 
-contract ORMarketsQuery{
+contract ORMarketsQuery is GnGOwnable{
     ORMarketController  marketsController;
     
-    function setMarketsController(address marketController) public{
-        //todo sec
+    function setMarketsController(address marketController) public onlyGovOrGur{
         marketsController = ORMarketController(marketController);
     }
     

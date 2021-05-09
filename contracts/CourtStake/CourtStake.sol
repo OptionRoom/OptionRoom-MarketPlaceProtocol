@@ -48,7 +48,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         
         address account = msg.sender;
         require(cDay >= suspended[account] , "user can not withdraw before suspended date");
-        require(stakedPerUser[account] >= amount, "amount excced stake amout");
+        require(stakedPerUser[account] >= amount, "amount exceed deposited amount");
         
         uint256 removeAmount = amount;
         while( removeAmount > 0){
@@ -68,6 +68,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
             i++;
         }
         
+        courtToken.transferFrom(address(this),msg.sender,amount);
         stakedPerUser[account] -= amount;
     }
     
@@ -79,6 +80,10 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     function _suspendAccount(address account, uint256 numOfDays) internal onlyGovOrGur{
         
         suspended[account] = getCurrentDay() + numOfDays;
+    }
+    
+    function suspendAccount(address account, uint256 numOfDays) external {
+        //todo
     }
     
     function getUserPower(address account) public view returns(uint256){
@@ -101,6 +106,18 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     
     function getCurrentDay() public view returns(uint256){
         return getCurrentTime() / 1 days;
+    }
+}
+
+contract CourtStakeDummy is CourtStake{
+    mapping(address => uint256) powers;
+    
+    function setUserPower(address account, uint256 power) public{
+        powers[account] = power;
+    }
+    
+    function getUserPower(address account) public view returns(uint256){
+        return powers[account];
     }
 }
 

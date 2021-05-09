@@ -2,14 +2,15 @@ pragma solidity ^0.5.1;
 import "./IORGovernor.sol";
 import "../CourtStake/ICourtStake.sol";
 import "../TimeDependent/TimeDependent.sol";
+import "../Guardian/GnGOwnable.sol";
 
-contract ORGovernor is TimeDependent{
+contract ORGovernor is TimeDependent, GnGOwnable{
     
     ICourtStake courtStake;
     mapping(address => uint256) suspended;
     mapping(address => string) suspendReason;
-    function setCourtStake(address courtStakeAddress) public{
-        //sec unchecked
+    
+    function setCourtStake(address courtStakeAddress) public onlyGovOrGur{
         courtStake = ICourtStake(courtStakeAddress);
     }
     
