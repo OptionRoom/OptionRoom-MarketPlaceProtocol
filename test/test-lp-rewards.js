@@ -64,9 +64,6 @@ contract('OR validation rewards', function([, creator, oracle, investor1, trader
 
   //tradeClaimUserRewards test for this .
   it('Should vote for the approval of this created market', async function() {
-    // let rewards = await rewardsProgram.tradeClaimUserRewards({from: investor1});
-    // console.log(rewards['todayReward'].toString());
-    // console.log(rewards['rewardsCanClaim'].toString());
   })
 
 })
