@@ -7,6 +7,7 @@ import "../TimeDependent/TimeDependent.sol";
 
 import "./FixedProductMarketMakerFactoryOR.sol";
 import "../RewardCenter/IRewardProgram.sol";
+import "../Guardian/GnGOwnable.sol";
 
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
@@ -19,7 +20,7 @@ interface IReportPayouts{
 }
 
 
-contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory{
+contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory, GnGOwnable{
     using SafeMath for uint256;
 
     struct MarketVotersInfo{
@@ -64,7 +65,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
    
     mapping(address => bool) payoutsMarkets;
 
-    uint256 public marketMinShareLiq = 100e18; //TODO
+    uint256 public marketMinShareLiq = 100e18; //todo
     uint256 public marketFee = 20000000000000000;  //2% todo
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
@@ -413,24 +414,28 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     // market configuration
-    function setMarketMinShareLiq(uint256 minLiq) public {
+    function setMarketMinShareLiq(uint256 minLiq) public onlyGovOrGur {
         marketMinShareLiq = minLiq;
     }
 
-    function setMarketValidatingPeriod(uint256 p) public{
+    function setMarketValidatingPeriod(uint256 p) public onlyGovOrGur{
         marketValidatingPeriod = p;
     }
 
-    function setMarketDisputePeriod(uint256 p) public{
+    function setMarketDisputePeriod(uint256 p) public onlyGovOrGur{
         marketDisputePeriod = p;
     }
 
-    function setMarketReCastResolvingPeriod(uint256 p) public{
+    function setMarketReCastResolvingPeriod(uint256 p) public onlyGovOrGur{
         marketReCastResolvingPeriod = p;
     }
 
-    function setDisputeThreshold(uint256 t) public{
+    function setDisputeThreshold(uint256 t) public onlyGovOrGur{
         disputeThreshold = t;
+    }
+    
+    function setMarketFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
+        marketFee = numerator * 1e18 / denominator;
     }
 
 
