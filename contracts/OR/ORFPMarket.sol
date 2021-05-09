@@ -12,8 +12,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     address public proposer;
     bytes32 public questionId;
 
-    uint256 public minShareLiq;
-    
+
     bool private initializationPhase2;
 
     string public marketQuestionID;
@@ -26,7 +25,6 @@ contract ORFPMarket is FixedProductMarketMaker {
             string memory _marketQuestionID,
             address _proposer,
             address _controller,
-            uint256 _minShareLiq,
             bytes32 _questionId
     ) public {
         require(initializationPhase2 == false, "Initialization already called");
@@ -35,8 +33,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         marketQuestionID = _marketQuestionID;
         proposer = _proposer;
         questionId = _questionId;
-        
-        minShareLiq = _minShareLiq;
     }
     
     

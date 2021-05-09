@@ -1,14 +1,15 @@
 pragma solidity ^0.5.0;
-import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import {IERC20} from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "../TimeDependent/TimeDependent.sol";
-import "./ICourtStake.sol";
 
-contract CourtStake is TimeDependent, ICourtStake {
+import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import "./ICourtStake.sol";
+import "../TimeDependent/TimeDependent.sol";
+import "../Guardian/GnGOwnable.sol";
+
+contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     //using SafeMath for uint256;
     
     // This is  ERC20 address. //todo getCourt address
-    IERC20 public constant courtToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
+    IERC20 public courtToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
     //todo: calc optimize
     
     struct StakedInfo{
@@ -20,6 +21,10 @@ contract CourtStake is TimeDependent, ICourtStake {
     mapping(address => StakedInfo[]) stakedInfoUser;
     
     mapping(address => uint256) suspended;
+    
+    function setCourtTokenAddress(address courtTokenAdd) public onlyGovOrGur{
+        courtToken = IERC20(courtTokenAdd);
+    }
     
     function deposit(uint256 amount) public{
         address account = msg.sender;
@@ -66,8 +71,12 @@ contract CourtStake is TimeDependent, ICourtStake {
         stakedPerUser[account] -= amount;
     }
     
-    function suspendAccount(address account, uint256 numOfDays) public{
-        // todo: sec check
+    function suspendAccountByGovOrGur(address account, uint256 numOfDays) public onlyGovOrGur{
+        
+        _suspendAccount(account,numOfDays);
+    }
+    
+    function _suspendAccount(address account, uint256 numOfDays) internal onlyGovOrGur{
         
         suspended[account] = getCurrentDay() + numOfDays;
     }

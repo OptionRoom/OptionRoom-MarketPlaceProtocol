@@ -4,8 +4,10 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "../TimeDependent/TimeDependent.sol";
 import "./IRewardCenter.sol";
 import "./IRewardProgram.sol";
+import "../Guardian/GnGOwnable.sol";
+import "../OR/IORMarketController.sol";
 
-contract RewardProgram is TimeDependent, IRewardProgram {
+contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
 
     using SafeMath for uint256;
 
@@ -25,7 +27,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         Resolve
     }
     
-    bool public IncludeSellInTradeRewards = true; //todo
+    bool public includeSellInTradeRewards = true; //todo
 
     uint256 public validationRewardPerDay = 1000e18; // todo
     uint256 public resolveRewardPerDay = 1000e18; // todo
@@ -36,7 +38,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
     uint256 deploymentDay = 0;
 
-    uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days //todo
+    uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days 
     uint256 public lpAccRewardsPerToken;
     uint256 public lpLastUpdateDate;
     uint256 public lpTotalEffectiveVolume;
@@ -98,8 +100,8 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
     }
 
-    function setMarketWeight(address market, uint256 weight) public {
-        // todo sec chec
+    function _setMarketWeight(address market, uint256 weight) internal {
+        
         address account = msg.sender;
         lpUpdateReward(market, account);
 
@@ -111,13 +113,15 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
 
     function claimLPReward(address market) public returns (uint256) {
-        // Todo: can not claim in the following proposal states (approving, rejected)
+        IORMarketController marketController = IORMarketController(marketControllerAddress);
+        ORMarketLib.MarketState marketState = marketController.getMarketState(market);
+        require(marketState >= ORMarketLib.MarketState.Active, "can not claim in Invalid, Validating, Rejected state"); //can not claim in the following proposal states (Invalid, Validating, Rejected )
         LPUserInfoPMarket storage lpUser = lpUsers[market][msg.sender];
 
         uint256 amountToClaim = lpUser.totalRewards.sub(lpUser.claimedRewards);
         lpUser.claimedRewards = lpUser.totalRewards;
 
-        //todo ask reward center to send amountToClaim
+        rewardCenter.sendRoomRewardByDollarAmount(msg.sender,amountToClaim, "");
         return amountToClaim;
     }
 
@@ -205,12 +209,12 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
        
         
-        uint256 LastClaimedDay = gLastClaimedDayPerUser[poolID][account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
+        uint256 lastClaimedDay = gLastClaimedDayPerUser[poolID][account];
+        if (lastClaimedDay < deploymentDay) {
+            lastClaimedDay = deploymentDay;
         }
         
-        for (uint256 index = LastClaimedDay ; index < cDay; index++) {
+        for (uint256 index = lastClaimedDay ; index < cDay; index++) {
             if (gTotalVolumePerDay[poolID][index] != 0) { //gRewardPerDay
                 uint256 localgRewardPerDay = gRewardsPerDay[poolID][index];
                 if(localgRewardPerDay == 0){
@@ -223,22 +227,6 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         claimedRewards = gClaimedPerUser[poolID][account];
     }
     
-    function gCanClaim(uint256 poolID, address account, uint256 cDay) internal view returns(uint256 rewardsCanClaim){
-        uint256 LastClaimedDay = gLastClaimedDayPerUser[poolID][account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        
-        for (uint256 index = LastClaimedDay ; index < cDay; index++) {
-            if (gTotalVolumePerDay[poolID][index] != 0) {
-                rewardsCanClaim += gRewardsPerDay[poolID][index] * gTotalVolumePerDayPerUser[poolID][index][account] * 1e18 / gTotalVolumePerDay[poolID][index];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-
-    
-
     function gClaimUserRewards(uint256 poolID) internal {
         //todo: check if there is penalty
         
@@ -249,28 +237,27 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
         uint256 rewardsCanClaim;
         
-        uint256 LastClaimedDay = gLastClaimedDayPerUser[poolID][account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
+        uint256 lastClaimedDay = gLastClaimedDayPerUser[poolID][account];
+        if (lastClaimedDay < deploymentDay) {
+            lastClaimedDay = deploymentDay;
         }
         
-        for (uint256 index = LastClaimedDay ; index < cDay; index++) {
+        for (uint256 index = lastClaimedDay ; index < cDay; index++) {
             if (gTotalVolumePerDay[poolID][index] != 0) {
                 rewardsCanClaim += gRewardsPerDay[poolID][index] * gTotalVolumePerDayPerUser[poolID][index][account] * 1e18 / gTotalVolumePerDay[poolID][index];
             }
         }
         rewardsCanClaim = rewardsCanClaim / 1e18;
-        gLastClaimedDayPerUser[poolID][account] = cDay;
+        gLastClaimedDayPerUser[poolID][account] = lastClaimedDay;
 
-        // todo: ask the reward center to send rewardsCanClaim
-        //rewardCenter.sendReward(account, rewardsCanClaim);
+        rewardCenter.sendRoomRewardByDollarAmount(msg.sender,rewardsCanClaim, "");
         gClaimedPerUser[poolID][msg.sender] += rewardsCanClaim;
     }
 
 
 
     function gAdd(uint256 poolID,  address account, uint256 v) internal {
-       
+       require(msg.sender == marketControllerAddress , "caller is not market controller");
         
         gInstallRewards(poolID);
         // first user in a day will mark the previous day to be distributed
@@ -284,6 +271,7 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     
     function resolveVote(address market, uint8 selection, address account, uint256 votePower) external{
         gAdd( uint256(RewardType.Resolve) ,account, votePower);
+        _setMarketWeight(market,0); // when start Resolve the market, no need to give rewards for LP
     }
     
     function validationVote(address market, bool validationFlag, address account, uint256 votePower) external{
@@ -291,7 +279,9 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
     
     function tradeAmount(address market, address account, uint256 amount, bool buyFlag) external{
-        if(buyFlag || IncludeSellInTradeRewards){
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        
+        if(buyFlag || includeSellInTradeRewards){
             gAdd( uint256(RewardType.Trade) ,account, amount);
         }
     }
@@ -325,26 +315,45 @@ contract RewardProgram is TimeDependent, IRewardProgram {
     }
     ////////////////////
     
-    function setMarketControllerAddress(address controllerAddress) public{
-        // sec only deployer
+    function setMarketControllerAddress(address controllerAddress) public onlyGovOrGur{
+
         marketControllerAddress = controllerAddress;
     }
     
-    function setValidationRewardPerDay(uint256 rewardPerDay) public{
-        //todo sec check
-        gRewardPerDay[0] = validationRewardPerDay;
+    function setValidationRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        validationRewardPerDay = rewardPerDay;
+        gRewardPerDay[uint256(RewardType.Validation)] = validationRewardPerDay;
     }
     
-    function setResolveRewardPerDay(uint256 rewardPerDay) public{
-        //todo sec check
-        gRewardPerDay[1] = resolveRewardPerDay;
+    function setResolveRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        resolveRewardPerDay = rewardPerDay;
+        gRewardPerDay[uint256(RewardType.Resolve)] = resolveRewardPerDay;
 
     }
     
-    function setTradeRewardPerDay(uint256 rewardPerDay) public{
-        //todo sec check
-        gRewardPerDay[2] = tradeRewardPerDay;
+    function setTradeRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        tradeRewardPerDay = rewardPerDay;
+        gRewardPerDay[uint256(RewardType.Trade)] = tradeRewardPerDay;
     }
+    
+    function setLPRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
+        lpRewardPerDay = rewardPerDay;
+        lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;
+    }
+    
+    function setMarketWeight(address market, uint256 weight) public onlyGovOrGur {
+        setMarketWeight(market,weight);
+    }
+    
+    function setIncludeSellInTradeRewards(bool includeSellInTradeRewardsFlag) public onlyGovOrGur{
+        includeSellInTradeRewards = includeSellInTradeRewardsFlag;
+    }
+    /////////////////
+    
+    function setRewardCenter(address rewardCenterAddress) public onlyGovOrGur {
+        rewardCenter = IRewardCenter(rewardCenterAddress);
+    }
+    
 
 
     //////////////////////
