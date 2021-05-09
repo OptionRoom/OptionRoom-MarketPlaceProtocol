@@ -3,7 +3,7 @@ pragma experimental ABIEncoderV2;
 
 import "../Governance/ORGovernor.sol";
 
-contract ORGovernanceMock is ORGovernor {
+contract ORGovernanceMock is DummyORGovernor {
 
     function getAccountInfo(address account) external returns(bool governorFlag, bool suspendedFlag, uint256 power){
         // Mocking this.
