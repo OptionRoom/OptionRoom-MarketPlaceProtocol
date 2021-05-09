@@ -38,6 +38,7 @@ const {
   marketResolvingPeriod,
   marketDisputePeriod,
   marketReCastResolvingPeriod,
+  oneDay,
 } = require('./constants')
 
 let disputeThreshold = toBN(100e18)
@@ -82,7 +83,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return fixedProductMarketMakerFactory;
+  return [fixedProductMarketMakerFactory,rewardProgram];
 }
 
 async function createNewMarket(creator) {
@@ -220,6 +221,10 @@ async function getCollateralBalance(account) {
   return collateralToken.balanceOf(account);
 }
 
+async function moveOneDay() {
+  centralTime.increaseTime(oneDay + 100);
+}
+
 module.exports = {
   moveToResolved11,
   prepareContracts,
@@ -233,6 +238,7 @@ module.exports = {
   moveToActive,
   moveToResolving,
   moveToResolved,
+  moveOneDay,
   executeControllerMethod,
   resetTimeIncrease,
   conditionalApproveForAll,

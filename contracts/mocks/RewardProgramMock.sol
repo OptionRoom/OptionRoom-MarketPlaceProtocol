@@ -10,8 +10,12 @@ contract RewardProgramMock is RewardProgram {
     
     function doInitialization () public {
         uint256 cDay = getCurrentTime() / 1 days;
-        validationLastRewardsDistributedDay = cDay;
-        resolveLastRewardsDistributedDay = cDay;
         deploymentDay = cDay;
+        gLastRewardsDistributedDay[0] = cDay;
+        gLastRewardsDistributedDay[1] = cDay;
+        gLastRewardsDistributedDay[2] = cDay;
+        gRewardPerDay[0] = validationRewardPerDay;
+        gRewardPerDay[1] = resolveRewardPerDay;
+        gRewardPerDay[2] = tradeRewardPerDay;
     }
 }
