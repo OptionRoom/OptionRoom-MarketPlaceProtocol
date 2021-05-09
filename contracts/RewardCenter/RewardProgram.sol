@@ -18,244 +18,61 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         uint256 totalRewards;
         uint256 claimedRewards;
     }
+    
+    enum RewardType{
+        Trade,
+        Validation,
+        Resolve
+    }
+    
+    bool public IncludeSellInTradeRewards = true; //todo
 
-    uint256 public validationRewardPerDay = 1700e18; // todo
-    uint256 public resolveRewardPerDay = 1700e18; // todo
-    uint256 public tradeRewardPerDay = 1700e18; // todo
-    uint256 public lpRewardPerDay = 1700e18; // todo
+    uint256 public validationRewardPerDay = 1000e18; // todo
+    uint256 public resolveRewardPerDay = 1000e18; // todo
+    uint256 public tradeRewardPerDay = 1000e18; // todo
+    uint256 public lpRewardPerDay = 1000e18; // todo
 
     bool public includeSellInTradeFlag = true; //todo
 
     uint256 deploymentDay = 0;
 
-    uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days
+    uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days //todo
     uint256 public lpAccRewardsPerToken;
     uint256 public lpLastUpdateDate;
     uint256 public lpTotalEffectiveVolume;
 
     mapping(address => uint256) public lpMarketsWeight;
     mapping(address => uint256) public lpMarketsTotalVolume;
-    mapping(address => bool) public lpMarketsStopRewards;
-
+    mapping(address => bool)    public lpMarketsStopRewards;
     mapping(address => mapping(address => LPUserInfoPMarket)) public lpUsers;
 
-    mapping(address => bool) payoutsMarkets;
-
-    uint256 public validationLastRewardsDistributedDay;
-    mapping(uint256 => uint256) validationTotalPowerCastedPerDay;
-    mapping(uint256 => uint256) validationRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) validationTotalPowerCastedPerDayPerUser;
-    mapping(address => uint256) validationLastClaimedDayPerUser;
-
-    uint256 public resolveLastRewardsDistributedDay;
-    mapping(uint256 => uint256) resolveTotalPowerCastedPerDay;
-    mapping(uint256 => uint256) resolveRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) resolveTotalPowerCastedPerDayPerUser;
-    mapping(address => uint256) resolveLastClaimedDayPerUser;
-
-    uint256 public tradeLastRewardsDistributedDay;
-    mapping(uint256 => uint256) tradeTotalVolumePerDay;
-    mapping(uint256 => uint256) tradeRewardsPerDay;
-    mapping(uint256 => mapping(address => uint256)) tradeTotalVolumePerDayPerUser;
-    mapping(address => uint256) tradeLastClaimedDayPerUser;
-
-
+    
+    mapping(uint256 => uint256) gRewardPerDay; // todo
+    mapping(uint256 => uint256) gLastRewardsDistributedDay;
+    mapping(uint256 => mapping(uint256 => uint256))  gTotalVolumePerDay;
+    mapping(uint256 => mapping(uint256 => uint256))  gRewardsPerDay;
+    mapping(uint256 => mapping(uint256 => mapping(address => uint256)))  gTotalVolumePerDayPerUser;
+    mapping(uint256 => mapping(address => uint256))  gLastClaimedDayPerUser;
+    mapping(uint256 => mapping(address => uint256))  gClaimedPerUser;
+    
+    
     constructor() public {
         initialize();
+        
     }
 
     function initialize() internal {
         uint256 cDay = getCurrentTime() / 1 days;
-        validationLastRewardsDistributedDay = cDay;
-        resolveLastRewardsDistributedDay = cDay;
-        tradeLastRewardsDistributedDay = cDay;
         deploymentDay = cDay;
+        gLastRewardsDistributedDay[0] = cDay;
+        gLastRewardsDistributedDay[1] = cDay;
+        gLastRewardsDistributedDay[2] = cDay;
+        gRewardPerDay[0] = validationRewardPerDay;
+        gRewardPerDay[1] = resolveRewardPerDay;
+        gRewardPerDay[2] = tradeRewardPerDay;
     }
     
-    function validationInstallRewards() public {
-        uint256 dayBefore = (getCurrentTime() / 1 days) - 1;
-        if (dayBefore > validationLastRewardsDistributedDay) {
-            for (uint256 index = dayBefore; index > validationLastRewardsDistributedDay; index--) {
-                validationRewardsPerDay[index] = validationRewardPerDay;
-            }
-            validationLastRewardsDistributedDay = dayBefore;
-        }
-    }
-
-    function resolveInstallRewards() public {
-        uint256 dayBefore = (getCurrentTime() / 1 days) - 1;
-        if (dayBefore > resolveLastRewardsDistributedDay) {
-            for (uint256 index = dayBefore; index > resolveLastRewardsDistributedDay; index--) {
-                resolveRewardsPerDay[index] = resolveRewardPerDay;
-            }
-            resolveLastRewardsDistributedDay = dayBefore;
-        }
-    }
-
-    function tradeInstallRewards() public {
-        uint256 dayBefore = (getCurrentTime() / 1 days) - 1;
-        if (dayBefore > tradeLastRewardsDistributedDay) {
-            for (uint256 index = dayBefore; index > tradeLastRewardsDistributedDay; index--) {
-                tradeRewardsPerDay[index] = tradeRewardPerDay;
-            }
-            tradeLastRewardsDistributedDay = dayBefore;
-        }
-    }
-
-    function validationRewards(address account) public view returns (uint256 todayReward, uint256 rewardsCanClaim){
-        uint256 cDay = getCurrentTime() / 1 days;
-        uint256 tCPtoday = validationTotalPowerCastedPerDay[cDay];
-        if (tCPtoday != 0) {
-            uint256 userTotalPowerVotesToday = validationTotalPowerCastedPerDayPerUser[cDay][account];
-            todayReward = validationRewardPerDay * userTotalPowerVotesToday * 1e18 / tCPtoday;
-            todayReward = todayReward / 1e18;
-        }
-
-        uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        for (uint256 index = LastClaimedDay; index < cDay; index++) {
-            if (validationTotalPowerCastedPerDay[index] != 0) {
-                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18 / validationTotalPowerCastedPerDay[index];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-
-    function resolveRewards(address account) public view returns (uint256 todayReward, uint256 rewardsCanClaim){
-        uint256 cDay = getCurrentTime() / 1 days;
-        uint256 tCPtoday = resolveTotalPowerCastedPerDay[cDay];
-        if (tCPtoday != 0) {
-            uint256 userTotalPowerVotesToday = resolveTotalPowerCastedPerDayPerUser[cDay][account];
-            todayReward = resolveRewardPerDay * userTotalPowerVotesToday * 1e18 / tCPtoday;
-            todayReward = todayReward / 1e18;
-        }
-
-        uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        for (uint256 index = LastClaimedDay; index < cDay; index++) {
-            if (resolveTotalPowerCastedPerDay[index] != 0) {
-                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18 / resolveTotalPowerCastedPerDay[index];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-
-    function tradeRewards(address account) public view returns (uint256 todayReward, uint256 rewardsCanClaim){
-        uint256 cDay = getCurrentTime() / 1 days;
-        uint256 tCPtoday = tradeTotalVolumePerDay[cDay];
-        if (tCPtoday != 0) {
-            uint256 userTotalVolumeToday = tradeTotalVolumePerDayPerUser[cDay][account];
-            todayReward = tradeRewardPerDay * userTotalVolumeToday * 1e18 / tCPtoday;
-            todayReward = todayReward / 1e18;
-        }
-
-        uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        for (uint256 index = LastClaimedDay; index < cDay; index++) {
-            if (tradeTotalVolumePerDay[index] != 0) {
-                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18 / tradeTotalVolumePerDay[index];
-            }
-        }
-        rewardsCanClaim = rewardsCanClaim / 1e18;
-    }
-
-    function validationClaimUserRewards() public {
-        //todo: check if there is penalty
-        require(address(rewardCenter) != address(0), "Reward center is not set");
-        address account = msg.sender;
-        uint256 cDay = getCurrentTime() / 1 days;
-
-        uint256 rewardsCanClaim;
-        uint256 LastClaimedDay = validationLastClaimedDayPerUser[account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
-            if (validationTotalPowerCastedPerDay[cDay] != 0) {
-                rewardsCanClaim += validationRewardsPerDay[index] * validationTotalPowerCastedPerDayPerUser[index][account] * 1e18 / validationTotalPowerCastedPerDay[cDay];
-            }
-        }
-
-        validationLastClaimedDayPerUser[account] = cDay - 1;
-
-        // todo: ask the reward center to send rewardsCanClaim
-        rewardCenter.sendReward(account, rewardsCanClaim);
-
-    }
-
-    function resolveClaimUserRewards() public {
-        //todo: check if there is penalty
-
-        require(address(rewardCenter) != address(0), "Reward center is not set");
-
-        address account = msg.sender;
-        uint256 cDay = getCurrentTime() / 1 days;
-
-        uint256 rewardsCanClaim;
-        uint256 LastClaimedDay = resolveLastClaimedDayPerUser[account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
-            if (resolveTotalPowerCastedPerDay[cDay] != 0) {
-                rewardsCanClaim += resolveRewardsPerDay[index] * resolveTotalPowerCastedPerDayPerUser[index][account] * 1e18 / resolveTotalPowerCastedPerDay[cDay];
-            }
-        }
-
-        resolveLastClaimedDayPerUser[account] = cDay - 1;
-
-        // todo: ask the reward center to send rewardsCanClaim
-        rewardCenter.sendReward(account, rewardsCanClaim);
-
-    }
-
-    function tradeClaimUserRewards() public {
-        //todo: check if there is penalty
-
-        require(address(rewardCenter) != address(0), "Reward center is not set");
-
-        address account = msg.sender;
-        uint256 cDay = getCurrentTime() / 1 days;
-
-        uint256 rewardsCanClaim;
-        uint256 LastClaimedDay = tradeLastClaimedDayPerUser[account];
-        if (LastClaimedDay < deploymentDay) {
-            LastClaimedDay = deploymentDay;
-        }
-        for (uint256 index = LastClaimedDay + 1; index < cDay; index++) {
-            if (tradeTotalVolumePerDay[cDay] != 0) {
-                rewardsCanClaim += tradeRewardsPerDay[index] * tradeTotalVolumePerDayPerUser[index][account] * 1e18 / tradeTotalVolumePerDay[cDay];
-            }
-        }
-
-        tradeLastClaimedDayPerUser[account] = cDay - 1;
-
-        // todo: ask the reward center to send rewardsCanClaim
-        rewardCenter.sendReward(account, rewardsCanClaim);
-
-    }
-
-
-    function claimRewards(bool ValidationRewardsFlag, bool resolveRewardsFlag, bool tradeRewardsFlag) public {
-
-        if (ValidationRewardsFlag) {
-            validationClaimUserRewards();
-        }
-        if (resolveRewardsFlag) {
-            resolveClaimUserRewards();
-        }
-        if (tradeRewardsFlag) {
-            tradeClaimUserRewards();
-        }
-
-    }
-
+    
     function lpUpdateReward(address market, address account) public {
         uint256 cBlockNumber = getBlockNumber();
 
@@ -339,48 +156,6 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         }
     }
 
-
-    function tradeAmount(address market, address account, uint256 amount, bool buyFlag) public {
-        require(msg.sender == marketControllerAddress , "caller is not market controller");
-
-        tradeInstallRewards();
-        
-        if (buyFlag || includeSellInTradeFlag) {
-            uint256 cDay = getCurrentTime() / 1 days;
-
-            tradeTotalVolumePerDay[cDay] += amount;
-            tradeTotalVolumePerDayPerUser[cDay][account] += amount;
-        }
-    }
-
-    function validationVote(address market, bool validationFlag, address account, uint256 votePower) public {
-        require(msg.sender == marketControllerAddress , "caller is not market controller");
-        
-        validationInstallRewards();
-        // first user in a day will mark the previous day to be distributed
-
-        uint256 cDay = getCurrentTime() / 1 days;
-        validationTotalPowerCastedPerDay[cDay] += votePower;
-        validationTotalPowerCastedPerDayPerUser[cDay][account] += votePower;
-    }
-
-
-    function resolveVote(address market, uint8 selection, address account, uint256 votePower) public {
-        require(msg.sender == marketControllerAddress , "caller is not market controller");
-        
-        resolveInstallRewards();
-        // first caller in a day will mark the previous day to be distributed
-
-        if (lpMarketsStopRewards[market] == false) {// first caller vote for Resolving will stop the market from get rewards
-            lpMarketsStopRewards[market] == true;
-            setMarketWeight(market, 0);
-        }
-
-        uint256 cDay = getCurrentTime() / 1 days;
-        resolveTotalPowerCastedPerDay[cDay] += votePower;
-        resolveTotalPowerCastedPerDayPerUser[cDay][account] += votePower;
-    }
-
     function lpMarketAdd(address market, address account, uint256 amount) public {
         require(msg.sender == marketControllerAddress , "caller is not market controller");
         
@@ -405,10 +180,170 @@ contract RewardProgram is TimeDependent, IRewardProgram {
         lpTotalEffectiveVolume = lpTotalEffectiveVolume.sub(amount.mul(lpMarketsWeight[market]));
     }
     
+    //////////////////////////////////
+    
+    function gInstallRewards(uint256 poolID) internal {
+        uint256 cDay = (getCurrentTime() / 1 days) ;
+       
+            for (uint256 index = gLastRewardsDistributedDay[poolID]; index < cDay; index++) {
+                gRewardsPerDay[poolID][index] = gRewardPerDay[poolID];
+            }
+            gLastRewardsDistributedDay[poolID] = cDay;
+        
+    }
+
+   
+
+    function gRewards(uint256 poolID, address account) internal view returns (uint256 todayExpectedReward, uint256 rewardsCanClaim, uint256 claimedRewards){
+        uint256 cDay = getCurrentTime() / 1 days;
+        uint256 tCPtoday = gTotalVolumePerDay[poolID][cDay];
+        if (tCPtoday != 0) {
+            uint256 userTotalPowerVotesToday = gTotalVolumePerDayPerUser[poolID][cDay][account];
+            todayExpectedReward = gRewardPerDay[poolID] * userTotalPowerVotesToday * 1e18 / tCPtoday;
+            todayExpectedReward = todayExpectedReward / 1e18;
+        }
+
+       
+        
+        uint256 LastClaimedDay = gLastClaimedDayPerUser[poolID][account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
+        
+        for (uint256 index = LastClaimedDay ; index < cDay; index++) {
+            if (gTotalVolumePerDay[poolID][index] != 0) { //gRewardPerDay
+                uint256 localgRewardPerDay = gRewardsPerDay[poolID][index];
+                if(localgRewardPerDay == 0){
+                    localgRewardPerDay = gRewardPerDay[poolID];
+                }
+                rewardsCanClaim += localgRewardPerDay * gTotalVolumePerDayPerUser[poolID][index][account] * 1e18 / gTotalVolumePerDay[poolID][index];
+            }
+        }
+        rewardsCanClaim = rewardsCanClaim / 1e18;
+        claimedRewards = gClaimedPerUser[poolID][account];
+    }
+    
+    function gCanClaim(uint256 poolID, address account, uint256 cDay) internal view returns(uint256 rewardsCanClaim){
+        uint256 LastClaimedDay = gLastClaimedDayPerUser[poolID][account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
+        
+        for (uint256 index = LastClaimedDay ; index < cDay; index++) {
+            if (gTotalVolumePerDay[poolID][index] != 0) {
+                rewardsCanClaim += gRewardsPerDay[poolID][index] * gTotalVolumePerDayPerUser[poolID][index][account] * 1e18 / gTotalVolumePerDay[poolID][index];
+            }
+        }
+        rewardsCanClaim = rewardsCanClaim / 1e18;
+    }
+
+    
+
+    function gClaimUserRewards(uint256 poolID) internal {
+        //todo: check if there is penalty
+        
+        gInstallRewards(poolID);
+        
+        address account = msg.sender;
+        uint256 cDay = getCurrentTime() / 1 days;
+
+        uint256 rewardsCanClaim;
+        
+        uint256 LastClaimedDay = gLastClaimedDayPerUser[poolID][account];
+        if (LastClaimedDay < deploymentDay) {
+            LastClaimedDay = deploymentDay;
+        }
+        
+        for (uint256 index = LastClaimedDay ; index < cDay; index++) {
+            if (gTotalVolumePerDay[poolID][index] != 0) {
+                rewardsCanClaim += gRewardsPerDay[poolID][index] * gTotalVolumePerDayPerUser[poolID][index][account] * 1e18 / gTotalVolumePerDay[poolID][index];
+            }
+        }
+        rewardsCanClaim = rewardsCanClaim / 1e18;
+        gLastClaimedDayPerUser[poolID][account] = cDay;
+
+        // todo: ask the reward center to send rewardsCanClaim
+        //rewardCenter.sendReward(account, rewardsCanClaim);
+        gClaimedPerUser[poolID][msg.sender] += rewardsCanClaim;
+    }
+
+
+
+    function gAdd(uint256 poolID,  address account, uint256 v) internal {
+       
+        
+        gInstallRewards(poolID);
+        // first user in a day will mark the previous day to be distributed
+
+        uint256 cDay = getCurrentTime() / 1 days;
+        gTotalVolumePerDay[poolID][cDay] += v;
+        gTotalVolumePerDayPerUser[poolID][cDay][account] += v;
+    }
+    
+    /////////
+    
+    function resolveVote(address market, uint8 selection, address account, uint256 votePower) external{
+        gAdd( uint256(RewardType.Resolve) ,account, votePower);
+    }
+    
+    function validationVote(address market, bool validationFlag, address account, uint256 votePower) external{
+        gAdd( uint256(RewardType.Validation) ,account, votePower);
+    }
+    
+    function tradeAmount(address market, address account, uint256 amount, bool buyFlag) external{
+        if(buyFlag || IncludeSellInTradeRewards){
+            gAdd( uint256(RewardType.Trade) ,account, amount);
+        }
+    }
+    
+    
+    function resolveRewards(address account) public view returns (uint256 todayExpectedReward, uint256 rewardsCanClaim, uint256 claimedRewards){
+        return gRewards(uint256(RewardType.Resolve), account);
+    }
+    
+    function validationRewards(address account) public view returns (uint256 todayExpectedReward, uint256 rewardsCanClaim, uint256 claimedRewards){
+        return gRewards(uint256(RewardType.Validation), account);
+    }
+    
+    function tradeRewards(address account) public view returns (uint256 todayExpectedReward, uint256 rewardsCanClaim, uint256 claimedRewards){
+        return gRewards(uint256(RewardType.Trade), account);
+    }
+    
+    
+    function claimRewards(bool validationFlag, bool resolveFlag, bool tradeFlag) public{
+        if(validationFlag){
+            gClaimUserRewards(uint256(RewardType.Validation));
+        }
+        
+        if(resolveFlag){
+            gClaimUserRewards(uint256(RewardType.Resolve));
+        }
+        
+        if(tradeFlag){
+            gClaimUserRewards(uint256(RewardType.Trade));
+        }
+    }
+    ////////////////////
     
     function setMarketControllerAddress(address controllerAddress) public{
         // sec only deployer
         marketControllerAddress = controllerAddress;
+    }
+    
+    function setValidationRewardPerDay(uint256 rewardPerDay) public{
+        //todo sec check
+        gRewardPerDay[0] = validationRewardPerDay;
+    }
+    
+    function setResolveRewardPerDay(uint256 rewardPerDay) public{
+        //todo sec check
+        gRewardPerDay[1] = resolveRewardPerDay;
+
+    }
+    
+    function setTradeRewardPerDay(uint256 rewardPerDay) public{
+        //todo sec check
+        gRewardPerDay[2] = tradeRewardPerDay;
     }
 
 
