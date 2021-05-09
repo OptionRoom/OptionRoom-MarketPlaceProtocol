@@ -13,5 +13,7 @@ contract RewardCenter is IRewardCenter {
     }
     
     // todo: gardian controll
-    
+    function sendRoomRewardByDollarAmount(address beneficiary, uint256 amount, string calldata comment) external{
+        
+    }
 }
