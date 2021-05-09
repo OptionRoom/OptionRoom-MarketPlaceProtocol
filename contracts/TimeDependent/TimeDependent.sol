@@ -33,6 +33,10 @@ contract TimeDependent{
     function setCentralTimeForTesting(CentralTimeForTesting _centralTimeForTesting) public{
         centralTimeForTesting = _centralTimeForTesting;
     }
+    
+    function setCentralTimeAddressForTesting(address _centralTimeForTesting) public{
+        centralTimeForTesting = CentralTimeForTesting(_centralTimeForTesting);
+    }
 
     function getCurrentTime1() public view returns(uint256){
         require(address(centralTimeForTesting) != address(0), "central time is not set");

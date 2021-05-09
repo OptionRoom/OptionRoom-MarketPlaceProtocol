@@ -315,10 +315,7 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     }
     ////////////////////
     
-    function setMarketControllerAddress(address controllerAddress) public onlyGovOrGur{
-
-        marketControllerAddress = controllerAddress;
-    }
+    
     
     function setValidationRewardPerDay(uint256 rewardPerDay) public onlyGovOrGur{
         validationRewardPerDay = rewardPerDay;
@@ -348,7 +345,13 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     function setIncludeSellInTradeRewards(bool includeSellInTradeRewardsFlag) public onlyGovOrGur{
         includeSellInTradeRewards = includeSellInTradeRewardsFlag;
     }
+    
     /////////////////
+    
+    function setMarketControllerAddress(address controllerAddress) public onlyGovOrGur{
+
+        marketControllerAddress = controllerAddress;
+    }
     
     function setRewardCenter(address rewardCenterAddress) public onlyGovOrGur {
         rewardCenter = IRewardCenter(rewardCenterAddress);

@@ -81,6 +81,10 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         suspended[account] = getCurrentDay() + numOfDays;
     }
     
+    function suspendAccount(address account, uint256 numOfDays) external {
+        //todo
+    }
+    
     function getUserPower(address account) public view returns(uint256){
         uint256 cDay = getCurrentDay();
         
@@ -101,6 +105,18 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     
     function getCurrentDay() public view returns(uint256){
         return getCurrentTime() / 1 days;
+    }
+}
+
+contract CourtStakeDummy is CourtStake{
+    mapping(address => uint256) powers;
+    
+    function setUserPower(address account, uint256 power) public{
+        powers[account] = power;
+    }
+    
+    function getUserPower(address account) public view returns(uint256){
+        return powers[account];
     }
 }
 

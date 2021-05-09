@@ -32,10 +32,7 @@ contract FixedProductMarketMakerFactory is CloneFactory {
         deployer = msg.sender;
     }
     
-    function setTemplateAddress(address templateAddress) public{
-        require(msg.sender == deployer,"only deployer can set the template");
-        implementationMasterAddr = templateAddress;
-    }
+    
     /*
         function cloneConstructor(bytes calldata consData) external {
             (
