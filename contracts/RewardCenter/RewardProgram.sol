@@ -342,6 +342,8 @@ contract RewardProgram is TimeDependent, IRewardProgram {
 
     function tradeAmount(address market, address account, uint256 amount, bool buyFlag) public {
         require(msg.sender == marketControllerAddress , "caller is not market controller");
+
+        tradeInstallRewards();
         
         if (buyFlag || includeSellInTradeFlag) {
             uint256 cDay = getCurrentTime() / 1 days;
