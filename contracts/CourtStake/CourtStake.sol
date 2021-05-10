@@ -9,7 +9,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     //using SafeMath for uint256;
     
     // This is  ERC20 address. //todo getCourt address
-    IERC20 public courtToken = IERC20(0xBE55c87dFf2a9f5c95cB5C07572C51fd91fe0732);
+    IERC20 public courtToken = IERC20(0x5B44cf5ada8074EAb3FB1F7C1695a1aA9B24de7F);
     //todo: calc optimize
     
     struct StakedInfo{
@@ -17,7 +17,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         uint256 dayIndex;
     }
     
-    mapping(address => uint256) stakedPerUser;
+    mapping(address => uint256) public stakedPerUser;
     mapping(address => StakedInfo[]) stakedInfoUser;
     
     mapping(address => uint256) suspended;
@@ -49,6 +49,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         address account = msg.sender;
         require(cDay >= suspended[account] , "user can not withdraw before suspended date");
         require(stakedPerUser[account] >= amount, "amount exceed deposited amount");
+        stakedPerUser[account] -= amount;
         
         uint256 removeAmount = amount;
         while( removeAmount > 0){
@@ -68,8 +69,7 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
             i++;
         }
         
-        courtToken.transferFrom(address(this),msg.sender,amount);
-        stakedPerUser[account] -= amount;
+        courtToken.transfer(msg.sender,amount);
     }
     
     function suspendAccountByGovOrGur(address account, uint256 numOfDays) public onlyGovOrGur{
@@ -96,12 +96,14 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         uint256 stakedLength = stakedInfoUser[account].length;
         uint256 power;
         for(uint256 i=0; i < stakedLength; i++){
-            uint256 daysDef = cDay = stakedInfoUser[account][i].dayIndex;
+            uint256 daysDef = cDay - stakedInfoUser[account][i].dayIndex;
             if(daysDef > 50){
                 daysDef = 50;
             }
             power += (stakedInfoUser[account][i].amount + (3 *stakedInfoUser[account][i].amount * daysDef/50 ));
         }
+        
+        return power;
     }
     
     function getCurrentDay() public view returns(uint256){
