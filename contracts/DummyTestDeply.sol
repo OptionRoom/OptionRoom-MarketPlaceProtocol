@@ -160,6 +160,8 @@ contract MainDeployer{
         
         //a6 config (RewardCenter)
         aa6.setRewardProgram(address(aa5));
+        //aa6.setRoomAddress(roomAddress); //todo: set room addres for reward center
+        //aa6.setRoomOraclePrice(oracleaddress) //todo: set oracle 
         
         //a7 config (AAA7ORGovernor)
         aa7.setCourtStake(address(aa8d));
