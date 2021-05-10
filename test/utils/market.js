@@ -11,6 +11,7 @@ let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol"
 let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
 let CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
 let PermissionsController = artifacts.require("../../../contracts/Guardian/GnGOwnable.sol");
+let RewardCenterController = artifacts.require("../../../contracts/RewardCenter/RewardCenter.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
@@ -52,6 +53,8 @@ const feeFactor = toBN(3e15) // (0.3%)
 let positionIds
 let deployer;
 
+let rewardCenter;
+
 function setDeployer(deployerAccount) {
   deployer = deployerAccount;
 }
@@ -75,9 +78,9 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await rewardProgram.doInitialization();
 
   let deployer1 = await rewardProgram.guardianAddress.call();
-  console.log(deployer1);
-  console.log(deployer);
 
+  rewardCenter = await RewardCenterController.new();
+  
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
 
 
@@ -95,7 +98,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return [fixedProductMarketMakerFactory,rewardProgram];
+  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter];
 }
 
 async function createNewMarket(creator) {
