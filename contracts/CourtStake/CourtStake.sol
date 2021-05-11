@@ -17,13 +17,21 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         uint256 dayIndex;
     }
     
+    mapping(address => bool) public hasSuspendPermission;
+    
     mapping(address => uint256) public stakedPerUser;
     mapping(address => StakedInfo[]) stakedInfoUser;
     
     mapping(address => uint256) suspended;
     
+    event Suspended(address indexed suspenser, address suspended, uint256 daysCount);
+    
     function setCourtTokenAddress(address courtTokenAdd) public onlyGovOrGur{
         courtToken = IERC20(courtTokenAdd);
+    }
+    
+    function suspendPermission(address account, bool permissionFlag) public onlyGovOrGur{
+        hasSuspendPermission[account] = permissionFlag;
     }
     
     function deposit(uint256 amount) public{
@@ -52,8 +60,9 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
         stakedPerUser[account] -= amount;
         
         uint256 removeAmount = amount;
+        uint256 i =0;
         while( removeAmount > 0){
-            uint256 i =0;
+           
             StakedInfo storage stakedInfo = stakedInfoUser[account][i];
             
             if(stakedInfo.amount > 0){
@@ -80,10 +89,12 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     function _suspendAccount(address account, uint256 numOfDays) internal onlyGovOrGur{
         
         suspended[account] = getCurrentDay() + numOfDays;
+        emit Suspended(msg.sender, account, numOfDays );
     }
     
     function suspendAccount(address account, uint256 numOfDays) external {
-        //todo
+        require(hasSuspendPermission[msg.sender] == true, "Caller has no permission to suspend");
+        _suspendAccount(account,numOfDays);
     }
     
     function getUserPower(address account) public view returns(uint256){
