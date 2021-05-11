@@ -69,6 +69,9 @@ contract CourtStakeFlat is  ICourtStake, GnGOwnable {
     
     mapping(address => uint256) suspended;
     
+    uint8 public powerReachMaxInDays = 50;
+    uint8 public maxAuth = 3;
+    
     event Suspended(address indexed suspenser, address suspended, uint256 daysCount);
     
     function setCourtTokenAddress(address courtTokenAdd) public onlyGovOrGur{
@@ -131,6 +134,14 @@ contract CourtStakeFlat is  ICourtStake, GnGOwnable {
         _suspendAccount(account,numOfDays);
     }
     
+    function setPowerReachMaxInDays(uint8 numOfDays) public onlyGovOrGur{
+        powerReachMaxInDays = numOfDays;
+    }
+    
+    function setMaxAuth(uint8 auth) public onlyGovOrGur {
+        maxAuth = auth;
+    }
+    
     function _suspendAccount(address account, uint256 numOfDays) internal {
         
         suspended[account] = getCurrentDay() + numOfDays;
@@ -153,10 +164,10 @@ contract CourtStakeFlat is  ICourtStake, GnGOwnable {
         uint256 power;
         for(uint256 i=0; i < stakedLength; i++){
             uint256 daysDef = cDay - stakedInfoUser[account][i].dayIndex;
-            if(daysDef > 50){
-                daysDef = 50;
+            if(daysDef > powerReachMaxInDays){
+                daysDef = powerReachMaxInDays;
             }
-            power += (stakedInfoUser[account][i].amount + (3 *stakedInfoUser[account][i].amount * daysDef/50 ));
+            power += (stakedInfoUser[account][i].amount + (maxAuth *stakedInfoUser[account][i].amount * daysDef / powerReachMaxInDays ));
         }
         
         return power;
