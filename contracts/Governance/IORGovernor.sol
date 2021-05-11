@@ -1,8 +1,8 @@
 pragma solidity ^0.5.1;
 
 interface IORGovernor{
-    function getAccountInfo(address account) external returns(bool governorFlag, bool suspendedFlag, uint256 power) ;
-    function getSuspendReason(address account) external returns(string memory reason);
+    function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power) ;
+    function getSuspendReason(address account) external view returns(string memory reason);
 }
 
 
@@ -10,10 +10,10 @@ interface IORGovernor{
 contract DummyORGovernor is IORGovernor{
     
   
-    function getAccountInfo(address account) external returns(bool governorFlag, bool suspendedFlag, uint256 power){
+    function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
         return (true,true, powerPerUser[account]);
     }
-    function getSuspendReason(address account) external returns(string memory reason){
+    function getSuspendReason(address account) external view returns(string memory reason){
         return "";
     }
     

@@ -114,7 +114,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         orConditionalTokens.reportPayouts(market.questionId(), getResolvingOutcome(marketAddress));
     }
 
-    function getAccountInfo(address account) public returns(bool canVote, uint256 votePower){
+    function getAccountInfo(address account) public view returns(bool canVote, uint256 votePower){
         bool governorFlag; bool suspendedFlag;
         (governorFlag, suspendedFlag,  votePower) = orGovernor.getAccountInfo(account);
         canVote = governorFlag && !suspendedFlag;
