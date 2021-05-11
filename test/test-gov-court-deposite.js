@@ -158,5 +158,20 @@ contract('Option room Reward program permissions check', function([deployer,
       expect(userBalanaceNumber.isEqualTo(userBalanaceBefore)).to.equal(true)
     }
   })
+  
+  it('Should revert because caller is not gov or guardian', async function() {
+    const REVERT = 'caller is not governor or guardian';
+    try {
+      await courtReservoir.suspendPermission(investor1, true, {from : oracle});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should pass and make investor1 able to suspend users', async function() {
+    await courtReservoir.suspendPermission(investor1, true, {from : deployer});
+  })
 
 })
