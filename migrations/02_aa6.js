@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("AAA6RewardCenter"), {
+  deployer.deploy(artifacts.require("Demo_Court"), {
   });
 };

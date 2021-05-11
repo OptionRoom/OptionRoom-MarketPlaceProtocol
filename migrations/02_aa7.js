@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("AAA7ORGovernor"), {
+  deployer.deploy(artifacts.require("HT_Claim"), {
   });
 };

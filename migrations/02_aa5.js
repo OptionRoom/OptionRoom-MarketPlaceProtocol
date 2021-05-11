@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("AAA5RewardProgram"), {
+  deployer.deploy(artifacts.require("RoomLP_Farming"), {
   });
 };

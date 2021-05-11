@@ -1,69 +1,43 @@
+/**
+ *Submitted for verification at Etherscan.io on 2021-03-13
+*/
+
+pragma solidity ^0.5.16;
+
+import {SafeMath} from "./HM_Claim.sol";
+
 pragma solidity ^0.5.0;
 
 interface IERC20 {
-    function totalSupply() external view returns (uint);
-    function balanceOf(address account) external view returns (uint);
-    function transfer(address recipient, uint amount) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint);
-    function approve(address spender, uint amount) external returns (bool);
-    function transferFrom(address sender, address recipient, uint amount) external returns (bool);
-    event Transfer(address indexed from, address indexed to, uint value);
-    event Approval(address indexed owner, address indexed spender, uint value);
+    
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount) external returns (bool);
+    function allowance(address owner, address spender) external view returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
-
-library SafeMath {
-
-    function add(uint a, uint b) internal pure returns (uint) {
-        uint c = a + b;
-        require(c >= a, "SafeMath: addition overflow");
-
-        return c;
-    }
-
-    function sub(uint a, uint b) internal pure returns (uint) {
-        return sub(a, b, "SafeMath: subtraction overflow");
-    }
-
-    function sub(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
-        require(b <= a, errorMessage);
-        uint c = a - b;
-
-        return c;
-    }
-
-    function mul(uint a, uint b) internal pure returns (uint) {
-        if (a == 0) {
-            return 0;
-        }
-
-        uint c = a * b;
-        require(c / a == b, "SafeMath: multiplication overflow");
-
-        return c;
-    }
-
-    function div(uint a, uint b) internal pure returns (uint) {
-        return div(a, b, "SafeMath: division by zero");
-    }
-
-    function div(uint a, uint b, string memory errorMessage) internal pure returns (uint) {
-        // Solidity only automatically asserts when dividing by 0
-        require(b > 0, errorMessage);
-        uint c = a / b;
-
-        return c;
-    }
-}
-
 
 contract Context {
+    // Empty internal constructor, to prevent people from mistakenly deploying
+    // an instance of this contract, which should be used via inheritance.
     constructor () internal { }
     // solhint-disable-previous-line no-empty-blocks
 
     function _msgSender() internal view returns (address payable) {
         return msg.sender;
     }
+
+    function _msgData() internal view returns (bytes memory) {
+        this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
+        return msg.data;
+    }
 }
+
+
+
 
 contract ERC20 is Context, IERC20 {
     using SafeMath for uint;
@@ -166,15 +140,59 @@ contract ERC20Detailed is ERC20 {
     }
 }
 
-contract DemoToken is ERC20Detailed {
+contract CourtToken11 is ERC20Detailed {
 
-    constructor () public ERC20Detailed("OptionRoom Token", "ROOM", 18) {
-        // mint 100,000,000 tokens with 18 decimals and send them to token deployer
-        // mint function is internal and can not be called after deployment
-       
+    uint256 public capital = 40001 * 1e18;
+    address public governance;
+    mapping(address => bool) public minters;
+
+    event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+    event CapitalChanged(uint256 previousCapital, uint256 newCapital);
+    event MinterAdded(address indexed minter);
+    event MinterRemoved(address indexed minter);
+
+    constructor () public ERC20Detailed("Court Token", "COURT", 18) {
+        governance = _msgSender();
+		// minting 1 token with 18 decimals
+        _mint(_msgSender(), 1e18);
     }
 
-    function mint(uint amount) public{
-        _mint(msg.sender, amount);
+    function mint(address account, uint256 amount) public {
+        require(minters[_msgSender()] == true, "Caller is not a minter");
+        require(totalSupply().add(amount) <= capital, "Court: capital exceeded");
+
+        _mint(account, amount);
     }
+
+    function transferOwnership(address newOwner) public onlyGovernance {
+        require(newOwner != address(0), "Ownable: new owner is the zero address");
+
+        emit OwnershipTransferred(governance, newOwner);
+        governance = newOwner;
+    }
+
+    function changeCapital(uint256 newCapital) public onlyGovernance {
+        require(newCapital > totalSupply(), "total supply exceeded capital");
+
+        emit CapitalChanged(capital, newCapital);
+        capital = newCapital;
+    }
+
+    function addMinter(address minter) public onlyGovernance {
+
+        emit MinterAdded(minter);
+        minters[minter] = true;
+    }
+
+    function removeMinter(address minter) public onlyGovernance {
+
+        emit MinterRemoved(minter);
+        minters[minter] = false;
+    }
+
+    modifier onlyGovernance() {
+        require(governance == _msgSender(), "Ownable: caller is not the governance");
+        _;
+    }
+
 }

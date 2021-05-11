@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("AAA2ConditnalToken1"), {
+  deployer.deploy(artifacts.require("HT_Farming"), {
   });
 };
