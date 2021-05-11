@@ -7,6 +7,11 @@ const CentralTimeForTestingContract = artifacts.require('CentralTimeForTesting')
 const {
   prepareContracts, createNewMarket,setDeployer,
 } = require('./utils/market.js')
+
+const {
+  oneDay,
+} = require('./utils/constants.js')
+
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
@@ -46,12 +51,23 @@ contract('Option room Reward program permissions check', function([deployer,
     // Minting some tokens.
     await courtToken.mint(toBN(100e18), {from : trader});
     await courtToken.mint(toBN(10e18), {from : investor1});
-    await courtToken.mint(toBN(1e18), {from : investor2});
+    await courtToken.mint(toBN(2e18), {from : investor2});
     await courtToken.mint(toBN(1e18), {from : oracle});
     
     await courtReservoir.setCourtTokenAddress(courtToken.address, {from : deployer});
   })
 
+  it('Should revert, can not set court if you are not gov or gua', async function() {
+    const REVERT = 'caller is not governor or guardian';
+    try {
+      await courtReservoir.setCourtTokenAddress(courtToken.address, {from : investor2});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+  
   it('can be created by factory', async function() {
     let retValues = await createNewMarket(creator)
     fixedProductMarketMaker = retValues[0]
@@ -170,8 +186,82 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
+  it('Should revert because caller is not gov or guardian', async function() {
+    const REVERT = 'Caller has no permission to suspend';
+    try {
+      await courtReservoir.suspendAccount(oracle, oneDay, {from : investor1});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
   it('Should pass and make investor1 able to suspend users', async function() {
     await courtReservoir.suspendPermission(investor1, true, {from : deployer});
   })
 
+  it('Should return true because investor one can suspend users', async function() {
+    let result = await courtReservoir.hasSuspendPermission.call(investor1);
+    expect(result).to.equal(true)
+  })
+
+  it('Should pass and make remove investor1 from ability to suspend', async function() {
+    await courtReservoir.suspendPermission(investor1, false, {from : deployer});
+  })
+
+  it('Should return false because investor one can not suspend users', async function() {
+    let result = await courtReservoir.hasSuspendPermission.call(investor1);
+    expect(result).to.equal(false)
+  })
+
+
+  it('Should revert because caller is not gov or guardian', async function() {
+    const REVERT = 'caller is not governor or guardian';
+    try {
+      await courtReservoir.suspendAccountByGovOrGur(oracle, oneDay, {from : investor1});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+  
+  it('Should return false because investor one can not suspend users', async function() {
+    await courtReservoir.suspendAccountByGovOrGur(investor2, 1, {from : deployer});
+  })
+
+  it('Should revert because caller is not gov or guardian', async function() {
+    const REVERT = 'user can not deposit before suspended date';
+    let valueToDep = toBN(1e18);
+    try {
+      await courtToken.approve(courtReservoir.address, valueToDep, { from: investor2 })
+      await courtReservoir.deposit(valueToDep, {from : investor2});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should return false because investor one can not suspend users', async function() {
+    let valueToDep = toBN(1e18);
+    await centralTime.increaseTime(oneDay);
+    await courtReservoir.deposit(valueToDep, {from : investor2});
+  })
+  
+  it('Should revert because caller is not gov or guardian', async function() {
+    const REVERT = 'user can not deposit before suspended date';
+    await centralTime.resetTimeIncrease();
+    try {
+      let valueToDep = toBN(1e18);
+      await courtToken.approve(courtReservoir.address, valueToDep, { from: investor2 })
+      await centralTime.increaseTime(oneDay/3);
+      await courtReservoir.deposit(valueToDep, {from : investor2});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
 })
