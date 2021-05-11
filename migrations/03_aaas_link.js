@@ -30,6 +30,9 @@ module.exports = function(deployer) {
 	
 	const aaa9Art = artifacts.require("AAA9ORMarketsQuery");
     const aaa9 = await aaa9Art.deployed();
+	
+	const aaa10Art = artifacts.require("RoomOraclePriceDummy");
+    const aaa10 = await aaa10Art.deployed();
     
 	console.log("set time ");
 	//await aaa1.setCentralTimeAddressForTesting(aaa0.address);
@@ -54,6 +57,7 @@ module.exports = function(deployer) {
 	
 	console.log("a6 config (RewardCenter) ");
 	await aaa6.setRewardProgram(aaa5.address);
+	await aaa6.setRoomOraclePrice(aaa10.address);
 	
 	console.log("a7 config (AAA7ORGovernor)");
 	await aaa7.setCourtStake(aaa8CS.address);

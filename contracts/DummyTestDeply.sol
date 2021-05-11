@@ -7,7 +7,7 @@ import "./RewardCenter/RewardProgram.sol";
 import "./RewardCenter/RewardCenter.sol";
 import "./Governance/ORGovernor.sol";
 import "./CourtStake/CourtStake.sol";
-
+import "./RewardCenter/IRoomOraclePrice.sol";
 import "./CourtStake/CourtStake.sol";
 
 import { DemoToken } from "./DemoToken.sol";

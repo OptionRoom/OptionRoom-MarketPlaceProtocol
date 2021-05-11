@@ -30,23 +30,14 @@ contract RewardCenter is IRewardCenter, GnGOwnable{
         roomToken.transfer(beneficiary,amount);
     }
     
-    function sendRoomRewardByERC20Value(address beneficiary, uint256 amount, IERC20 erc20, string calldata) external{
-        require(msg.sender == rewardProgramAddress, "only reward program allowed to send rewards");
-        (uint256 numerator, uint256 denominator) = roomOraclePrice.getPriceByERC20(address(erc20));
-        
-        require(denominator != 0, "Room price is not available");
-        
-        uint256 roomAmount = amount.mul(numerator).div(denominator);
-        roomToken.transfer(beneficiary,roomAmount);
-    }
     
     function sendRoomRewardByDollarAmount(address beneficiary, uint256 amount, string calldata) external{
         require(msg.sender == rewardProgramAddress, "only reward program allowed to send rewards");
-        (uint256 numerator, uint256 denominator) = roomOraclePrice.getPrice();
+        (uint256 numerator, uint256 denominator, uint256 denominatorDec) = roomOraclePrice.getPrice();
         
         require(denominator != 0, "Room price is not available");
-        
-        uint256 roomAmount = amount.mul(numerator).div(denominator);
+        // dollar amount 18 decimal
+        uint256 roomAmount = amount.mul(numerator).div(denominator).div(10 ** (18 - denominatorDec));
         roomToken.transfer(beneficiary,roomAmount);
         
     }
