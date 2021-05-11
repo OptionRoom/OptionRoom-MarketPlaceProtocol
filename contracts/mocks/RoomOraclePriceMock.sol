@@ -14,14 +14,12 @@ contract RoomOraclePriceMock is IRoomOraclePrice {
     function setDen(uint256 value) public {
         denominator = value;
     }
-    
-    function getPrice() external returns(uint256 numerator, uint256 denominator){
-        numerator = 1;
-        denominator = 1;
-    }
 
-    function getPriceByERC20(address erc20Address) external returns(uint256 numerator, uint256 denominator){
-        numerator = 1;
-        denominator = 1;
+    function getPrice() external view returns(uint256 roomAmount, uint256 usdAmount, uint8 usdDecimals){
+        roomAmount = 1e18;
+        usdAmount = 1250000;
+        usdDecimals = 6;
+
+        return (roomAmount,usdAmount,usdDecimals);
     }
 }

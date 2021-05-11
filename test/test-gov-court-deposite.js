@@ -60,6 +60,37 @@ contract('Option room Reward program permissions check', function([deployer,
   it('Should revert, can not set court if you are not gov or gua', async function() {
     const REVERT = 'caller is not governor or guardian';
     try {
+      await courtReservoir.setMaxAuth(2, {from : investor2});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should be to change max auth', async function() {
+    await courtReservoir.setMaxAuth(3, {from : deployer});
+  })
+
+
+  it('Should revert, can not set court if you are not gov or gua', async function() {
+    const REVERT = 'caller is not governor or guardian';
+    try {
+      await courtReservoir.setPowerReachMaxInDays(10, {from : investor2});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should be able to change power max days', async function() {
+    await courtReservoir.setPowerReachMaxInDays(10, {from : deployer});
+  })
+  
+  it('Should revert, can not set court if you are not gov or gua', async function() {
+    const REVERT = 'caller is not governor or guardian';
+    try {
       await courtReservoir.setCourtTokenAddress(courtToken.address, {from : investor2});
       throw null
     } catch (error) {
