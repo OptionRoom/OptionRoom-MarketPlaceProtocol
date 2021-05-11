@@ -135,6 +135,7 @@ contract CourtStakeFlat is  ICourtStake, GnGOwnable {
     }
     
     function setPowerReachMaxInDays(uint8 numOfDays) public onlyGovOrGur{
+        require( numOfDays > 0 , "Max days can not be Zero");
         powerReachMaxInDays = numOfDays;
     }
     
