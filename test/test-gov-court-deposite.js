@@ -281,18 +281,4 @@ contract('Option room Reward program permissions check', function([deployer,
     await courtReservoir.deposit(valueToDep, {from : investor2});
   })
   
-  it('Should revert because caller is not gov or guardian', async function() {
-    const REVERT = 'user can not deposit before suspended date';
-    await centralTime.resetTimeIncrease();
-    try {
-      let valueToDep = toBN(1e18);
-      await courtToken.approve(courtReservoir.address, valueToDep, { from: investor2 })
-      await centralTime.increaseTime(oneDay/3);
-      await courtReservoir.deposit(valueToDep, {from : investor2});
-      throw null
-    } catch (error) {
-      assert(error, 'Expected an error but did not get one')
-      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
-    }
-  })
 })
