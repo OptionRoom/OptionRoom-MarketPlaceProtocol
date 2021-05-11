@@ -131,7 +131,7 @@ contract CourtStakeFlat is  ICourtStake, GnGOwnable {
         _suspendAccount(account,numOfDays);
     }
     
-    function _suspendAccount(address account, uint256 numOfDays) internal onlyGovOrGur{
+    function _suspendAccount(address account, uint256 numOfDays) internal {
         
         suspended[account] = getCurrentDay() + numOfDays;
         emit Suspended(msg.sender, account, numOfDays );
