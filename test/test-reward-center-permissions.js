@@ -56,12 +56,12 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
-  it('Should pass and change the controller address because I am the guardian.', async function() {
+  it('Should pass and change the reward program because I am the guardian.', async function() {
       await rewardCenter.setRewardProgram(oracle, {from : deployer});
   })
 
 
-  it('Should fail because sender is not governor or guardian', async function() {
+  it('Should fail to set room address', async function() {
     const REVERT = 'caller is not governor or guardian';
     try {
       await rewardCenter.setRoomAddress(roomTokenFake.address, {from : controller.address});
@@ -72,7 +72,7 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
-  it('Should pass and change the controller address because I am the guardian.', async function() {
+  it('Should set room address.', async function() {
     await rewardCenter.setRoomAddress(roomTokenFake.address, {from : deployer});
 
     await roomTokenFake.approve(rewardCenter.address, toBN(100e18), { from: creator })
@@ -80,7 +80,7 @@ contract('Option room Reward program permissions check', function([deployer,
   })
 
 
-  it('Should fail because sender is not governor or guardian', async function() {
+  it('Should fail to set room oracle', async function() {
     const REVERT = 'caller is not governor or guardian';
     try {
       await rewardCenter.setRoomOraclePrice(roomTokenFake.address, {from : controller.address});
@@ -91,12 +91,12 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
-  it('Should pass and change the controller address because I am the guardian.', async function() {
+  it('Should manage to set the room oracle', async function() {
     await rewardCenter.setRoomOraclePrice(oracleInstance.address, {from : deployer});
   })
   
   
-  it('Should fail because sender is not governor or guardian', async function() {
+  it('Should fail to send room reward', async function() {
     const REVERT = 'only reward program allowed to send rewards';
     try {
       await rewardCenter.sendRoomReward(trader, toBN(1e18), {from : controller.address});
@@ -107,13 +107,13 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
-  it('Should pass and change the controller address because I am the guardian.', async function() {
+  it('Should be able to send rewards.', async function() {
     let amount = toBN(1e18);
     await roomTokenFake.approve(rewardCenter.address, amount, { from: trader })
     await rewardCenter.sendRoomReward(trader, amount,  "test", {from : oracle});
   })
 
-  it('Should fail because sender is not governor or guardian', async function() {
+  it('Should fail to send room rewards ERC20', async function() {
     const REVERT = 'only reward program allowed to send rewards';
     try {
       await rewardCenter.sendRoomRewardByERC20Value(trader, toBN(0), roomTokenFake.address, "test", {from : controller.address});
@@ -124,7 +124,7 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
-  it('Should pass and change the controller address because I am the guardian.', async function() {
+  it('Should manage to send room rewards ERC20.', async function() {
     await rewardCenter.sendRoomRewardByERC20Value(trader, toBN(0), roomTokenFake.address, "test", {from : oracle});
   })
 })
