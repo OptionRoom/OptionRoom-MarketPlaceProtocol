@@ -1,8 +1,8 @@
 module.exports = function(deployer) {
   deployer.then(async () => {
 
-   const aaa0Art = artifacts.require("AAA0Time");
-    const aaa0 = await aaa0Art.deployed();
+    const aaa0Art = artifacts.require("AAA0Time");
+    const aaa0 = "0x8665FCdb7616e14ab017b63F438fbC42fdc1A7Be";
 	
 	const aaa1Art = artifacts.require("AAA1DemoToken1");
     const aaa1 = await aaa1Art.deployed();
@@ -37,17 +37,17 @@ module.exports = function(deployer) {
 	console.log("set time ");
 	//await aaa1.setCentralTimeAddressForTesting(aaa0.address);
 	//await aaa2.setCentralTimeAddressForTesting(aaa0.address);
-	await aaa3.setCentralTimeAddressForTesting(aaa0.address);
+	await aaa3.setCentralTimeAddressForTesting(aaa0);
 	//await aaa4.setCentralTimeAddressForTesting(aaa0.address);
-	await aaa5.setCentralTimeAddressForTesting(aaa0.address);
+	await aaa5.setCentralTimeAddressForTesting(aaa0);
 	//await aaa6.setCentralTimeAddressForTesting(aaa0.address);
-	await aaa7.setCentralTimeAddressForTesting(aaa0.address);
-	await aaa8CS.setCentralTimeAddressForTesting(aaa0.address);
+	await aaa7.setCentralTimeAddressForTesting(aaa0);
+	await aaa8CS.setCentralTimeAddressForTesting(aaa0);
 	//await aaa9.setCentralTimeAddressForTesting(aaa0.address);
 	
 	console.log("a3 config (marketController) ");
 	await aaa3.setConditionalToken(aaa2.address);
-	await aaa3.setRewardCenter(aaa6.address);
+	await aaa3.setRewardProgram(aaa5.address);
 	await aaa3.setIORGoverner(aaa7.address);
 	await aaa3.setTemplateAddress(aaa4.address);
 	
@@ -69,7 +69,7 @@ module.exports = function(deployer) {
 	await aaa9.setMarketsController(aaa3.address);
 
 	console.log("aaa0.address ");
-	console.log(aaa0.address);
+	console.log(aaa0);
 	
 	console.log("aaa1.address ");
 	console.log(aaa1.address);

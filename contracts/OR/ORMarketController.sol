@@ -419,7 +419,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         orGovernor = IORGovernor(orGovernorAddress);
     }
     
-    function setRewardCenter(address rewardProgramAddress) public onlyGovOrGur{
+    function setRewardProgram(address rewardProgramAddress) public onlyGovOrGur{
        
         RP = IRewardProgram(rewardProgramAddress);
     }
