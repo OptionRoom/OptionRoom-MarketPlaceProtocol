@@ -26,7 +26,7 @@ module.exports = function(deployer) {
     const aaa7 = await aaa7Art.deployed();
 	
 	const aaa8Art = artifacts.require("AAA8CourtStakeDummy");
-    const aaa8 = await aaa8Art.deployed();
+    const aaa8CS = await aaa8Art.deployed();
 	
 	const aaa9Art = artifacts.require("AAA9ORMarketsQuery");
     const aaa9 = await aaa9Art.deployed();
@@ -39,7 +39,7 @@ module.exports = function(deployer) {
 	await aaa5.setCentralTimeAddressForTesting(aaa0.address);
 	//await aaa6.setCentralTimeAddressForTesting(aaa0.address);
 	await aaa7.setCentralTimeAddressForTesting(aaa0.address);
-	await aaa8.setCentralTimeAddressForTesting(aaa0.address);
+	await aaa8CS.setCentralTimeAddressForTesting(aaa0.address);
 	//await aaa9.setCentralTimeAddressForTesting(aaa0.address);
 	
 	console.log("a3 config (marketController) ");
@@ -56,7 +56,7 @@ module.exports = function(deployer) {
 	await aaa6.setRewardProgram(aaa5.address);
 	
 	console.log("a7 config (AAA7ORGovernor)");
-	await aaa7.setCourtStake(aaa7.address);
+	await aaa7.setCourtStake(aaa8CS.address);
 	
 	//a8 config (AAA8CourtStake)
     //aa8.setCourtTokenAddress(courtTokenAddress)
@@ -88,8 +88,8 @@ module.exports = function(deployer) {
 	console.log("aaa7.address ");
 	console.log(aaa7.address);
 	
-	console.log("aaa8.address ");
-	console.log(aaa8.address);
+	console.log("aaa8CS.address ");
+	console.log(aaa8CS.address);
 	
 	console.log("aaa9.address ");
 	console.log(aaa9.address);
