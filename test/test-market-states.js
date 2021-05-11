@@ -1,16 +1,14 @@
 const ORMarketLib = artifacts.require('ORMarketLib')
 
 const {
-  prepareContracts, createNewMarket,
-  executeControllerMethod, moveToActive, conditionalApproveForAll, callControllerMethod,
-  conditionalBalanceOf, moveToResolving,resetTimeIncrease,increaseTime,moveToResolved
+  prepareContracts, createNewMarket,resetTimeIncrease,increaseTime,setDeployer,
 } = require('./utils/market.js')
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
 
 // TODO: Tareq, please add the withdraw of the votes for the resolving, and check the power reset.
-contract('Option room: test proposal states', function([, creator, oracle, investor1, trader, investor2]) {
+contract('Option room: test proposal states', function([deployer, creator, oracle, investor1, trader, investor2]) {
   let collateralToken
   let fixedProductMarketMaker
   let controller
@@ -18,7 +16,9 @@ contract('Option room: test proposal states', function([, creator, oracle, inves
   let marketPendingPeriod = 1800;
   
   before(async function() {
-    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    setDeployer(deployer);
+    let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
+    controller = retArray[0];
   })
 
   it('can be created by factory', async function() {

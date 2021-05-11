@@ -5,7 +5,8 @@ const {
 const { toBN } = web3.utils
 // var BigNumber = require('bignumber.js')
 
-contract('FixedProductMarketMaker', function([, creator, oracle, investor1, trader, investor2]) {
+contract('OR test creation of multiple markets', 
+  function([, creator, oracle, investor1, trader, investor2]) {
   before(async function() {
     await prepareContracts(creator, oracle, investor1, trader, investor2)
   })

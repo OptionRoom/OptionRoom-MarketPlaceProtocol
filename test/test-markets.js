@@ -1,19 +1,21 @@
 const ORMarketLib = artifacts.require('ORMarketLib')
 
-const { prepareContracts, createNewMarket ,invokeFactoryMethod,
+const { prepareContracts, createNewMarket ,setDeployer,
   executeControllerMethod, moveToActive,callViewFactoryMethod ,
   resetTimeIncrease} = require("./utils/market.js")
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js');
 
-contract('OR markets: create multiple markets test', function([, creator, oracle, investor1, trader, investor2]) {
+contract('OR markets: create multiple markets test', function([deployer, creator, oracle, investor1, trader, investor2]) {
 
   let marketMakers = [];
   let pendingMarketMakersMap = new Map()
   
   let controller;
   before(async function() {
-    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    setDeployer(deployer);
+    let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
+    controller = retArray[0];  
   })
 
   it('Should create and return correct validating markets count', async function() {

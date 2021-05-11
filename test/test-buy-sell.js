@@ -3,12 +3,12 @@ const ORMarketLib = artifacts.require('ORMarketLib')
 const {
   prepareContracts, createNewMarket,
   executeControllerMethod, moveToActive, conditionalApproveForAll, callControllerMethod,
-  conditionalBalanceOf, moveToResolving,resetTimeIncrease,increaseTime,moveToResolved,conditionalApproveFor
+  conditionalBalanceOf, moveToResolving,resetTimeIncrease,increaseTime,moveToResolved,setDeployer,
 } = require('./utils/market.js')
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('Markets buy sell redeem test', function([, creator, oracle, investor1, trader, investor2]) {
+contract('Markets buy sell redeem test', function([deployer, creator, oracle, investor1, trader, investor2]) {
 
   let collateralToken
   let fixedProductMarketMaker
@@ -17,7 +17,9 @@ contract('Markets buy sell redeem test', function([, creator, oracle, investor1,
   let controller;
 
   before(async function() {
-    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    setDeployer(deployer);
+    let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
+    controller = retArray[0];
   })
 
   it('can be created by factory', async function() {

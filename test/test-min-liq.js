@@ -1,14 +1,12 @@
 const ORMarketLib = artifacts.require('ORMarketLib')
 
 const {
-  prepareContracts, createNewMarket,
-  executeControllerMethod, moveToActive, conditionalApproveForAll, callControllerMethod,
-  conditionalBalanceOf, moveToResolving, resetTimeIncrease, increaseTime, moveToResolved,
+  prepareContracts, createNewMarket, moveToActive,setDeployer
 } = require('./utils/market.js')
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('OR: test min liquidity and withdrawal', function([, creator, oracle, investor1, trader, investor2]) {
+contract('OR: test min liquidity and withdrawal', function([deployer, creator, oracle, investor1, trader, investor2]) {
 
   let controller
 
@@ -24,7 +22,9 @@ contract('OR: test min liquidity and withdrawal', function([, creator, oracle, i
 
   // let positionIds
   before(async function() {
-    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    setDeployer(deployer);
+    let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
+    controller = retArray[0];
     // set the min liquidity from here
     await controller.setMarketMinShareLiq(minLiquidityFunding)
   })
