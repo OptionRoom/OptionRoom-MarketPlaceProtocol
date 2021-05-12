@@ -218,7 +218,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
  
     function castGovernanceResolvingVote(address marketAddress,uint8 outcomeIndex) public {
-       
+        require( outcomeIndex < 2 , "Outcome should be within range!");
         address account = msg.sender;
         ORMarketLib.MarketState marketState = getMarketState(marketAddress);
 
