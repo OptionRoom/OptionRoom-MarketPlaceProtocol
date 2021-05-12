@@ -195,14 +195,19 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     let state = await callControllerMethod('getMarketState', [fixedProductMarketMaker.address])
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Resolving))).to.equal(true)
 
-    const inv1Attr = [fixedProductMarketMaker.address, 2, { from: investor1 }]
-    const inv2Attr = [fixedProductMarketMaker.address, 4, { from: investor2 }]
-    const oracleAttr = [fixedProductMarketMaker.address, 4, { from: oracle }]
+    const inv1Attr = [fixedProductMarketMaker.address, 1, { from: investor1 }]
+    const inv2Attr = [fixedProductMarketMaker.address, 1, { from: investor2 }]
+    const oracleAttr = [fixedProductMarketMaker.address, 1, { from: oracle }]
 
     await executeControllerMethod('castGovernanceResolvingVote', inv1Attr)
     await executeControllerMethod('castGovernanceResolvingVote', inv2Attr)
     await executeControllerMethod('castGovernanceResolvingVote', oracleAttr)
 
     await moveToResolved();
+  })
+
+  it('Should check weather market in resolved state', async function() {
+    let state = await callControllerMethod('getMarketState', [fixedProductMarketMaker.address])
+    expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Resolved))).to.equal(true)
   })
 })

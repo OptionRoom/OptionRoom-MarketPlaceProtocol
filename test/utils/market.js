@@ -215,7 +215,7 @@ async function moveToResolving() {
 }
 
 async function moveToResolved() {
-  centralTime.increaseTime(marketResolvingPeriod + 10);
+  centralTime.increaseTime((oneDay * 5) + 10);
 }
 
 async function moveToResolved11() {
