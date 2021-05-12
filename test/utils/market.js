@@ -12,6 +12,7 @@ let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
 let CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
 let PermissionsController = artifacts.require("../../../contracts/Guardian/GnGOwnable.sol");
 let RewardCenterController = artifacts.require("../../../contracts/RewardCenter/RewardCenter.sol");
+let RewardCenterMockController = artifacts.require("../../../contracts/mock/RewardCenterMock.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
@@ -76,10 +77,8 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   rewardProgram = await RewardProgram.deployed();
   await rewardProgram.setCentralTimeForTesting(centralTime.address);
   await rewardProgram.doInitialization();
-
-  let deployer1 = await rewardProgram.guardianAddress.call();
-
-  rewardCenter = await RewardCenterController.new();
+  
+  rewardCenter = await RewardCenterMockController.new();
   
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
 

@@ -3,7 +3,7 @@ pragma solidity ^0.5.1;
 
 import "../RewardCenter/RewardCenter.sol";
 
-contract RewardProgramMock is RewardCenter {
+contract RewardCenterMock is RewardCenter {
     
     // Just a place holder.
     struct BeneficiaryDetails {
@@ -15,13 +15,8 @@ contract RewardProgramMock is RewardCenter {
 
     mapping(address =>  BeneficiaryDetails) public beneficiaries;
     
-    function sendRoomReward(address beneficiary, uint256 amount, string calldata comment) external{
-        BeneficiaryDetails storage user = beneficiaries[beneficiary];
-
+    function deposit(uint256 amount) public {
+        address account = msg.sender;
+        roomToken.transferFrom(account,address(this),amount);
     }
-
-    function sendRoomRewardByERC20Value(address beneficiary, uint256 amount, IERC20 erc20, string calldata comment) external{
-        //todo
-    }
-
 }
