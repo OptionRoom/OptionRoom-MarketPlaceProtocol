@@ -11,7 +11,7 @@ contract DummyORGovernor is IORGovernor{
     
   
     function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
-        return (true,true, powerPerUser[account]);
+        return (true,false, 100);
     }
     function getSuspendReason(address account) external view returns(string memory reason){
         return "";
