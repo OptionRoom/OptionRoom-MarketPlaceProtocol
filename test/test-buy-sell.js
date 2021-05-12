@@ -184,7 +184,17 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     expect(colTokenBalance.isGreaterThan(new BigNumber(0)))
   })
 
-
+  it('Should fail because we sent number not within range', async function() {
+    const REVERT = 'Outcome should be within range!'
+    try {
+      await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 4, {from: investor1});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+  
   it('Should move the market to the resolved state', async function() {
     await resetTimeIncrease();
     await moveToResolving()
