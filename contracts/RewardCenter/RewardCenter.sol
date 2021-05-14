@@ -19,7 +19,7 @@ contract RewardCenter is IRewardCenter, GnGOwnable{
         roomToken = IERC20(roomAddres);
     }
     
-    function setRoomOraclePrice(IRoomOraclePrice oracelAddress) public onlyGovOrGur{
+    function setRoomOracle(address oracelAddress) public onlyGovOrGur{
         roomOraclePrice = IRoomOraclePrice(oracelAddress);
     }
     
