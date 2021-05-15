@@ -345,12 +345,20 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         proposalIds[questionId] = address(fpMarket);
         
-        marketAddLiquidity(address(fpMarket),initialLiq);
+        _marketAddLiquidity(address(fpMarket),initialLiq);
         //TODO: check collateralToken is from the list
     }
     
     
     function marketAddLiquidity(address market,uint256 amount) public{
+        ORMarketLib.MarketState marketState = getMarketState(market);
+        
+        require(marketState == ORMarketLib.MarketState.Active ," liquidity can be added only in active state");
+       _marketAddLiquidity(market,amount);
+    }
+    
+    
+    function _marketAddLiquidity(address market,uint256 amount) internal{
         ORFPMarket fpMarket = ORFPMarket(market);
         IERC20 collateralToken = fpMarket.collateralToken();
          // Add liquidity
@@ -369,12 +377,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         address proposer = fpMarket.proposer();
         
-        fpMarket.transferFrom(beneficiary,address(this),sharesAmount);
-        fpMarket.approve(address(fpMarket),sharesAmount);
-        
-        // todo : wrong : proposer can send his share to other addres and withdraw them
          if(beneficiary == proposer) {
             ORMarketLib.MarketState marketState = getMarketState(market);
+            
             if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
                 require(fpMarket.balanceOf(beneficiary).sub(sharesAmount) >= marketMinShareLiq, "The remaining shares dropped under the minimum");
             }

@@ -17,7 +17,7 @@ library CeilDiv {
 }
 
 
-contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
+contract FixedProductMarketMaker is ERC1155TokenReceiver {
     event FPMMFundingAdded(
         address indexed funder,
         uint[] amountsAdded,
@@ -183,7 +183,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             require(collateralToken.transfer(account, withdrawableAmount), "withdrawal transfer failed");
         }
     }
-
+    /*
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal {
         if (from != address(0)) {
             withdrawFees(from);
@@ -207,6 +207,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
             feePoolWeight = feePoolWeight.sub(withdrawnFeesTransfer);
         }
     }
+    */
 
     function addFundingTo(address beneficiary, uint addedFunds, uint[] memory distributionHint) internal returns(uint)
     {
@@ -284,7 +285,7 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         }
 
         uint collateralRemovedFromFeePool = collateralToken.balanceOf(address(this));
-
+        withdrawFees(beneficiary);
         _burn(msg.sender, sharesToBurn);
         collateralRemovedFromFeePool = collateralRemovedFromFeePool.sub(
             collateralToken.balanceOf(address(this))
@@ -437,6 +438,31 @@ contract FixedProductMarketMaker is ERC20, ERC1155TokenReceiver {
         
         return expectedRet;
         
+    }
+    
+    uint256 totalLiq;
+    mapping(address => uint256) balances;
+    function totalSupply() public view returns(uint256){
+        return totalLiq;
+    }
+    
+    function balanceOf(address account) public view returns(uint256){
+        return balances[account];
+    }
+    
+    function _mint(address account, uint256 amount) internal{
+        if(account != address(0)){
+            balances[account] += amount;
+            totalLiq += amount;
+        }
+    }
+    
+    function _burn(address account, uint256 amount) internal{
+        if(account != address(0)){
+            require(amount <= balances[account], "insufficient balance");
+            balances[account] -= amount;
+            totalLiq -= amount;
+        }
     }
 
     function _beforeBuyTo(address account, uint256 amount) internal;

@@ -56,12 +56,16 @@ contract ORFPMarket is FixedProductMarketMaker {
     function removeLiquidityTo(address beneficiary, uint256 shares, bool autoMerge) public {
         removeFundingTo(beneficiary, shares);
         if(autoMerge == true){
-            merge();
+            _merge(beneficiary);
         }
     }
 
     function merge() public {
-        uint[] memory balances = getBalances(msg.sender);
+       _merge(msg.sender);
+    }
+    
+    function _merge(address account) internal {
+        uint[] memory balances = getBalances(account);
         uint minBalance = balances[0];
         for (uint256 i = 0; i < balances.length; i++) {
             if (balances[i] < minBalance) {
@@ -74,10 +78,10 @@ contract ORFPMarket is FixedProductMarketMaker {
             sendAmounts[i] = minBalance;
         }
 
-        conditionalTokens.safeBatchTransferFrom(msg.sender, address(this), positionIds, sendAmounts, "");
+        conditionalTokens.safeBatchTransferFrom(account, address(this), positionIds, sendAmounts, "");
         mergePositionsThroughAllConditions(minBalance);
 
-        require(collateralToken.transfer(msg.sender, minBalance), "return transfer failed");
+        require(collateralToken.transfer(account, minBalance), "return transfer failed");
     }
 
     function getPercentage() public view returns (uint256[] memory percentage) {
@@ -129,17 +133,17 @@ contract ORFPMarket is FixedProductMarketMaker {
     
     
     function _beforeAddFundingTo(address beneficiary, uint sharesToBurn) internal {
-        require(msg.sender == address(marketController), "buy order is not from controller");
+        require(msg.sender == address(marketController), "caller is not market controller");
         
     }
     
     function _beforeRemoveFundingTo(address beneficiary, uint sharesToBurn) internal{
-        require(msg.sender == address(marketController), "buy order is not from controller");
+        require(msg.sender == address(marketController), "caller is not market controller");
     }
 
     function _beforeBuyTo(address beneficiary, uint256 amount) internal {
         
-        require(msg.sender == address(marketController), "buy order is not from controller");
+        require(msg.sender == address(marketController), "caller is not market controller");
         
         if(traders[beneficiary] == false){
             traders[beneficiary] == true;
@@ -148,7 +152,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     function _beforeSellTo(address beneficiary, uint256 amount) internal {
         
-        require(msg.sender == address(marketController), "sell order is not from controller");
+        require(msg.sender == address(marketController), "caller is not market controller");
         
         if(traders[beneficiary] == false){
             traders[beneficiary] == true;
