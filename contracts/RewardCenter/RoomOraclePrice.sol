@@ -435,7 +435,7 @@ contract RoomOraclePrice  is GnGOwnable{
     }
     
     
-    function buyRoom(address tokenA, uint256 amountTokenA, address to) public{
+    function buyRoom(address tokenA, uint256 amountTokenA, address to) public {
         
         (uint reserve0, uint reserve1) = getReserves(tokenA,ROOMaddress);
         
