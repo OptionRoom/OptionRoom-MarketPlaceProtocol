@@ -257,6 +257,13 @@ contract('Option room: test proposal states', function([deployer, creator, oracl
     expect(new BigNumber(creatorResolvingVoter[2]).isEqualTo(new BigNumber(0))).to.equal(true);
   });
 
+  it('Should return number of resolving votes regardless', async function() {
+    let resolveVotingCounts = await controller.getResolvingVotesCount(fixedProductMarketMaker.address);
+    // We know the market is not in resolving yet.
+    // expect(new BigNumber(resolveVotingCounts[0]).isEqualTo(new BigNumber(0))).to.equal(true);
+    // expect(new BigNumber(resolveVotingCounts[1]).isEqualTo(new BigNumber(3))).to.equal(true);
+  });
+
   it('Should return not resolved after the voting', async function() {
     let outcome = await controller.getResolvingOutcome(fixedProductMarketMaker.address);
     // We know the market is not in resolving yet.
