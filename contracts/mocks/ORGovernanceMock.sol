@@ -5,15 +5,13 @@ import "../Governance/ORGovernor.sol";
 
 contract ORGovernanceMock is DummyORGovernor {
 
-    function getAccountInfo(address account) external returns(bool governorFlag, bool suspendedFlag, uint256 power){
+    function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
         // Mocking this.
         power = powerPerUser[account];
         governorFlag = true;
         suspendedFlag = false;
     }
-    
-    function getSuspendReason(address account) external returns(string memory reason){
-        // Mocking this.
+    function getSuspendReason(address account) external view returns(string memory reason){
         "Testing suspension";
     }
 }
