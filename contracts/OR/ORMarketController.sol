@@ -333,7 +333,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
-
+        require(initialLiq >= marketMinShareLiq, "initial liquidity less than minimum liquidity required" );
         ct.prepareCondition(address(this), questionId, 2);
         bytes32[]  memory conditionIds = new bytes32[](1);
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
@@ -353,7 +353,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     function marketAddLiquidity(address market,uint256 amount) public{
         ORMarketLib.MarketState marketState = getMarketState(market);
         
-        require(marketState == ORMarketLib.MarketState.Active ," liquidity can be added only in active state");
+        require(marketState == ORMarketLib.MarketState.Active || marketState == ORMarketLib.MarketState.Validating," liquidity can be added only in active/Validating state");
        _marketAddLiquidity(market,amount);
     }
     
