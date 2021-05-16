@@ -509,5 +509,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         protocolFee = numerator * 1e18 /denominator;
     }
 
-
+    // A method to return the calculated value from investment amount.
+    function getProtocolCalculatedFees(uint investmentAmount) external view returns(uint256) {
+        return investmentAmount * protocolFee / 1e18;
+    }
 }

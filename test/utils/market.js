@@ -6,19 +6,17 @@ chai.use(require('chai-bignumber')());
 const { expectEvent } = require('openzeppelin-test-helpers')
 const { toBN } = web3.utils
 
-let ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
-let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
-let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
-let CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
-let PermissionsController = artifacts.require("../../../contracts/Guardian/GnGOwnable.sol");
-let RewardCenterController = artifacts.require("../../../contracts/RewardCenter/RewardCenter.sol");
-let RewardCenterMockController = artifacts.require("../../../contracts/mock/RewardCenterMock.sol");
+const ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
+const MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
+const CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
+const CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
 const RoomsGovernor = artifacts.require('ORGovernanceMock')
 const CentralTimeForTestingContract = artifacts.require('CentralTimeForTesting')
 const RewardProgram = artifacts.require('RewardProgramMock')
+const RewardCenterMockController = artifacts.require("../../../contracts/mock/RewardCenterMock.sol");
 
 const ORMarketLib = artifacts.require('ORMarketLib')
 var BigNumber = require('bignumber.js');
@@ -35,7 +33,7 @@ let centralTime
 let marketLibrary;
 
 let rewardProgram;
-let permissionsController;
+// let permissionsController;
 
 const {
   marketValidationPeriod,
@@ -45,15 +43,14 @@ const {
   oneDay,
 } = require('./constants')
 
-let disputeThreshold = toBN(100e18)
-let minHoldingToDispute = toBN(10e18)
+const disputeThreshold = toBN(100e18)
+const minHoldingToDispute = toBN(10e18)
 
 const questionString = 'Test'
 const feeFactor = toBN(3e15) // (0.3%)
 
 let positionIds
 let deployer;
-
 let rewardCenter;
 
 function setDeployer(deployerAccount) {
@@ -82,8 +79,9 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
 
-
-  await fixedProductMarketMakerFactory.setRewardCenter(rewardProgram.address);
+  // Setting the reward program here.
+  await fixedProductMarketMakerFactory.setRewardProgram(rewardProgram.address);
+  await fixedProductMarketMakerFactory.setRewardCenter(rewardCenter.address);
   
   let deployedMarketMakerContract = await ORFPMarket.deployed();
   await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
@@ -126,7 +124,7 @@ async function createNewMarket(creator) {
   })
 
 
-  let marketToReturn = await ORFPMarket.at(fixedProductMarketMakerAddress)
+  const marketToReturn = await ORFPMarket.at(fixedProductMarketMakerAddress)
   positionIds = await marketToReturn.getPositionIds();
   return [marketToReturn, collateralToken, positionIds];
 }
