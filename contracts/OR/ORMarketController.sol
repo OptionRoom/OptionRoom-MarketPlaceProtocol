@@ -6,7 +6,9 @@ import "../Governance/IORGovernor.sol";
 import "../TimeDependent/TimeDependent.sol";
 
 import "./FixedProductMarketMakerFactoryOR.sol";
+import "../RewardCenter/IRewardCenter.sol";
 import "../RewardCenter/IRewardProgram.sol";
+import "../RewardCenter/IRoomOraclePrice.sol";
 import "../Guardian/GnGOwnable.sol";
 
 interface IORMarketForMarketGovernor{
@@ -48,9 +50,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         bool    disputedFlag;
     }
     
-    IORGovernor orGovernor;
+    IORGovernor public orGovernor;
     ConditionalTokens public ct; 
     IRewardProgram  public RP; //reward program
+    address public roomOracleAddress;
+    address public rewardCenterAddress;
     
     mapping(address => MarketInfo) marketsInfo;
 
@@ -67,7 +71,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     mapping(address => bool) payoutsMarkets;
 
     uint256 public marketMinShareLiq = 100e18; //todo
-    uint256 public marketFee = 20000000000000000;  //2% todo
+    uint256 public marketLPFee = 20000000000000000;  //2% todo
+    uint256 public protocolFee = 10000000000000000; //1%t odo
+    uint256 public buyRoomThreshold = 1e18; //
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
@@ -83,7 +89,6 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         
     }
-    
     
     
     function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
@@ -114,13 +119,14 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         orConditionalTokens.reportPayouts(market.questionId(), getResolvingOutcome(marketAddress));
     }
 
-    function getAccountInfo(address account) public returns(bool canVote, uint256 votePower){
+    function getAccountInfo(address account) public view returns(bool canVote, uint256 votePower){
         bool governorFlag; bool suspendedFlag;
         (governorFlag, suspendedFlag,  votePower) = orGovernor.getAccountInfo(account);
         canVote = governorFlag && !suspendedFlag;
         return (canVote, votePower);
     }
-
+    
+    
     function getMarketState(address marketAddress) public view returns (ORMarketLib.MarketState) {
 
         MarketInfo memory marketInfo = marketsInfo[marketAddress];
@@ -333,18 +339,26 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
         //ORMarketController marketController =  ORMarketController(governanceAdd);
         
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketFee);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketLPFee);
         fpMarket.setConfig(marketQuestionID, msg.sender, address(this), questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
         
         proposalIds[questionId] = address(fpMarket);
         
-        marketAddLiquidity(address(fpMarket),initialLiq);
+        _marketAddLiquidity(address(fpMarket),initialLiq);
         //TODO: check collateralToken is from the list
     }
     
     
     function marketAddLiquidity(address market,uint256 amount) public{
+        ORMarketLib.MarketState marketState = getMarketState(market);
+        
+        require(marketState == ORMarketLib.MarketState.Active ," liquidity can be added only in active state");
+       _marketAddLiquidity(market,amount);
+    }
+    
+    
+    function _marketAddLiquidity(address market,uint256 amount) internal{
         ORFPMarket fpMarket = ORFPMarket(market);
         IERC20 collateralToken = fpMarket.collateralToken();
          // Add liquidity
@@ -363,12 +377,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         address proposer = fpMarket.proposer();
         
-        fpMarket.transferFrom(beneficiary,address(this),sharesAmount);
-        fpMarket.approve(address(fpMarket),sharesAmount);
-        
-        // todo : wrong : proposer can send his share to other addres and withdraw them
          if(beneficiary == proposer) {
             ORMarketLib.MarketState marketState = getMarketState(market);
+            
             if(marketState == ORMarketLib.MarketState.Validating || marketState == ORMarketLib.MarketState.Active){
                 require(fpMarket.balanceOf(beneficiary).sub(sharesAmount) >= marketMinShareLiq, "The remaining shares dropped under the minimum");
             }
@@ -379,6 +390,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         RP.lpMarketRemove(market, msg.sender, sharesAmount);
     }
     
+    mapping(address => uint256) fees;
    
     function marketBuy(address market,uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBu) public{
         ORMarketLib.MarketState marketState = getMarketState(market);
@@ -390,7 +402,12 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         collateralToken.transferFrom(msg.sender,address(this),investmentAmount);
         collateralToken.approve(address(fpMarket),investmentAmount);
         
-        fpMarket.buyTo(msg.sender,investmentAmount,outcomeIndex,minOutcomeTokensToBu);
+        uint256 pFee = investmentAmount * protocolFee / 1e18;
+        fees[address(collateralToken)] += pFee;
+        
+        buyRoom(address(collateralToken));
+        
+        fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
         
         RP.tradeAmount(market, msg.sender, investmentAmount, true);
     }
@@ -403,10 +420,37 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         uint256[] memory PositionIds = fpMarket.getPositionIds();
         ct.setApprovalForAll(address(fpMarket),true);
         ct.safeTransferFrom(msg.sender, address(this), PositionIds[index], amount, "");
-        uint256 tradeVolume = fpMarket.sellTo(msg.sender,amount,index);
+        uint256 tradeVolume = fpMarket.sellTo(address(this),amount,index);
+       
+        IERC20 collateralToken = ORFPMarket(market).collateralToken();
         
+        
+        uint256 pFee = tradeVolume * protocolFee / 1e18;
+        fees[address(collateralToken)] += pFee;
+        
+        buyRoom(address(collateralToken));
+        
+        collateralToken.transfer(msg.sender,tradeVolume - pFee);
         RP.tradeAmount(market, msg.sender, tradeVolume, false);
     }
+    
+    function buyRoom(address IERCaddress) internal{
+        if(fees[IERCaddress] >= buyRoomThreshold){
+            if(roomOracleAddress != address(0)){
+                IERC20 erc20 = IERC20(IERCaddress);
+                erc20.approve(roomOracleAddress,fees[IERCaddress]);
+                IRoomOraclePrice(roomOracleAddress).buyRoom(IERCaddress,fees[IERCaddress],rewardCenterAddress);
+                fees[IERCaddress] = 0;
+            }
+        }
+    }
+    
+    function withdrawFees(address erc20Address, address to) public  onlyGovOrGur{
+        IERC20 erc20 = IERC20(erc20Address);
+        
+        erc20.transfer(to, erc20.balanceOf(address(this)));
+    }
+    
     
     //
     function setTemplateAddress(address templateAddress) public onlyGovOrGur{
@@ -419,13 +463,21 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         orGovernor = IORGovernor(orGovernorAddress);
     }
     
-    function setRewardCenter(address rewardProgramAddress) public onlyGovOrGur{
+    function setRewardProgram(address rewardProgramAddress) public onlyGovOrGur{
        
         RP = IRewardProgram(rewardProgramAddress);
     }
     
-    function setConditionalToken(address conditionalTokens) public onlyGovOrGur{
-        ct = ConditionalTokens(conditionalTokens);
+    function setConditionalToken(address conditionalTokensAddress) public onlyGovOrGur{
+        ct = ConditionalTokens(conditionalTokensAddress);
+    }
+    
+    function setRoomoracleAddress(address newAddress) public onlyGovOrGur{
+        roomOracleAddress = newAddress;
+    }
+    
+    function setRewardCenter(address newAddress) public onlyGovOrGur{
+        rewardCenterAddress = newAddress;
     }
     
     // market configuration
@@ -449,8 +501,12 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         disputeThreshold = t;
     }
     
-    function setMarketFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
-        marketFee = numerator * 1e18 / denominator;
+    function setMarketLPFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
+        marketLPFee = numerator * 1e18 / denominator;
+    }
+    
+    function setProtocolFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
+        protocolFee = numerator * 1e18 /denominator;
     }
 
 

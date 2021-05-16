@@ -148,7 +148,7 @@ contract MainDeployer{
         
         //a3 config (marketController)
         aa3.setConditionalToken(address(aa2));
-        aa3.setRewardCenter(address(aa6));
+        aa3.setRewardProgram(address(aa5));
         aa3.setIORGoverner(address(aa7));
         aa3.setTemplateAddress(address(aa4));
         
