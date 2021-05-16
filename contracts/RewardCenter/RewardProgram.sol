@@ -125,8 +125,8 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         return amountToClaim;
     }
 
-    function getLPReward(address market, address account, uint256 cBlockNumber) public view returns (uint256 pendingRewards, uint256 claimedRewards){
-        //cBlockNumber = getBlockNumber();
+    function getLPReward(address market, address account) public view returns (uint256 pendingRewards, uint256 claimedRewards){
+        uint256 cBlockNumber = getBlockNumber();
 
         // update accRewardPerToken, in case totalVolume is zero; do not increment accRewardPerToken
 
