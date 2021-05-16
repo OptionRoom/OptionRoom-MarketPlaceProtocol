@@ -3,13 +3,15 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IRewardCenter.sol";
 import "../Guardian/GnGOwnable.sol";
 import "./IRoomOraclePrice.sol";
+import "../TimeDependent/TimeDependent.sol";
 
-contract RewardCenter is IRewardCenter, GnGOwnable{
+contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     using SafeMath for uint256;
     
     address public rewardProgramAddress;
-    IERC20 roomToken ;
-    IRoomOraclePrice roomOraclePrice;
+    IERC20 public roomToken ;
+    IRoomOraclePrice public roomOraclePrice;
+    uint256 public updatePeriod = 600; // 10 min
     
     function setRewardProgram(address programAddress) public onlyGovOrGur{
         rewardProgramAddress = programAddress;
@@ -19,10 +21,13 @@ contract RewardCenter is IRewardCenter, GnGOwnable{
         roomToken = IERC20(roomAddres);
     }
     
-    function setRoomOraclePrice(IRoomOraclePrice oracelAddress) public onlyGovOrGur{
+    function setRoomOracleAddress(address oracelAddress) public onlyGovOrGur{
         roomOraclePrice = IRoomOraclePrice(oracelAddress);
     }
     
+    function setUpdatePeriod(uint256 newPeriod) public onlyGovOrGur{
+        updatePeriod = newPeriod;
+    }
 
     
     function sendRoomReward(address beneficiary, uint256 amount, string calldata) external{
@@ -30,10 +35,19 @@ contract RewardCenter is IRewardCenter, GnGOwnable{
         roomToken.transfer(beneficiary,amount);
     }
     
+    uint256 numerator;
+    uint256 denominator;
+    uint256 denominatorDec;
+    uint256 updatedTime;
     
     function sendRoomRewardByDollarAmount(address beneficiary, uint256 amount, string calldata) external{
         require(msg.sender == rewardProgramAddress, "only reward program allowed to send rewards");
-        (uint256 numerator, uint256 denominator, uint256 denominatorDec) = roomOraclePrice.getPrice();
+        uint256 cTime = getCurrentTime();
+        
+        if(cTime - updatedTime > updatePeriod){
+            updatedTime = cTime;
+            (numerator, denominator, denominatorDec) = roomOraclePrice.getPrice();
+        }
         
         require(denominator != 0, "Room price is not available");
         // dollar amount 18 decimal
