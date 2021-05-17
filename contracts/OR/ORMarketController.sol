@@ -50,6 +50,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         bool    disputedFlag;
     }
     
+    struct MarketsVoted{
+        uint256 wrongVotingCount;
+        address[] marketsResolving;
+    }
+    
     IORGovernor public orGovernor;
     ConditionalTokens public ct; 
     IRewardProgram  public RP; //reward program
@@ -79,6 +84,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
     
+    bool pelantyOnWrongResolving;
+    mapping(address => MarketsVoted) marketsVotedPerUse;
     
     mapping(bytes32 => address) public proposalIds;
     
@@ -92,7 +99,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     
     function addMarket(address marketAddress, uint256 _marketCreatedTime,  uint256 _marketParticipationEndTime,  uint256 _marketResolvingEndTime) internal returns(uint256){
-        // todo security check
+        
         MarketInfo storage marketInfo = marketsInfo[marketAddress];
         marketInfo.createdTime = _marketCreatedTime;
         marketInfo.participationEndTime = _marketParticipationEndTime;
@@ -232,7 +239,15 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
 
         MarketVotersInfo storage marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == false, "user already voted");
-
+        
+        if(pelantyOnWrongResolving){
+            address[] memory wrongVoting = checkForWrongVoting(account);
+            bool doNoteVoteFalg = orGovernor.userhasWrongVoting(wrongVoting);
+            if(doNoteVoteFalg){
+                return;
+            }
+        }
+        
         bool canVote;
         uint256 votePower;
         (canVote,votePower) = getAccountInfo(account);
@@ -244,7 +259,12 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         }else{
              marketsInfo[marketAddress].lastDisputeResolvingVoteTime = getCurrentTime();
         }
-
+        
+        if(pelantyOnWrongResolving){
+            MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
+            marketsVoted.marketsResolving.push(marketAddress);
+        }
+        
         if(marketVotersInfo.insertedFlag == 0){
             marketVotersInfo.insertedFlag = 1;
             marketResolvingVoters[marketAddress].push(account);
@@ -258,6 +278,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
 
         marketsInfo[marketAddress].resolvingVotesCount[outcomeIndex] += votePower;
     }
+    
 
     function withdrawGovernanceResolvingVote(address marketAddress) public{
         address account = msg.sender;
@@ -266,6 +287,10 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         require(marketState == ORMarketLib.MarketState.Resolving || marketState == ORMarketLib.MarketState.ResolvingAfterDispute, "Market is not in resolving/ResolvingAfterDispute states");
 
         MarketVotersInfo storage marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
+        
+        if(pelantyOnWrongResolving){
+            deleteMarketVoting(account,marketAddress);
+        }
         require(marketVotersInfo.voteFlag == true, "user did not vote");
 
         marketVotersInfo.voteFlag = false;
@@ -273,7 +298,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         uint8 outcomeIndex = marketVotersInfo.selection;
         marketsInfo[marketAddress].resolvingVotesCount[outcomeIndex] -= marketVotersInfo.power;
         marketVotersInfo.power = 0;
-        //TODO: palanty
+        
     }
 
     function disputeMarket(address marketAddress, string memory disputeReason) public{
@@ -298,6 +323,42 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         }
 
         emit DisputeSubmittedEvent(account,marketAddress,marketsInfo[marketAddress].disputeTotalBalances,marketsInfo[marketAddress].disputedFlag);
+    }
+    
+    function deleteMarketVoting(address account, address market) internal{
+        MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
+        for(uint256 i = marketsVoted.marketsResolving.length -1; i==0; i--){
+            if(marketsVoted.marketsResolving[i] == market){
+               marketsVoted.marketsResolving[i] = marketsVoted.marketsResolving[marketsVoted.marketsResolving.length -1];
+               marketsVoted.marketsResolving.length--;
+                break;
+            }
+        }
+    }
+    
+    function checkForWrongVoting(address account) internal returns(address[] memory wrongVoting){
+       
+        MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
+        wrongVoting = new address[](marketsVoted.marketsResolving.length);
+        uint256 wrongVoteIndex =0;
+        for(uint256 i = marketsVoted.marketsResolving.length -1; i==0; i--){
+            address marketAddress = marketsVoted.marketsResolving[i];
+            if(getMarketState(marketAddress) == ORMarketLib.MarketState.Resolved){
+                //todo check wrongVoting
+                
+                // delete it
+                marketsVoted.marketsResolving[i] = marketsVoted.marketsResolving[marketsVoted.marketsResolving.length -1];
+                marketsVoted.marketsResolving.length--;
+                
+                uint256[] memory indexSet = getResolvingOutcome(marketAddress);
+                if( indexSet[marketResolvingVotersInfo[marketAddress][account].selection] == 1){
+                    
+                    wrongVoting[wrongVoteIndex] = marketAddress;
+                    wrongVoteIndex++;
+                }
+            }
+        }
+        
     }
 
 
@@ -507,6 +568,10 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     function setProtocolFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
         protocolFee = numerator * 1e18 /denominator;
+    }
+    
+    function setPelantyOnWrongResolving(bool plentyFlag) public onlyGovOrGur{
+        pelantyOnWrongResolving = plentyFlag;
     }
 
 

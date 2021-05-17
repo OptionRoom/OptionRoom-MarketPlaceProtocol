@@ -3,6 +3,7 @@ pragma solidity ^0.5.1;
 interface IORGovernor{
     function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power) ;
     function getSuspendReason(address account) external view returns(string memory reason);
+    function userhasWrongVoting(address[] calldata market) external returns (bool);
 }
 
 
