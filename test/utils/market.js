@@ -95,7 +95,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter];
+  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens];
 }
 
 async function createNewMarket(creator) {
