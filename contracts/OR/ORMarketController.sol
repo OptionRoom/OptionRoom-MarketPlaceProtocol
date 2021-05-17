@@ -242,7 +242,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         if(pelantyOnWrongResolving){
             address[] memory wrongVoting = checkForWrongVoting(account);
-            bool doNoteVoteFalg = orGovernor.userhasWrongVoting(wrongVoting);
+            bool doNoteVoteFalg = orGovernor.userhasWrongVoting(account, wrongVoting);
             if(doNoteVoteFalg){
                 return;
             }

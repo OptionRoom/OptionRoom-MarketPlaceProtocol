@@ -57,7 +57,7 @@ contract ORGovernor is TimeDependent, GnGOwnable{
         courtStake.suspendAccount(account,numOfDays);
     }
     
-    function userhasWrongVoting(address account, address[] memory markets) public  returns (bool){
+    function userhasWrongVoting(address account, address[] calldata markets) external  returns (bool){
         require(msg.sender == marketsControllarAddress, "caller is not market controller");
         
         WrongMarketsVoting storage wrongVoting = WrongVoting[account];
