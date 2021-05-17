@@ -286,7 +286,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         uint collateralRemovedFromFeePool = collateralToken.balanceOf(address(this));
         withdrawFees(beneficiary);
-        _burn(msg.sender, sharesToBurn);
+        _burn(beneficiary, sharesToBurn);
         collateralRemovedFromFeePool = collateralRemovedFromFeePool.sub(
             collateralToken.balanceOf(address(this))
         );
@@ -348,6 +348,14 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         return buyTokenPoolBalance.add(investmentAmountMinusFees).sub(endingOutcomeBalance.ceildiv(ONE));
     }
+    
+    
+    function calcBuyAmountProtocolFeesIncluded(uint investmentAmount, uint outcomeIndex, uint256 protocolFee) public view returns (uint) {
+        uint256 pFee = investmentAmount * protocolFee / 1e18;
+        
+        return calcBuyAmount(investmentAmount - pFee, outcomeIndex);
+        
+    }
 
 
     function calcSellAmount(uint returnAmount, uint outcomeIndex) internal view returns (uint outcomeTokenSellAmount) {
@@ -394,6 +402,15 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         ret = ret.mul(ONE.sub(fee)) / ONE;
     }
+    
+    function calcSellReturnInvMinusMarketFees(uint amount, uint inputIndex, uint256 protocolFee) public view returns (uint256 ret){
+        ret = calcSellReturnInv(amount,inputIndex);
+        
+        uint256 pFee = ret * protocolFee / 1e18;
+        
+        ret -= pFee;
+    }
+    
 
     function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
         _beforeBuyTo(beneficiary, investmentAmount);
