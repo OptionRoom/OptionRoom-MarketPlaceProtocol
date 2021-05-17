@@ -69,7 +69,6 @@ contract('OR: test min liquidity and withdrawal', function([deployer, creator, o
   })
 
   it('Should allow other account to withdraw liquidity with no issues', async function() {
-    await fixedProductMarketMaker.approve(controller.address, addedFunds1, { from: investor2 })
     await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds1,false,  { from: investor2 })
   })
 
@@ -80,8 +79,6 @@ contract('OR: test min liquidity and withdrawal', function([deployer, creator, o
   
   it('Should revert when trying to remove more liquidity than min liquidity', async function() {
     const REVERT = 'The remaining shares dropped under the minimum'
-
-    await fixedProductMarketMaker.approve(controller.address, addedFunds, { from: creator })
     
     try {
       await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds, false, { from: creator })
@@ -95,10 +92,20 @@ contract('OR: test min liquidity and withdrawal', function([deployer, creator, o
   it('Should withdraw, amount is lesser then the min liquidity and state in validation.', async function() {
     await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, toRemoveFunds1, false, { from: creator })
   })
-  
-  it('Should fail to withdraw trying to remove more liquidity than min liquidity', async function() {
+
+  it('Should revert when trying to remove more liquidity than min liquidity after removing some liquidity before', async function() {
     const REVERT = 'The remaining shares dropped under the minimum'
 
+    try {
+      await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, toRemoveFunds1, false, { from: creator })
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+  
+  it('Should fail to withdraw trying to remove more liquidity than min liquidity', async function() {
     await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: investor1 })
     await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, false, { from: oracle })
     await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor2 })
@@ -113,4 +120,17 @@ contract('OR: test min liquidity and withdrawal', function([deployer, creator, o
     // Got to manage to remove all of the rest of the liquidity because we are rejected.
     await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, toRemoveFunds1, false, { from: creator })
   })
+
+  it('Should revert, removing liquidity not in the proper state.', async function() {
+    const REVERT = ' liquidity can be added only in active/Validating state'
+
+    try {
+      await controller.marketAddLiquidity(fixedProductMarketMaker.address, addedFunds, { from: creator })
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+  
 })

@@ -78,21 +78,21 @@ contract('Option room reward center tests', function([deployer,
     await rewardCenter.deposit(toBN(100e18), { from: creator })
   })
 
-
-  it('Should fail to set room oracle', async function() {
-    const REVERT = 'caller is not governor or guardian';
-    try {
-      await rewardCenter.setRoomOraclePrice(roomTokenFake.address, {from : controller.address});
-      throw null
-    } catch (error) {
-      assert(error, 'Expected an error but did not get one')
-      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
-    }
-  })
-
-  it('Should manage to set the room oracle', async function() {
-    await rewardCenter.setRoomOraclePrice(oracleInstance.address, {from : deployer});
-  })
+  //
+  // it('Should fail to set room oracle', async function() {
+  //   const REVERT = 'caller is not governor or guardian';
+  //   try {
+  //     await rewardCenter.setRoomOraclePrice(roomTokenFake.address, {from : controller.address});
+  //     throw null
+  //   } catch (error) {
+  //     assert(error, 'Expected an error but did not get one')
+  //     assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+  //   }
+  // })
+  //
+  // it('Should manage to set the room oracle', async function() {
+  //   await rewardCenter.setRoomOraclePrice(oracleInstance.address, {from : deployer});
+  // })
   
   it('Should fail to send room reward', async function() {
     const REVERT = 'only reward program allowed to send rewards';

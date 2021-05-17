@@ -122,8 +122,7 @@ async function createNewMarket(creator) {
     conditionalTokens: conditionalTokens.address,
     collateralToken: collateralToken.address,
   })
-
-
+  
   const marketToReturn = await ORFPMarket.at(fixedProductMarketMakerAddress)
   positionIds = await marketToReturn.getPositionIds();
   return [marketToReturn, collateralToken, positionIds];
@@ -165,6 +164,15 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
     conditionalTokens: conditionalTokens.address,
     collateralToken: col.address,
   })
+
+  const { fixedProductMarketMaker } = createTx.logs.find(
+    ({ event }) => event === 'FixedProductMarketMakerCreation'
+  ).args;
+
+  // Return those attributes to the creation, so that we can check on them.
+  const marketToReturn = await ORFPMarket.at(fixedProductMarketMaker)
+  positionIds = await marketToReturn.getPositionIds();
+  return [marketToReturn, col, positionIds];
 }
 
 function addDays(theDate, days) {

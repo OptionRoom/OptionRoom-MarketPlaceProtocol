@@ -156,20 +156,4 @@ contract('Option room market controller permissions', function([deployer,
   it('Should pass and change the controller address because I am the guardian.', async function() {
     await controller.setDisputeThreshold(disputeThreshold, {from : deployer});
   })
-  
-  it('Should fail because sender is not governor or guardian', async function() {
-    const REVERT = 'caller is not governor or guardian';
-    try {
-      await controller.setMarketFee(numerator,denominator , {from : controller.address});
-      throw null
-    } catch (error) {
-      assert(error, 'Expected an error but did not get one')
-      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
-    }
-  })
-
-  it('Should pass and change the controller address because I am the guardian.', async function() {
-    await controller.setMarketFee(numerator,denominator, {from : deployer});
-  })
-  
 })

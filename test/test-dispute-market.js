@@ -1,12 +1,13 @@
 const ORMarketLib = artifacts.require('ORMarketLib')
 const { expectEvent } = require('openzeppelin-test-helpers')
 const {
-  prepareContracts, createNewMarket,resetTimeIncrease,increaseTime,moveToActive,moveToResolved11
+  prepareContracts, createNewMarket,resetTimeIncrease,increaseTime,
+  setDeployer, moveToActive,moveToResolved11
 } = require('./utils/market.js')
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('MarketMakerStates: test dispute market', function([, creator, oracle, investor1, trader, investor2]) {
+contract('MarketMakerStates: test dispute market', function([deployer, creator, oracle, investor1, trader, investor2]) {
   let collateralToken
   let controller
   let fixedProductMarketMaker;
@@ -14,7 +15,9 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
   let marketPendingPeriod = 1800;
   
   before(async function() {
-    controller = await prepareContracts(creator, oracle, investor1, trader, investor2)
+    setDeployer(deployer);
+    let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
+    controller = retArray[0];
   })
 
   it('can be created by factory', async function() {
@@ -55,8 +58,10 @@ contract('MarketMakerStates: test dispute market', function([, creator, oracle, 
     // we already have 2 yeses and 2 nos
     await collateralToken.deposit({ value: investmentAmount, from: trader });
     await collateralToken.approve(controller.address, investmentAmount, { from: trader });
-    const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex);
-    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
+    
+    const protocolFees = await controller.protocolFee.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader });
   })
 
   let firstTimeResolve;

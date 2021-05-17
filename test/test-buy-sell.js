@@ -51,7 +51,6 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
   })
 
   it('Should be able to add more liquidity from another account', async function() {
-    await fixedProductMarketMaker.approve(controller.address, addedFunds1, { from: investor2 })
     await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds1,false,  { from: investor2 })
   })
   
@@ -72,11 +71,13 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     // we already have 2 yeses and 2 nosNN
     await collateralToken.deposit({ value: investmentAmount, from: trader })
     await collateralToken.approve(controller.address, investmentAmount, { from: trader })
-    const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
 
+    const protocolFees = await controller.protocolFee.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    
     const REVERT = 'Market is not in active state'
     try {
-      await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader })
+      await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader })
       throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')
@@ -115,11 +116,8 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     const investmentAmount = toBN(1e18)
     const buyOutcomeIndex = 1
 
-    // await fixedProductMarketMaker.increaseTime(marketPendingPeriod);
-    // await centralTime.increaseTime(marketPendingPeriod);
     await moveToActive()
 
-    // let state = await governanceMock.getMarketState(fixedProductMarketMaker.address);
     let state = await callControllerMethod('getMarketState', [fixedProductMarketMaker.address])
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Active))).to.equal(true)
 
@@ -127,8 +125,10 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     await collateralToken.deposit({ value: investmentAmount, from: trader })
     await collateralToken.approve(controller.address, investmentAmount, { from: trader })
 
-    const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
-    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader })
+    // const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
+    const protocolFees = await controller.protocolFee.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader })
   })
 
   const addedFunds2 = toBN(1e18)
@@ -162,9 +162,7 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
   it('Should be able to sell', async function() {
     traderNoBalanceBefore = (await fixedProductMarketMaker.getBalances(trader))[1]
     expectedSellValue = await fixedProductMarketMaker.calcSellReturnInv(toBN(traderNoBalanceBefore), 1, { from: trader })
-
-    // await conditionalApproveForAll(controller, trader)
-
+    
     await collateralToken.approve(controller.address, expectedSellValue, { from: trader })
     
     // the first attribute is the amount, then the index you want to sell.
