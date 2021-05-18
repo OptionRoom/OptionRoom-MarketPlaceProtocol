@@ -434,8 +434,26 @@ contract RoomOraclePrice  is GnGOwnable{
         
     }
     
+    function getExpectedRoomByToken(address tokenA, uint256 amountTokenA) public view returns(uint256) {
+        (uint reserve0, uint reserve1) = getReserves(tokenA,ROOMaddress);
+        address[] memory path;
+        
+        if( reserve0 > 0 && reserve1 >0){
+            path = new address[](2);
+            path[0] = tokenA;
+            path[1] = ROOMaddress;
+        }else{
+            path = new address[](3);
+            path[0] = tokenA;
+            path[1] = WETRaddress;
+            path[2] = ROOMaddress;
+        }
+        uint[] memory amounts = UniswapV2Library.getAmountsOut(factoryAddress, amountTokenA, path);
+        return amounts[amounts.length - 1];
+    }
     
-    function buyRoom(address tokenA, uint256 amountTokenA, address to) public {
+    
+    function buyRoom(address tokenA, uint256 amountTokenA, uint256  minRoom, address to) public {
         
         (uint reserve0, uint reserve1) = getReserves(tokenA,ROOMaddress);
         
@@ -452,7 +470,7 @@ contract RoomOraclePrice  is GnGOwnable{
             path[2] = ROOMaddress;
         }
         
-        swapExactTokensForTokens(amountTokenA, 0, path, to);
+        swapExactTokensForTokens(amountTokenA, minRoom, path, to);
     }
     
     //////////////////

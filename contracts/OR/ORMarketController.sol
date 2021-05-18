@@ -523,7 +523,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             if(roomOracleAddress != address(0)){
                 IERC20 erc20 = IERC20(IERCaddress);
                 erc20.safeApprove(roomOracleAddress,fees[IERCaddress]);
-                IRoomOraclePrice(roomOracleAddress).buyRoom(IERCaddress,fees[IERCaddress],rewardCenterAddress);
+                IRoomOraclePrice(roomOracleAddress).buyRoom(IERCaddress,fees[IERCaddress],0,rewardCenterAddress);
                 fees[IERCaddress] = 0;
             }
         }
