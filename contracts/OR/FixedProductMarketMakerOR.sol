@@ -7,6 +7,7 @@ import {CTHelpers} from "../../gnosis.pm/conditional-tokens-contracts/contracts/
 import {ERC1155TokenReceiver} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import {TransferHelper} from "../Helpers/TransferHelper.sol";
+import {IRoomOraclePrice} from "../RewardCenter/IRoomOraclePrice.sol";
 
 library CeilDiv {
     // calculates ceil(x/y)
@@ -48,15 +49,22 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
     using SafeMath for uint;
     using CeilDiv for uint;
-
+    
+    address public proposer;
+    
     uint constant ONE = 10 ** 18;
-
+    address roomOracle;
     ConditionalTokens public conditionalTokens;
     IERC20 public collateralToken;
     bytes32[] public conditionIds;
-    uint public fee;
+    uint public totalFee;
+    uint public lpFee;
+    uint public proposerFee;
     uint internal feePoolWeight;
-
+    
+    uint public totalProposerFee;
+    uint public withdrawnProposerFee;
+    
     uint[] outcomeSlotCounts;
     bytes32[][] collectionIds;
     uint[] positionIds;
@@ -69,15 +77,22 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         ConditionalTokens _conditionalTokens,
         IERC20 _collateralToken,
         bytes32[] memory _conditionIds,
-        uint _fee
+        uint _lpfee,
+        uint _propserFee,
+        address _proposer,
+        address _roomOracle
     ) public {
         require(initiated == false, "Market Already initiated");
 
         conditionalTokens = _conditionalTokens;
         collateralToken = _collateralToken;
         conditionIds = _conditionIds;
-        fee = _fee;
-
+        lpFee = _lpfee;
+        proposerFee = _propserFee;
+        proposer = _proposer;
+        totalFee = lpFee + proposerFee;
+        roomOracle =_roomOracle;
+        
         uint atomicOutcomeSlotCount = 1;
         outcomeSlotCounts = new uint[](conditionIds.length);
         for (uint i = 0; i < conditionIds.length; i++) {
@@ -171,18 +186,37 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         return feePoolWeight.sub(totalWithdrawnFees);
     }
 
-    function feesWithdrawableBy(address account) public view returns (uint) {
+    function feeLPWithdrawableBy(address account) public view returns (uint collateralAmount, uint roomAmount) {
         uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
-        return rawAmount.sub(withdrawnFees[account]);
+        collateralAmount = rawAmount.sub(withdrawnFees[account]);
+        roomAmount = IRoomOraclePrice(roomOracle).getExpectedRoomByToken(address(collateralToken),collateralAmount);
+       
+    }
+    
+    function feeProposerWithdrawable() public view returns(uint collateralAmount, uint roomAmount) {
+        collateralAmount = totalProposerFee.sub(withdrawnProposerFee);
+        roomAmount = IRoomOraclePrice(roomOracle).getExpectedRoomByToken(address(collateralToken),collateralAmount);
+    }
+    
+    function withdrawProposerFee(uint256 minRoom) public {
+        require(msg.sender == proposer, "only proposer can call");
+        (uint withdrawableAmount, ) = feeProposerWithdrawable();
+        if(withdrawableAmount > 0){
+            withdrawnProposerFee = withdrawnProposerFee.add(withdrawableAmount);
+            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,msg.sender);
+        }
+        
     }
 
-    function withdrawFees(address account) public {
+    function withdrawFees(address account, uint256 minRoom) public {
         uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
         uint withdrawableAmount = rawAmount.sub(withdrawnFees[account]);
         if (withdrawableAmount > 0) {
             withdrawnFees[account] = rawAmount;
             totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
-            collateralToken.safeTransfer(account, withdrawableAmount);
+            //collateralToken.safeTransfer(account, withdrawableAmount);
+            
+            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,account);
         }
     }
     /*
@@ -287,7 +321,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         }
 
         uint collateralRemovedFromFeePool = collateralToken.balanceOf(address(this));
-        withdrawFees(beneficiary);
+        withdrawFees(beneficiary,0);
         _burn(beneficiary, sharesToBurn);
         collateralRemovedFromFeePool = collateralRemovedFromFeePool.sub(
             collateralToken.balanceOf(address(this))
@@ -335,7 +369,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         require(outcomeIndex < positionIds.length, "invalid outcome index");
 
         uint[] memory poolBalances = getPoolBalances();
-        uint investmentAmountMinusFees = investmentAmount.sub(investmentAmount.mul(fee) / ONE);
+        uint investmentAmountMinusFees = investmentAmount.sub(investmentAmount.mul(totalFee) / ONE);
         uint buyTokenPoolBalance = poolBalances[outcomeIndex];
         uint endingOutcomeBalance = buyTokenPoolBalance.mul(ONE);
         for (uint i = 0; i < poolBalances.length; i++) {
@@ -365,7 +399,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         uint[] memory poolBalances = getPoolBalances();
         //uint returnAmountPlusFees = returnAmount.mul(ONE) / ONE.sub(fee);
-        uint returnAmountPlusFees = returnAmount.mul(ONE.add(fee)) / ONE;
+        uint returnAmountPlusFees = returnAmount.mul(ONE.add(totalFee)) / ONE;
         uint sellTokenPoolBalance = poolBalances[outcomeIndex];
         uint endingOutcomeBalance = sellTokenPoolBalance.mul(ONE);
         for (uint i = 0; i < poolBalances.length; i++) {
@@ -402,7 +436,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
             ret = ((2 * poolBalance0[0]) - (f - m)) / 2;
         }
 
-        ret = ret.mul(ONE.sub(fee)) / ONE;
+        ret = ret.mul(ONE.sub(totalFee)) / ONE;
     }
     
     function calcSellReturnInvMinusMarketFees(uint amount, uint inputIndex, uint256 protocolFee) public view returns (uint256 ret){
@@ -413,7 +447,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         ret -= pFee;
     }
     
-
+    
     function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
         _beforeBuyTo(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
@@ -421,15 +455,17 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         collateralToken.safeTransferFrom(msg.sender, address(this), investmentAmount);
 
-        uint feeAmount = investmentAmount.mul(fee) / ONE;
-        feePoolWeight = feePoolWeight.add(feeAmount);
-        uint investmentAmountMinusFees = investmentAmount.sub(feeAmount);
+        uint feeLPAmount = investmentAmount.mul(lpFee) / ONE;
+        uint feeProposer = investmentAmount.mul(proposerFee) / ONE;
+        totalProposerFee += feeProposer;
+        feePoolWeight = feePoolWeight.add(feeLPAmount);
+        uint investmentAmountMinusFees = investmentAmount.sub(feeLPAmount).sub(feeProposer);
         require(collateralToken.approve(address(conditionalTokens), investmentAmountMinusFees), "approval for splits failed");
         splitPositionThroughAllConditions(investmentAmountMinusFees);
 
         conditionalTokens.safeTransferFrom(address(this), beneficiary, positionIds[outcomeIndex], outcomeTokensToBuy, "");
 
-        emit FPMMBuy(beneficiary, investmentAmount, feeAmount, outcomeIndex, outcomeTokensToBuy);
+        emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
     }
 
     function sellByReturnAmountTo(address beneficiary, uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
@@ -438,15 +474,19 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         conditionalTokens.safeTransferFrom(msg.sender, address(this), positionIds[outcomeIndex], outcomeTokensToSell, "");
 
+        uint feeProposer = returnAmount.mul(proposerFee) / ONE;
+        totalProposerFee += feeProposer;
+        
         //uint feeAmount = returnAmount.mul(fee) / (ONE.sub(fee));
-        uint feeAmount = returnAmount.mul(fee) / ONE;
-        feePoolWeight = feePoolWeight.add(feeAmount);
-        uint returnAmountPlusFees = returnAmount.add(feeAmount);
+        uint feeLPAmount = returnAmount.mul(lpFee) / ONE;
+        
+        feePoolWeight = feePoolWeight.add(feeLPAmount);
+        uint returnAmountPlusFees = returnAmount.add(feeLPAmount);
         mergePositionsThroughAllConditions(returnAmountPlusFees);
 
         collateralToken.safeTransfer(beneficiary, returnAmount);
 
-        emit FPMMSell(msg.sender, returnAmount, feeAmount, outcomeIndex, outcomeTokensToSell);
+        emit FPMMSell(msg.sender, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
     }
 
     
