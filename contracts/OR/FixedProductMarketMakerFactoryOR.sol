@@ -94,7 +94,9 @@ contract FixedProductMarketMakerFactory is CloneFactory {
         ConditionalTokens conditionalTokens,
         IERC20 collateralToken,
         bytes32[] memory conditionIds,
-        uint fee,
+        uint feeLP,
+        uint feeProposer,
+        address proposer,
         address roomOracle
     )
     internal
@@ -102,7 +104,7 @@ contract FixedProductMarketMakerFactory is CloneFactory {
     {
         ORFPMarket fixedProductMarketMaker = ORFPMarket(createClone(implementationMasterAddr));
 
-        fixedProductMarketMaker.init(conditionalTokens, collateralToken, conditionIds, fee, roomOracle);
+        fixedProductMarketMaker.init(conditionalTokens, collateralToken, conditionIds, feeLP, feeProposer, proposer, roomOracle);
 
         emit FixedProductMarketMakerCreation(
             msg.sender,
@@ -110,7 +112,7 @@ contract FixedProductMarketMakerFactory is CloneFactory {
             conditionalTokens,
             collateralToken,
             conditionIds,
-            fee
+            feeLP + feeProposer
         );
 
         fpMarkets.push(fixedProductMarketMaker);

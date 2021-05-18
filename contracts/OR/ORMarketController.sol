@@ -81,8 +81,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     mapping(address => bool) payoutsMarkets;
 
     uint256 public marketMinShareLiq = 100e18; //todo
-    uint256 public marketLPFee = 20000000000000000;  //2% todo
-    uint256 public protocolFee = 10000000000000000; //1%t todo
+    uint256 public feeMarketLP = 20000000000000000;  //2% todo
+    uint256 public FeeProtocol = 10000000000000000; //1%t todo
+    uint256 public FeeProposer = 10000000000000000; //1%t todo
     uint256 public buyRoomThreshold = 1e18; // todo
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
@@ -409,8 +410,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
         //ORMarketController marketController =  ORMarketController(governanceAdd);
         
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketLPFee, roomOracleAddress);
-        fpMarket.setConfig(marketQuestionID, msg.sender, address(this), questionId);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, feeMarketLP, FeeProposer, msg.sender, roomOracleAddress);
+        fpMarket.setConfig(marketQuestionID, address(this), questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
         
         proposalIds[questionId] = address(fpMarket);
@@ -474,7 +475,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         collateralToken.safeTransferFrom(msg.sender,address(this),investmentAmount);
         collateralToken.safeApprove(address(fpMarket),investmentAmount);
         
-        uint256 pFee = investmentAmount * protocolFee / 1e18;
+        uint256 pFee = investmentAmount * FeeProtocol / 1e18;
         fees[address(collateralToken)] += pFee;
         
         buyRoom(address(collateralToken));
@@ -497,7 +498,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         IERC20 collateralToken = ORFPMarket(market).collateralToken();
         
         
-        uint256 pFee = tradeVolume * protocolFee / 1e18;
+        uint256 pFee = tradeVolume * FeeProtocol / 1e18;
         fees[address(collateralToken)] += pFee;
         
         buyRoom(address(collateralToken));
@@ -582,12 +583,17 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         disputeThreshold = t;
     }
     
-    function setMarketLPFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
-        marketLPFee = numerator * 1e18 / denominator;
+    function setFeeMarketLP(uint256 numerator, uint256 denominator) public onlyGovOrGur{
+        
+        feeMarketLP = numerator * 1e18 / denominator;
     }
     
-    function setProtocolFee(uint256 numerator, uint256 denominator) public onlyGovOrGur{
-        protocolFee = numerator * 1e18 /denominator;
+    function setFeeProtocol(uint256 numerator, uint256 denominator) public onlyGovOrGur{
+        FeeProtocol = numerator * 1e18 /denominator;
+    }
+    
+    function setFeeProposer(uint256 numerator, uint256 denominator) public onlyGovOrGur{
+        FeeProposer = numerator * 1e18 /denominator;
     }
     
     function setpenaltyOnWrongResolving(bool plentyFlag) public onlyGovOrGur{
