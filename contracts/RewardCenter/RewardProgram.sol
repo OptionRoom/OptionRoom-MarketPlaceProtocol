@@ -269,16 +269,16 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     
     /////////
     
-    function resolveVote(address market, uint8 selection, address account, uint256 votePower) external{
+    function resolveVote(address market, uint8 , address account, uint256 votePower) external{
         gAdd( uint256(RewardType.Resolve) ,account, votePower);
         _setMarketWeight(market,0); // when start Resolve the market, no need to give rewards for LP
     }
     
-    function validationVote(address market, bool validationFlag, address account, uint256 votePower) external{
+    function validationVote(address , bool , address account, uint256 votePower) external{
         gAdd( uint256(RewardType.Validation) ,account, votePower);
     }
     
-    function tradeAmount(address market, address account, uint256 amount, bool buyFlag) external{
+    function tradeAmount(address , address account, uint256 amount, bool buyFlag) external{
         require(msg.sender == marketControllerAddress , "caller is not market controller");
         
         if(buyFlag || includeSellInTradeRewards){
