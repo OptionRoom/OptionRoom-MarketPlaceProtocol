@@ -15,6 +15,19 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     IRoomOraclePrice public roomOraclePrice;
     uint256 public updatePeriod = 600; // 10 min
     
+    uint256 public minRoomPrice =0;
+    bool public revertIfPriceLessMin;
+    
+    function setMinRoomPrice(uint256 minPrice) public onlyGovOrGur{
+        minRoomPrice = minPrice;
+    }
+    
+    function setRevertIfPriceLessMin(bool flag) public onlyGovOrGur{
+        // the transaction will be reverted if the current price less than allowed min, 
+        // otherwise the amount of room determined by minmum price allowed
+        revertIfPriceLessMin = flag;
+    }
+    
     function setRewardProgram(address programAddress) public onlyGovOrGur{
         rewardProgramAddress = programAddress;
     }
@@ -50,10 +63,30 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
             updatedTime = cTime;
             (numerator, denominator, denominatorDec) = roomOraclePrice.getPrice();
         }
-        
         require(denominator != 0, "Room price is not available");
-        // dollar amount 18 decimal
-        uint256 roomAmount = amount.mul(numerator).div(denominator).div(10 ** (18 - denominatorDec));
+        
+        uint256 roomAmount;
+        
+        if(minRoomPrice > 0){
+            uint256 cPrice = denominator * 1e18  ** (18 - denominatorDec)/ numerator;
+            
+            if( cPrice  >=  minRoomPrice){
+                roomAmount = amount.mul(numerator).div(denominator).div(10 ** (18 - denominatorDec));
+                
+            }else{
+                if(revertIfPriceLessMin == true){
+                    require(false, "current price less than min");
+                }
+                // room amount determined bu minimum price allowed
+                roomAmount = amount * 1e18 / minRoomPrice;
+            }
+        }else{
+            
+            // dollar amount 18 decimal
+            roomAmount = amount.mul(numerator).div(denominator).div(10 ** (18 - denominatorDec));
+            
+        }
+        
         roomToken.safeTransfer(beneficiary,roomAmount);
         
     }
