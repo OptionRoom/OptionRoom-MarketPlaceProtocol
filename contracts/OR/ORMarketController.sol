@@ -10,8 +10,8 @@ import "../RewardCenter/IRewardCenter.sol";
 import "../RewardCenter/IRewardProgram.sol";
 import "../RewardCenter/IRoomOraclePrice.sol";
 import "../Guardian/GnGOwnable.sol";
+import {TransferHelper} from "../Helpers/TransferHelper.sol";
 
-import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
@@ -26,7 +26,7 @@ interface IReportPayouts{
 
 contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory, GnGOwnable{
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using TransferHelper for IERC20;
     
     struct MarketVotersInfo{
         uint256 power;
@@ -75,6 +75,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     mapping(address => address[]) public marketDisputers;
     mapping(address => mapping(address => MarketDisputersInfo)) public marketDisputersInfo;
     
+    mapping(address => bool) allowedCollaterals;
    
     mapping(address => bool) payoutsMarkets;
 
@@ -87,7 +88,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
     
-    bool pelantyOnWrongResolving;
+    bool penaltyOnWrongResolving;
     mapping(address => MarketsVoted) marketsVotedPerUse;
     
     mapping(bytes32 => address) public proposalIds;
@@ -243,7 +244,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         MarketVotersInfo storage marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
         require(marketVotersInfo.voteFlag == false, "user already voted");
         
-        if(pelantyOnWrongResolving){
+        if(penaltyOnWrongResolving){
             address[] memory wrongVoting = checkForWrongVoting(account);
             bool doNoteVoteFalg = orGovernor.userhasWrongVoting(account, wrongVoting);
             if(doNoteVoteFalg){
@@ -263,7 +264,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
              marketsInfo[marketAddress].lastDisputeResolvingVoteTime = getCurrentTime();
         }
         
-        if(pelantyOnWrongResolving){
+        if(penaltyOnWrongResolving){
             MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
             marketsVoted.marketsResolving.push(marketAddress);
         }
@@ -291,7 +292,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
 
         MarketVotersInfo storage marketVotersInfo = marketResolvingVotersInfo[marketAddress][account];
         
-        if(pelantyOnWrongResolving){
+        if(penaltyOnWrongResolving){
             deleteMarketVoting(account,marketAddress);
         }
         require(marketVotersInfo.voteFlag == true, "user did not vote");
@@ -394,7 +395,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         return marketsInfo[marketAddress];
     }
     ////////////////////////
-    function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public {
+    function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public returns(address){
+        require(allowedCollaterals[address(collateralToken)] == true, "Collateral token is not allowed");
+        
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
         require(initialLiq >= marketMinShareLiq, "initial liquidity less than minimum liquidity required" );
@@ -410,7 +413,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         proposalIds[questionId] = address(fpMarket);
         
         _marketAddLiquidity(address(fpMarket),initialLiq);
-        //TODO: check collateralToken is from the list
+        
+        
+        return address(fpMarket);
     }
     
     
@@ -573,8 +578,12 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         protocolFee = numerator * 1e18 /denominator;
     }
     
-    function setPelantyOnWrongResolving(bool plentyFlag) public onlyGovOrGur{
-        pelantyOnWrongResolving = plentyFlag;
+    function setpenaltyOnWrongResolving(bool plentyFlag) public onlyGovOrGur{
+        penaltyOnWrongResolving = plentyFlag;
+    }
+    
+    function setCollateralAllowed(address token, bool allowdFlag) public onlyGovOrGur{
+        allowedCollaterals[token] = allowdFlag;
     }
 
     // A method to return the calculated value from investment amount.
