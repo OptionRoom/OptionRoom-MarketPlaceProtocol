@@ -63,7 +63,7 @@ module.exports = function(deployer) {
 	await aaa3.setRoomoracleAddress(aaa10.address);
 	await aaa3.setRewardCenter(aaa6.address);
 	await aaa3.setRoomAddress(aaa11.address);
-	await aaa3.setCollateralAllowed(aaa1.address);
+	await aaa3.setCollateralAllowed(aaa1.address,true);
 	
 	console.log("a4 config ");
 	// no config market template
@@ -79,7 +79,7 @@ module.exports = function(deployer) {
 	
 	console.log("a7 config (AAA7ORGovernor)");
 	await aaa7.setCourtStake(aaa8.address);
-	await aaa7.setMarketsControllarAddress(aaa3.address,true);
+	await aaa7.setMarketsControllarAddress(aaa3.address);
 	
 	console.log("a8 config (AAA8CourtStake)");
     //aa8.setCourtTokenAddress(courtTokenAddress)
