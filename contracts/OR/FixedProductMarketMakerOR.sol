@@ -6,7 +6,7 @@ import {ConditionalTokens} from "../../gnosis.pm/conditional-tokens-contracts/co
 import {CTHelpers} from "../../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
 import {ERC1155TokenReceiver} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-
+import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
 library CeilDiv {
     // calculates ceil(x/y)
@@ -18,6 +18,8 @@ library CeilDiv {
 
 
 contract FixedProductMarketMaker is ERC1155TokenReceiver {
+    using SafeERC20 for IERC20;
+    
     event FPMMFundingAdded(
         address indexed funder,
         uint[] amountsAdded,
@@ -180,7 +182,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         if (withdrawableAmount > 0) {
             withdrawnFees[account] = rawAmount;
             totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
-            require(collateralToken.transfer(account, withdrawableAmount), "withdrawal transfer failed");
+            collateralToken.safeTransfer(account, withdrawableAmount);
         }
     }
     /*
@@ -253,7 +255,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
             mintAmount = addedFunds;
         }
 
-        require(collateralToken.transferFrom(msg.sender, address(this), addedFunds), "funding transfer failed");
+        collateralToken.safeTransferFrom(msg.sender, address(this), addedFunds);
         require(collateralToken.approve(address(conditionalTokens), addedFunds), "approval for splits failed");
         splitPositionThroughAllConditions(addedFunds);
 
@@ -417,7 +419,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
 
-        require(collateralToken.transferFrom(msg.sender, address(this), investmentAmount), "cost transfer failed");
+        collateralToken.safeTransferFrom(msg.sender, address(this), investmentAmount);
 
         uint feeAmount = investmentAmount.mul(fee) / ONE;
         feePoolWeight = feePoolWeight.add(feeAmount);
@@ -442,7 +444,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint returnAmountPlusFees = returnAmount.add(feeAmount);
         mergePositionsThroughAllConditions(returnAmountPlusFees);
 
-        require(collateralToken.transfer(beneficiary, returnAmount), "return transfer failed");
+        collateralToken.safeTransfer(beneficiary, returnAmount);
 
         emit FPMMSell(msg.sender, returnAmount, feeAmount, outcomeIndex, outcomeTokensToSell);
     }

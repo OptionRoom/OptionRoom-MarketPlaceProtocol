@@ -11,6 +11,8 @@ import "../RewardCenter/IRewardProgram.sol";
 import "../RewardCenter/IRoomOraclePrice.sol";
 import "../Guardian/GnGOwnable.sol";
 
+import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+
 interface IORMarketForMarketGovernor{
     function getBalances(address account) external view returns (uint[] memory);
     function getConditionalTokenAddress() external view returns(address);
@@ -24,7 +26,8 @@ interface IReportPayouts{
 
 contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory, GnGOwnable{
     using SafeMath for uint256;
-
+    using SafeERC20 for IERC20;
+    
     struct MarketVotersInfo{
         uint256 power;
         bool voteFlag;
@@ -423,8 +426,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         ORFPMarket fpMarket = ORFPMarket(market);
         IERC20 collateralToken = fpMarket.collateralToken();
          // Add liquidity
-        collateralToken.transferFrom(msg.sender,address(this),amount);
-        collateralToken.approve(address(fpMarket),amount);
+        collateralToken.safeTransferFrom(msg.sender,address(this),amount);
+        collateralToken.safeApprove(address(fpMarket),amount);
         uint sharesAmount = fpMarket.addLiquidityTo(msg.sender,amount);
         
         RP.lpMarketAdd(market, msg.sender, sharesAmount);
@@ -460,8 +463,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         ORFPMarket fpMarket = ORFPMarket(market);
         IERC20 collateralToken = fpMarket.collateralToken();
         
-        collateralToken.transferFrom(msg.sender,address(this),investmentAmount);
-        collateralToken.approve(address(fpMarket),investmentAmount);
+        collateralToken.safeTransferFrom(msg.sender,address(this),investmentAmount);
+        collateralToken.safeApprove(address(fpMarket),investmentAmount);
         
         uint256 pFee = investmentAmount * protocolFee / 1e18;
         fees[address(collateralToken)] += pFee;
@@ -491,7 +494,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         buyRoom(address(collateralToken));
         
-        collateralToken.transfer(msg.sender,tradeVolume - pFee);
+        collateralToken.safeTransfer(msg.sender,tradeVolume - pFee);
         RP.tradeAmount(market, msg.sender, tradeVolume, false);
     }
     
@@ -499,7 +502,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         if(fees[IERCaddress] >= buyRoomThreshold){
             if(roomOracleAddress != address(0)){
                 IERC20 erc20 = IERC20(IERCaddress);
-                erc20.approve(roomOracleAddress,fees[IERCaddress]);
+                erc20.safeApprove(roomOracleAddress,fees[IERCaddress]);
                 IRoomOraclePrice(roomOracleAddress).buyRoom(IERCaddress,fees[IERCaddress],rewardCenterAddress);
                 fees[IERCaddress] = 0;
             }
@@ -509,7 +512,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     function withdrawFees(address erc20Address, address to) public  onlyGovOrGur{
         IERC20 erc20 = IERC20(erc20Address);
         
-        erc20.transfer(to, erc20.balanceOf(address(this)));
+        erc20.safeTransfer(to, erc20.balanceOf(address(this)));
     }
     
     

@@ -3,11 +3,13 @@ pragma solidity ^0.5.1;
 import "./ORMarketLib.sol";
 import "./FixedProductMarketMakerOR.sol";
 import "../OR/IORMarketController.sol";
-
+import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 /**
     @title ORFPMarket Extended version of the FixedProductMarketMaker
 */
 contract ORFPMarket is FixedProductMarketMaker {
+    using SafeERC20 for IERC20;
+    
 
     address public proposer;
     bytes32 public questionId;
@@ -81,7 +83,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         conditionalTokens.safeBatchTransferFrom(account, address(this), positionIds, sendAmounts, "");
         mergePositionsThroughAllConditions(minBalance);
 
-        require(collateralToken.transfer(account, minBalance), "return transfer failed");
+        collateralToken.safeTransfer(account, minBalance);
     }
 
     function getPercentage() public view returns (uint256[] memory percentage) {
