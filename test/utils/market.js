@@ -115,16 +115,18 @@ async function createNewMarket(creator) {
 
   await centralTime.initializeTime();
 
-  const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
   const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
     creator,
-    fixedProductMarketMaker: fixedProductMarketMakerAddress,
     conditionalTokens: conditionalTokens.address,
     collateralToken: collateralToken.address,
   })
+
+  const { fixedProductMarketMaker } = createTx.logs.find(
+    ({ event }) => event === 'FixedProductMarketMakerCreation'
+  ).args;
   
-  const marketToReturn = await ORFPMarket.at(fixedProductMarketMakerAddress)
+  const marketToReturn = await ORFPMarket.at(fixedProductMarketMaker)
   positionIds = await marketToReturn.getPositionIds();
   return [marketToReturn, collateralToken, positionIds];
 }
@@ -147,8 +149,6 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds, quest
     
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
     await col.deposit({ value: addedFunds, from: creator })
-    // await col.approve(controller.address, addedFunds, { from: user })
-    // await col.deposit({ value: addedFunds, from: creator });
   }
 
   const createArgs = [
@@ -164,7 +164,6 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds, quest
 
   await col.approve(fixedProductMarketMakerFactory.address, addedFunds, { from: creator })
   
-  const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposal.call(...createArgs)
   const createTx = await fixedProductMarketMakerFactory.createMarketProposal(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
     creator,
