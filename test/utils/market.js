@@ -79,6 +79,9 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await rewardCenter.setCentralTimeForTesting(centralTime.address);
 
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
+  // Two very important calls...
+  await rewardProgram.setRewardCenter(rewardCenter.address);
+  await rewardCenter.setRewardProgram(rewardProgram.address);
 
   // Setting the reward program here.
   await fixedProductMarketMakerFactory.setRewardProgram(rewardProgram.address);
@@ -96,7 +99,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens];
+  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens, rewardCenter];
 }
 
 async function createNewMarket(creator) {
@@ -252,6 +255,13 @@ async function moveOneDay() {
   centralTime.increaseTime(oneDay + 100);
 }
 
+async function forwardMarketToResolving(fixedProductMarketMaker, investor1, trader, investor2) {
+  await fixedProductMarketMakerFactory.castGovernanceValidatingVote(fixedProductMarketMaker.address,true, 
+    { from: investor2 });
+  
+  await moveToActive();
+}
+
 module.exports = {
   setDeployer,
   moveToResolved11,
@@ -272,5 +282,6 @@ module.exports = {
   conditionalApproveForAll,
   conditionalBalanceOf,
   conditionalApproveFor,
+  forwardMarketToResolving,
   getCollateralBalance,
 }

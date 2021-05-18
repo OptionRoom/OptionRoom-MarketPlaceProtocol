@@ -69,7 +69,25 @@ contract('Option room Reward program permissions check', function([deployer,
     await rewardsProgram.setTradeRewardPerDay(toBN(1e17), {from : deployer});
     await rewardsProgram.setLPRewardPerDay(toBN(1e17), {from : deployer});
     await rewardsProgram.setMarketWeight(fixedProductMarketMaker.address, toBN(1e18), {from : deployer});
-    await rewardsProgram.setIncludeSellInTradeRewards(toBN(1e17), {from : deployer});
+    await rewardsProgram.setIncludeSellInTradeRewards(false, {from : deployer});
+
+    let validationRewardPerDay = await rewardsProgram.validationRewardPerDay.call();
+    expect(new BigNumber(validationRewardPerDay).isEqualTo(new BigNumber(toBN(1e17)))).to.equal(true)
+
+    let resolveRewardPerDay = await rewardsProgram.resolveRewardPerDay.call();
+    expect(new BigNumber(resolveRewardPerDay).isEqualTo(new BigNumber(toBN(1e17)))).to.equal(true)
+
+    let tradeRewardPerDay = await rewardsProgram.tradeRewardPerDay.call();
+    expect(new BigNumber(tradeRewardPerDay).isEqualTo(new BigNumber(toBN(1e17)))).to.equal(true)
+
+    let lpRewardPerDay = await rewardsProgram.lpRewardPerDay.call();
+    expect(new BigNumber(lpRewardPerDay).isEqualTo(new BigNumber(toBN(1e17)))).to.equal(true)
+
+    let lpMarketsWeights = await rewardsProgram.lpMarketsWeight.call(fixedProductMarketMaker.address);
+    expect(new BigNumber(lpMarketsWeights).isEqualTo(new BigNumber(toBN(1e18)))).to.equal(true)
+
+    let includeSellInTradeRewards = await rewardsProgram.includeSellInTradeRewards.call();
+    expect(includeSellInTradeRewards).to.equal(false);
   })
 
   it('Should not be able to transfer the governance address because you are not deployer.', async function() {
