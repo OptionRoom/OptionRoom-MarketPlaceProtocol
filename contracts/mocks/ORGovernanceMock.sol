@@ -14,4 +14,8 @@ contract ORGovernanceMock is DummyORGovernor {
     function getSuspendReason(address account) external view returns(string memory reason){
         "Testing suspension";
     }
+
+    function userhasWrongVoting(address account, address[] calldata markets) external  returns (bool) {
+        return false;
+    }
 }

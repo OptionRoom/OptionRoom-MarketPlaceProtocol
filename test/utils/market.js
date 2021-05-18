@@ -140,13 +140,14 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds, quest
   let col;
   if (isERC20) {
     col = await CollateralToken2Contract.new();
+    await fixedProductMarketMakerFactory.setCollateralAllowed(col.address, true);
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
 
     await col.mint(addedFunds, { from: creator })
     await col.transfer(creator, addedFunds, { from: creator })
   }  else {
     col =await CollatContract.new() ;
-    
+    await fixedProductMarketMakerFactory.setCollateralAllowed(col.address, true);
     await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
     await col.deposit({ value: addedFunds, from: creator })
   }
