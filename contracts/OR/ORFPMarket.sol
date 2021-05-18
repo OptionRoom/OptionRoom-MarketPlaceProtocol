@@ -134,16 +134,16 @@ contract ORFPMarket is FixedProductMarketMaker {
     }
     
     
-    function _beforeAddFundingTo(address beneficiary, uint sharesToBurn) internal {
+    function _beforeAddFundingTo(address , uint ) internal {
         require(msg.sender == address(marketController), "caller is not market controller");
         
     }
     
-    function _beforeRemoveFundingTo(address beneficiary, uint sharesToBurn) internal{
+    function _beforeRemoveFundingTo(address , uint ) internal{
         require(msg.sender == address(marketController), "caller is not market controller");
     }
 
-    function _beforeBuyTo(address beneficiary, uint256 amount) internal {
+    function _beforeBuyTo(address beneficiary, uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
         
@@ -152,7 +152,7 @@ contract ORFPMarket is FixedProductMarketMaker {
         }
     }
 
-    function _beforeSellTo(address beneficiary, uint256 amount) internal {
+    function _beforeSellTo(address beneficiary, uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
         
