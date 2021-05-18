@@ -7,6 +7,7 @@ import {CTHelpers} from "../../gnosis.pm/conditional-tokens-contracts/contracts/
 import {ERC1155TokenReceiver} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
 import {TransferHelper} from "../Helpers/TransferHelper.sol";
+import {IRoomOraclePrice} from "../RewardCenter/IRoomOraclePrice.sol";
 
 library CeilDiv {
     // calculates ceil(x/y)
@@ -50,7 +51,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     using CeilDiv for uint;
 
     uint constant ONE = 10 ** 18;
-
+    address roomOracle;
     ConditionalTokens public conditionalTokens;
     IERC20 public collateralToken;
     bytes32[] public conditionIds;
@@ -69,7 +70,8 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         ConditionalTokens _conditionalTokens,
         IERC20 _collateralToken,
         bytes32[] memory _conditionIds,
-        uint _fee
+        uint _fee,
+        address _roomOracle
     ) public {
         require(initiated == false, "Market Already initiated");
 
@@ -77,7 +79,8 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         collateralToken = _collateralToken;
         conditionIds = _conditionIds;
         fee = _fee;
-
+        roomOracle =_roomOracle;
+        
         uint atomicOutcomeSlotCount = 1;
         outcomeSlotCounts = new uint[](conditionIds.length);
         for (uint i = 0; i < conditionIds.length; i++) {
@@ -182,7 +185,9 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         if (withdrawableAmount > 0) {
             withdrawnFees[account] = rawAmount;
             totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
-            collateralToken.safeTransfer(account, withdrawableAmount);
+            //collateralToken.safeTransfer(account, withdrawableAmount);
+            
+            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,account);
         }
     }
     /*

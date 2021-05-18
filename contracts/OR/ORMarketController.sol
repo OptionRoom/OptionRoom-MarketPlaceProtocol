@@ -409,7 +409,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
         //ORMarketController marketController =  ORMarketController(governanceAdd);
         
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketLPFee);
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, marketLPFee, roomOracleAddress);
         fpMarket.setConfig(marketQuestionID, msg.sender, address(this), questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
         
