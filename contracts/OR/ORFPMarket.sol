@@ -3,12 +3,13 @@ pragma solidity ^0.5.1;
 import "./ORMarketLib.sol";
 import "./FixedProductMarketMakerOR.sol";
 import "../OR/IORMarketController.sol";
-import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import {TransferHelper} from "../Helpers/TransferHelper.sol";
+
 /**
     @title ORFPMarket Extended version of the FixedProductMarketMaker
 */
 contract ORFPMarket is FixedProductMarketMaker {
-    using SafeERC20 for IERC20;
+    using TransferHelper for IERC20;
     
 
     address public proposer;

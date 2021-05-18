@@ -6,7 +6,7 @@ import {ConditionalTokens} from "../../gnosis.pm/conditional-tokens-contracts/co
 import {CTHelpers} from "../../gnosis.pm/conditional-tokens-contracts/contracts/CTHelpers.sol";
 import {ERC1155TokenReceiver} from "../../gnosis.pm/conditional-tokens-contracts/contracts/ERC1155/ERC1155TokenReceiver.sol";
 import {ERC20} from "openzeppelin-solidity/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import {TransferHelper} from "../Helpers/TransferHelper.sol";
 
 library CeilDiv {
     // calculates ceil(x/y)
@@ -18,7 +18,7 @@ library CeilDiv {
 
 
 contract FixedProductMarketMaker is ERC1155TokenReceiver {
-    using SafeERC20 for IERC20;
+    using TransferHelper for IERC20;
     
     event FPMMFundingAdded(
         address indexed funder,
