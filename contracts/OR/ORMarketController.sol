@@ -60,6 +60,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     IORGovernor public orGovernor;
     ConditionalTokens public ct; 
+    IERC20 roomToken;
     IRewardProgram  public RP; //reward program
     address public roomOracleAddress;
     address public rewardCenterAddress;
@@ -81,12 +82,13 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
 
     uint256 public marketMinShareLiq = 100e18; //todo
     uint256 public marketLPFee = 20000000000000000;  //2% todo
-    uint256 public protocolFee = 10000000000000000; //1%t odo
-    uint256 public buyRoomThreshold = 1e18; //
+    uint256 public protocolFee = 10000000000000000; //1%t todo
+    uint256 public buyRoomThreshold = 1e18; // todo
     uint256 public marketValidatingPeriod = 1800; // todo
     uint256 public marketDisputePeriod = 4 * 1800; // todo
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
+    uint256 public marketCreationFees = 0;
     
     bool penaltyOnWrongResolving;
     mapping(address => MarketsVoted) marketsVotedPerUse;
@@ -398,6 +400,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public returns(address){
         require(allowedCollaterals[address(collateralToken)] == true, "Collateral token is not allowed");
         
+        roomToken.safeTransferFrom(msg.sender, rewardCenterAddress ,marketCreationFees);
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
         require(initialLiq >= marketMinShareLiq, "initial liquidity less than minimum liquidity required" );
@@ -549,7 +552,16 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         rewardCenterAddress = newAddress;
     }
     
+    function setRoomAddress(address roomAddres) public onlyGovOrGur{
+        roomToken =IERC20(roomAddres);
+    }
+    
     // market configuration
+    
+    function setMarketCreationFees(uint256 fees) public onlyGovOrGur{
+        marketCreationFees = fees;    
+    }
+    
     function setMarketMinShareLiq(uint256 minLiq) public onlyGovOrGur {
         marketMinShareLiq = minLiq;
     }
