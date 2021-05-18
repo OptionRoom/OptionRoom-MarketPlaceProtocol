@@ -76,7 +76,8 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await rewardProgram.doInitialization();
   
   rewardCenter = await RewardCenterMockController.new();
-  
+  await rewardCenter.setCentralTimeForTesting(centralTime.address);
+
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
 
   // Setting the reward program here.

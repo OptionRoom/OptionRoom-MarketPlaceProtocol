@@ -85,8 +85,11 @@ contract('Options room trade rewards tests', function([, creator, oracle, invest
     await collateralToken.deposit({ value: investmentAmount, from: investor1 })
     await collateralToken.approve(controller.address, investmentAmount, { from: investor1 })
 
-    const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
-    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: investor1 })
+    // const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
+    const protocolFees = await controller.protocolFee.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+
+    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: investor1 })
 
     let rewards = await rewardsProgram.tradeRewards(investor1);
     expectedToDay = new BigNumber(rewards['todayExpectedReward']);
