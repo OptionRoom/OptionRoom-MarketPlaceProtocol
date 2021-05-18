@@ -117,6 +117,7 @@ async function createNewMarket(creator) {
   ]
 
   await centralTime.initializeTime();
+  await fixedProductMarketMakerFactory.setCollateralAllowed(collateralToken.address, true);
 
   const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {

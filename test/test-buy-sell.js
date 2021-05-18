@@ -72,8 +72,8 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     await collateralToken.deposit({ value: investmentAmount, from: trader })
     await collateralToken.approve(controller.address, investmentAmount, { from: trader })
 
-    const protocolFees = await controller.protocolFee.call();
-    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    const FeeProtocol = await controller.FeeProtocol.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
     
     const REVERT = 'Market is not in active state'
     try {
@@ -126,8 +126,8 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     await collateralToken.approve(controller.address, investmentAmount, { from: trader })
 
     // const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
-    const protocolFees = await controller.protocolFee.call();
-    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    const FeeProtocol = await controller.FeeProtocol.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
     await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader })
   })
 

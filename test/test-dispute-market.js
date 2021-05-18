@@ -59,8 +59,8 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
     await collateralToken.deposit({ value: investmentAmount, from: trader });
     await collateralToken.approve(controller.address, investmentAmount, { from: trader });
     
-    const protocolFees = await controller.protocolFee.call();
-    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    const FeeProtocol = await controller.FeeProtocol.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
     await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader });
   })
 

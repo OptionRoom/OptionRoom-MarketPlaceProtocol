@@ -17,8 +17,14 @@ contract RoomOraclePriceMock is IRoomOraclePrice {
     function getPrice() external view returns(uint256 roomAmount, uint256 usdAmount, uint8 usdDecimals){
         return (roomAmountValue,usdAmountValue,usdDecimalsValue);
     }
+    
 
-    function buyRoom(address tokenA, uint256 amountTokenA, address to) external {
+    function buyRoom(address tokenA, uint256 amountTokenA, uint256  minRoom, address to) external {
 
+    }
+
+
+    function getExpectedRoomByToken(address tokenA, uint256 amountTokenA) external view returns(uint256) {
+        return 1e18;
     }
 }

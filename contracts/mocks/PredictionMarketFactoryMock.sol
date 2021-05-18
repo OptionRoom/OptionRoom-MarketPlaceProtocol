@@ -25,15 +25,19 @@ contract PredictionMarketFactoryMock is ORMarketController {
 
     function createMarketProposalTest(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime,
         uint fees) public returns (ORFPMarket) {
+
+        require(allowedCollaterals[address(collateralToken)] == true, "Collateral token is not allowed");
+
+        roomToken.safeTransferFrom(msg.sender, rewardCenterAddress ,marketCreationFees);
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
-
         ct.prepareCondition(address(this), questionId, 2);
         bytes32[]  memory conditionIds = new bytes32[](1);
         conditionIds[0] = ct.getConditionId(address(this), questionId, 2);
-        
-        ORFPMarket fpMarket = createFixedProductMarketMaker(ct,IERC20( collateralToken ), conditionIds, marketLPFee);
-        fpMarket.setConfig(marketQuestionID, msg.sender, address(this) ,questionId);
+        //ORMarketController marketController =  ORMarketController(governanceAdd);
+
+        ORFPMarket fpMarket = createFixedProductMarketMaker(ct, IERC20( collateralToken ), conditionIds, feeMarketLP, FeeProposer, msg.sender, roomOracleAddress);
+        fpMarket.setConfig(marketQuestionID, address(this), questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
 
         proposalIds[questionId] = address(fpMarket);

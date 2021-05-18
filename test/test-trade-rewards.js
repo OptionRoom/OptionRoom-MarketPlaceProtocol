@@ -85,9 +85,8 @@ contract('Options room trade rewards tests', function([, creator, oracle, invest
     await collateralToken.deposit({ value: investmentAmount, from: investor1 })
     await collateralToken.approve(controller.address, investmentAmount, { from: investor1 })
 
-    // const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
-    const protocolFees = await controller.protocolFee.call();
-    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, protocolFees);
+    const FeeProtocol = await controller.FeeProtocol.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
 
     await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: investor1 })
 
