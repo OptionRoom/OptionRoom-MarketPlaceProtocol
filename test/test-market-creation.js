@@ -24,24 +24,29 @@ contract('OR test creation of multiple markets',
     // nothing just sent the min liquidity here to a number that we can just deal with
     await controller.setMarketMinShareLiq(marketMinToProvide2);
     
-    let retValues = await createNewMarketWithCollateral(creator, false, marketMinToProvide1);
+    let retValues = await createNewMarketWithCollateral(creator, false, marketMinToProvide2, "test");
     const market1 = retValues[0]
     const colToken1 = retValues[1]
     const posIds1 = retValues[2]
     
     let balanceOf = await market1.balanceOf(creator);
-    expect(new BigNumber(balanceOf).isEqualTo(new BigNumber(marketMinToProvide1))).
+    expect(new BigNumber(balanceOf).isEqualTo(new BigNumber(marketMinToProvide2))).
       to.equal(true)
 
 
-    let retValues2 = await createNewMarketWithCollateral(creator, true, marketMinToProvide2);
+    let retValues2 = await createNewMarketWithCollateral(creator, true, marketMinToProvide1, "test 2");
     const market2 = retValues2[0]
     const colToken2 = retValues2[1]
     const posIds2 = retValues2[2]
 
     let balanceOf2 = await market2.balanceOf(creator);
-    expect(new BigNumber(balanceOf2).isEqualTo(new BigNumber(marketMinToProvide2))).
+    expect(new BigNumber(balanceOf2).isEqualTo(new BigNumber(marketMinToProvide1))).
       to.equal(true)
+
+    let questionID1 = await market1.getMarketQuestionID();
+    let questionID2 = await market2.getMarketQuestionID();
+    expect(questionID1).to.equal("test")
+    expect(questionID2).to.equal("test 2")
     
   })
     
@@ -49,7 +54,7 @@ contract('OR test creation of multiple markets',
     const REVERT = "initial liquidity less than minimum liquidity required";
 
     try {
-      await createNewMarketWithCollateral(creator, true, addedFunds);
+      await createNewMarketWithCollateral(creator, true, addedFunds, "test 3");
       throw null;
     }
     catch (error) {

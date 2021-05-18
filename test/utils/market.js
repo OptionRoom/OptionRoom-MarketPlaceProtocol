@@ -128,7 +128,7 @@ async function createNewMarket(creator) {
   return [marketToReturn, collateralToken, positionIds];
 }
 
-async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
+async function createNewMarketWithCollateral(creator, isERC20, addedFunds, question) {
   let now = new Date()
   let resolvingEndDate = addDays(now, 5)
   let endTime = Math.floor(addDays(now, 3).getTime() / 1000)
@@ -137,15 +137,21 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
   let col;
   if (isERC20) {
     col = await CollateralToken2Contract.new();
+    await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
+
     await col.mint(addedFunds, { from: creator })
     await col.transfer(creator, addedFunds, { from: creator })
   }  else {
-    col = collateralToken;
-    await col.deposit({ value: addedFunds, from: creator });
+    col =await CollatContract.new() ;
+    
+    await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
+    await col.deposit({ value: addedFunds, from: creator })
+    // await col.approve(controller.address, addedFunds, { from: user })
+    // await col.deposit({ value: addedFunds, from: creator });
   }
 
   const createArgs = [
-    questionString,
+    question,
     endTime,
     resolvingEndTime,
     col.address,
