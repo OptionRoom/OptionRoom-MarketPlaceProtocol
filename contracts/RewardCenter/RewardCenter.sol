@@ -4,9 +4,11 @@ import "./IRewardCenter.sol";
 import "../Guardian/GnGOwnable.sol";
 import "./IRoomOraclePrice.sol";
 import "../TimeDependent/TimeDependent.sol";
+import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
 contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     using SafeMath for uint256;
+    using SafeERC20 for IERC20;
     
     address public rewardProgramAddress;
     IERC20 public roomToken ;
@@ -32,7 +34,7 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     
     function sendRoomReward(address beneficiary, uint256 amount, string calldata) external{
         require(msg.sender == rewardProgramAddress, "only reward program allowed to send rewards");
-        roomToken.transfer(beneficiary,amount);
+        roomToken.safeTransfer(beneficiary,amount);
     }
     
     uint256 numerator;
@@ -52,12 +54,12 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
         require(denominator != 0, "Room price is not available");
         // dollar amount 18 decimal
         uint256 roomAmount = amount.mul(numerator).div(denominator).div(10 ** (18 - denominatorDec));
-        roomToken.transfer(beneficiary,roomAmount);
+        roomToken.safeTransfer(beneficiary,roomAmount);
         
     }
     
     
     function sendRoomByGovOrGur(address beneficiary, uint256 amount) public onlyGovOrGur{
-        roomToken.transfer(beneficiary,amount);
+        roomToken.safeTransfer(beneficiary,amount);
     }
 }
