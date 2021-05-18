@@ -10,6 +10,7 @@ library ORMarketLib{
         Resolving, // governance voting for result
         Resolved,  // can redeem
         DisputePeriod, // Dispute
-        ResolvingAfterDispute
+        ResolvingAfterDispute,
+        ForcedResolved
     }
 }

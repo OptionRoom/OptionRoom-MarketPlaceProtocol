@@ -12,7 +12,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     using TransferHelper for IERC20;
     
 
-    address public proposer;
+    
     bytes32 public questionId;
 
 
@@ -26,7 +26,6 @@ contract ORFPMarket is FixedProductMarketMaker {
 
     function setConfig(
             string memory _marketQuestionID,
-            address _proposer,
             address _controller,
             bytes32 _questionId
     ) public {
@@ -34,7 +33,6 @@ contract ORFPMarket is FixedProductMarketMaker {
         initializationPhase2 = true;
         marketController = IORMarketController(_controller);
         marketQuestionID = _marketQuestionID;
-        proposer = _proposer;
         questionId = _questionId;
     }
     
