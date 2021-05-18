@@ -79,7 +79,7 @@ module.exports = function(deployer) {
 	
 	console.log("a7 config (AAA7ORGovernor)");
 	await aaa7.setCourtStake(aaa8.address);
-	await aaa7.setMarketsControllarAddress(aaa3.address);
+	await aaa7.setMarketsControllarAddress(aaa3.address,true);
 	
 	console.log("a8 config (AAA8CourtStake)");
     //aa8.setCourtTokenAddress(courtTokenAddress)
