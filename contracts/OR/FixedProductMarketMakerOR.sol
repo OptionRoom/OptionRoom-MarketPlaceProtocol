@@ -186,26 +186,29 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         return feePoolWeight.sub(totalWithdrawnFees);
     }
 
-    function feesWithdrawableBy(address account) public view returns (uint) {
+    function feeLPWithdrawableBy(address account) public view returns (uint collateralAmount, uint roomAmount) {
         uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
-        return rawAmount.sub(withdrawnFees[account]);
+        collateralAmount = rawAmount.sub(withdrawnFees[account]);
+        roomAmount = IRoomOraclePrice(roomOracle).getExpectedRoomByToken(address(collateralToken),collateralAmount);
+       
     }
     
-    function proposerFeeWithdrawable() public view returns(uint) {
-        return  totalProposerFee.sub(withdrawnProposerFee);
+    function feeProposerWithdrawable() public view returns(uint collateralAmount, uint roomAmount) {
+        collateralAmount = totalProposerFee.sub(withdrawnProposerFee);
+        roomAmount = IRoomOraclePrice(roomOracle).getExpectedRoomByToken(address(collateralToken),collateralAmount);
     }
     
-    function withdrawProposerFee() public {
+    function withdrawProposerFee(uint256 minRoom) public {
         require(msg.sender == proposer, "only proposer can call");
-        uint withdrawableAmount = proposerFeeWithdrawable();
+        (uint withdrawableAmount, ) = feeProposerWithdrawable();
         if(withdrawableAmount > 0){
             withdrawnProposerFee = withdrawnProposerFee.add(withdrawableAmount);
-            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,msg.sender);
+            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,msg.sender);
         }
         
     }
 
-    function withdrawFees(address account) public {
+    function withdrawFees(address account, uint256 minRoom) public {
         uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
         uint withdrawableAmount = rawAmount.sub(withdrawnFees[account]);
         if (withdrawableAmount > 0) {
@@ -213,7 +216,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
             totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
             //collateralToken.safeTransfer(account, withdrawableAmount);
             
-            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,account);
+            IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,account);
         }
     }
     /*
@@ -318,7 +321,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         }
 
         uint collateralRemovedFromFeePool = collateralToken.balanceOf(address(this));
-        withdrawFees(beneficiary);
+        withdrawFees(beneficiary,0);
         _burn(beneficiary, sharesToBurn);
         collateralRemovedFromFeePool = collateralRemovedFromFeePool.sub(
             collateralToken.balanceOf(address(this))
