@@ -126,11 +126,19 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
 
         payoutsMarkets[marketAddress] = true;
         IORMarketForMarketGovernor market = IORMarketForMarketGovernor(marketAddress);
-
-        require(getMarketState(marketAddress) == ORMarketLib.MarketState.Resolved, "market is not in resolved state");
+        
+        ORMarketLib.MarketState marketState = getMarketState(marketAddress);
+        require(marketState == ORMarketLib.MarketState.Resolved || marketState == ORMarketLib.MarketState.ForcedResolved, "market is not in resolved/ forces resolve state");
 
         IReportPayouts orConditionalTokens = IReportPayouts(address(market.getConditionalTokenAddress()));
-        orConditionalTokens.reportPayouts(market.questionId(), getResolvingOutcome(marketAddress));
+        if(marketState == ORMarketLib.MarketState.Resolved){
+            orConditionalTokens.reportPayouts(market.questionId(), getResolvingOutcome(marketAddress));
+        }else{
+            uint256[] memory indexSet = new uint256[](2);
+            indexSet[0] = 1;
+            indexSet[1] = 1;
+            orConditionalTokens.reportPayouts(market.questionId(), indexSet);
+        }
     }
 
     function getAccountInfo(address account) public view returns(bool canVote, uint256 votePower){
@@ -146,6 +154,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         MarketInfo memory marketInfo = marketsInfo[marketAddress];
 
         uint256 time = getCurrentTime();
+        if(marketsStopped[marketAddress] == true){
+            return ORMarketLib.MarketState.ForcedResolved;
+        }
         if(marketInfo.createdTime == 0){
             return ORMarketLib.MarketState.Invalid;
 
@@ -603,6 +614,10 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     function setCollateralAllowed(address token, bool allowdFlag) public onlyGovOrGur{
         allowedCollaterals[token] = allowdFlag;
     }
-
+    
+    mapping(address =>bool) marketsStopped;
+    function marketStop(address market) public onlyGovOrGur{
+        marketsStopped[market] = true;
+    }
 
 }
