@@ -134,15 +134,29 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     }
 }
 
-contract CourtStakeDummy is CourtStake{
+contract CourtStakeDummy is TimeDependent, ICourtStake{
     mapping(address => uint256) powers;
     
+    mapping(address => bool) setFlag;
     function setUserPower(address account, uint256 power) public{
         powers[account] = power;
+        setFlag[account] = true;
     }
     
     function getUserPower(address account) public view returns(uint256){
-        return powers[account];
+        if(setFlag[account]){
+         return powers[account];
+        }
+        
+        return 100;
+    }
+    
+    function suspendAccount(address account, uint256 numOfDays) external{
+        
+    }
+    
+    function suspendPermission(address account, bool permissionFlag) public {
+       
     }
 }
 

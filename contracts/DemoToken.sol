@@ -168,6 +168,23 @@ contract ERC20Detailed is ERC20 {
 
 contract DemoToken is ERC20Detailed {
 
+    constructor () public ERC20Detailed("Collateral", "USD", 18) {
+        // mint 100,000,000 tokens with 18 decimals and send them to token deployer
+        // mint function is internal and can not be called after deployment
+       
+    }
+
+    function mint(uint amount) public{
+        _mint(msg.sender, amount);
+    }
+    
+    function mintTo(address account, uint amount) public{
+        _mint(account,amount);
+    }
+}
+
+contract RoomDemoToken is ERC20Detailed {
+
     constructor () public ERC20Detailed("OptionRoom Token", "ROOM", 18) {
         // mint 100,000,000 tokens with 18 decimals and send them to token deployer
         // mint function is internal and can not be called after deployment
@@ -176,5 +193,13 @@ contract DemoToken is ERC20Detailed {
 
     function mint(uint amount) public{
         _mint(msg.sender, amount);
+    }
+    
+    function mintTo(address account, uint amount) public{
+        _mint(account,amount);
+    }
+    
+    function mintTokensTo(address account, uint count) public{
+        mintTo(account, count*1e18);
     }
 }

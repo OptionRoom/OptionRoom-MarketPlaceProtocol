@@ -203,6 +203,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         (uint withdrawableAmount, ) = feeProposerWithdrawable();
         if(withdrawableAmount > 0){
             withdrawnProposerFee = withdrawnProposerFee.add(withdrawableAmount);
+            collateralToken.safeApprove(roomOracle, withdrawableAmount);
             IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,msg.sender);
         }
         
@@ -215,7 +216,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
             withdrawnFees[account] = rawAmount;
             totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
             //collateralToken.safeTransfer(account, withdrawableAmount);
-            
+            collateralToken.safeApprove(roomOracle, withdrawableAmount);
             IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,account);
         }
     }

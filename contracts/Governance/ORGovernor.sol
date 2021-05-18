@@ -36,7 +36,7 @@ contract ORGovernor is TimeDependent, GnGOwnable{
             return(true, true, 0);
         }
         
-        return(true,false, courtStake.getUserPower(account));
+        return(true,false, 100);
     }
     
     function getSuspendReason(address account) external view returns(string memory reason){

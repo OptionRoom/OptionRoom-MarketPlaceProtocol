@@ -2,28 +2,18 @@ pragma solidity ^0.5.0;
 
 contract CentralTimeForTesting{
 
-    uint256 crt ;
+    
     function getCurrentTime() public view returns(uint256){
-        return crt + timeIncrease;
+        return block.timestamp + timeIncreased;
     }
 
-    uint256 timeIncrease;
-
+    
+    uint256 public timeIncreased =0;
     function increaseTime(uint256 t) public {
-        timeIncrease += t;
+        timeIncreased += t;
     }
 
-    function resetTimeIncrease() public {
-        timeIncrease = 0;
-    }
-
-    function setTime(uint256 t) public {
-        crt = t;
-    }
-
-    function initializeTime() public {
-        crt = block.timestamp;
-    }
+  
 }
 
 
@@ -38,13 +28,13 @@ contract TimeDependent{
         centralTimeForTesting = CentralTimeForTesting(_centralTimeForTesting);
     }
 
-    function getCurrentTime1() public view returns(uint256){
+    function getCurrentTime() public view returns(uint256){
         require(address(centralTimeForTesting) != address(0), "central time is not set");
         return centralTimeForTesting.getCurrentTime();
         //return block.timestamp;
     }
 
-    function getCurrentTime() public view returns(uint256){
+    function getCurrentTime1() public view returns(uint256){
 
         return block.timestamp;
     }

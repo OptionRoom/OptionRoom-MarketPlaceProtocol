@@ -1,4 +1,4 @@
 module.exports = function(deployer) {
-  deployer.deploy(artifacts.require("RoomOraclePriceDummy"), {
+  deployer.deploy(artifacts.require("AAA10OracleDummy"), {
   });
 };

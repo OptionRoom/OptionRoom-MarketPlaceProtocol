@@ -59,7 +59,7 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     
     
     constructor() public {
-        initialize();
+        
         
     }
 
@@ -72,6 +72,11 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         gRewardPerDay[0] = validationRewardPerDay;
         gRewardPerDay[1] = resolveRewardPerDay;
         gRewardPerDay[2] = tradeRewardPerDay;
+    }
+    
+    function setCentralTimeForTesting(CentralTimeForTesting _centralTimeForTesting) public{
+        centralTimeForTesting = _centralTimeForTesting;
+        initialize();
     }
     
     
