@@ -59,7 +59,7 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     }
     
     
-    function sendRoomByGovOrGur(address beneficiary, uint256 amount) public onlyGovOrGur{
+    function sendRoomByGur(address beneficiary, uint256 amount) public onlyGurdian{
         roomToken.safeTransfer(beneficiary,amount);
     }
 }
