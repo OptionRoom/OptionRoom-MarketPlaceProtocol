@@ -4,11 +4,11 @@ import "./IRewardCenter.sol";
 import "../Guardian/GnGOwnable.sol";
 import "./IRoomOraclePrice.sol";
 import "../TimeDependent/TimeDependent.sol";
-import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+import {TransferHelper} from "../Helpers/TransferHelper.sol";
 
 contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     using SafeMath for uint256;
-    using SafeERC20 for IERC20;
+    using TransferHelper for IERC20;
     
     address public rewardProgramAddress;
     IERC20 public roomToken ;
