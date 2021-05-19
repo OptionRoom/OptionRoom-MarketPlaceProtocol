@@ -15,4 +15,13 @@ contract RoomOraclePriceDummy is IRoomOraclePrice{
         
         return (roomAmount,usdAmount,usdDecimals);
     }
+
+    function buyRoom(address tokenA, uint256 amountTokenA, uint256  minRoom, address to) external {
+
+    }
+
+
+    function getExpectedRoomByToken(address tokenA, uint256 amountTokenA) external view returns(uint256) {
+        return 1e18;
+    }
 }

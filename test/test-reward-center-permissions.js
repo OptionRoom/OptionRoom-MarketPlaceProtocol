@@ -8,14 +8,14 @@ const {
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('Option room Reward program permissions check', function([deployer,
+contract('Option room reward center tests', function([deployer,
                                                           creator, oracle, investor1, trader, investor2]) {
 
   let collateralToken
   let fixedProductMarketMaker
   let positionIds
   let controller;
-  // let rewardsProgram;
+  let rewardsProgram;
   let rewardCenter;
   
   let roomTokenFake;
@@ -26,7 +26,7 @@ contract('Option room Reward program permissions check', function([deployer,
     setDeployer(deployer);
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
     controller = retArray[0];
-    // rewardsProgram = retArray[1];
+    rewardsProgram = retArray[1];
     rewardCenter = retArray[2];
     
 
@@ -57,7 +57,7 @@ contract('Option room Reward program permissions check', function([deployer,
   })
 
   it('Should pass and change the reward program because I am the guardian.', async function() {
-      await rewardCenter.setRewardProgram(oracle, {from : deployer});
+      await rewardCenter.setRewardProgram(creator, {from : deployer});
   })
 
 
@@ -74,7 +74,6 @@ contract('Option room Reward program permissions check', function([deployer,
 
   it('Should set room address.', async function() {
     await rewardCenter.setRoomAddress(roomTokenFake.address, {from : deployer});
-
     await roomTokenFake.approve(rewardCenter.address, toBN(100e18), { from: creator })
     await rewardCenter.deposit(toBN(100e18), { from: creator })
   })
@@ -83,7 +82,7 @@ contract('Option room Reward program permissions check', function([deployer,
   it('Should fail to set room oracle', async function() {
     const REVERT = 'caller is not governor or guardian';
     try {
-      await rewardCenter.setRoomOraclePrice(roomTokenFake.address, {from : controller.address});
+      await rewardCenter.setRoomOracleAddress(roomTokenFake.address, {from : controller.address});
       throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')
@@ -92,14 +91,13 @@ contract('Option room Reward program permissions check', function([deployer,
   })
 
   it('Should manage to set the room oracle', async function() {
-    await rewardCenter.setRoomOraclePrice(oracleInstance.address, {from : deployer});
+    await rewardCenter.setRoomOracleAddress(oracleInstance.address, {from : deployer});
   })
-  
   
   it('Should fail to send room reward', async function() {
     const REVERT = 'only reward program allowed to send rewards';
     try {
-      await rewardCenter.sendRoomReward(trader, toBN(1e18), {from : controller.address});
+      await rewardCenter.sendRoomReward(trader, toBN(1e18), {from : oracle});
       throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')
@@ -109,14 +107,13 @@ contract('Option room Reward program permissions check', function([deployer,
 
   it('Should be able to send rewards.', async function() {
     let amount = toBN(1e18);
-    await roomTokenFake.approve(rewardCenter.address, amount, { from: trader })
-    await rewardCenter.sendRoomReward(trader, amount,  "test", {from : oracle});
+    await rewardCenter.sendRoomReward(trader, amount, "Test", {from : creator});
   })
 
-  it('Should fail to send room rewards ERC20', async function() {
+  it('Should fail to send room reward', async function() {
     const REVERT = 'only reward program allowed to send rewards';
     try {
-      await rewardCenter.sendRoomRewardByERC20Value(trader, toBN(0), roomTokenFake.address, "test", {from : controller.address});
+      await rewardCenter.sendRoomRewardByDollarAmount(trader, toBN(1e18), {from : oracle});
       throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')
@@ -124,7 +121,23 @@ contract('Option room Reward program permissions check', function([deployer,
     }
   })
 
-  it('Should manage to send room rewards ERC20.', async function() {
-    await rewardCenter.sendRoomRewardByERC20Value(trader, toBN(0), roomTokenFake.address, "test", {from : oracle});
+  it('Should fail to send room reward', async function() {
+    const REVERT = 'Room price is not available';
+
+    try {
+      let amount = toBN(1e18);
+      await oracleInstance.setValues(toBN(1e18), toBN(0), 6);
+      await rewardCenter.sendRoomRewardByDollarAmount(trader, amount, "Test", {from : creator});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should pass with no issues.', async function() {
+      let amount = toBN(1e18);
+      await oracleInstance.setValues(toBN(1e18), toBN(1e18), 6);
+      await rewardCenter.sendRoomRewardByDollarAmount(trader, amount, "Test", {from : creator});
   })
 })

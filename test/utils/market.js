@@ -6,18 +6,17 @@ chai.use(require('chai-bignumber')());
 const { expectEvent } = require('openzeppelin-test-helpers')
 const { toBN } = web3.utils
 
-let ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
-let MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
-let CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
-let CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
-let PermissionsController = artifacts.require("../../../contracts/Guardian/GnGOwnable.sol");
-let RewardCenterController = artifacts.require("../../../contracts/RewardCenter/RewardCenter.sol");
+const ConditionalTokensContract = artifacts.require("../../../contracts/OR/ORConditionalTokens.sol");
+const MarketLibContract = artifacts.require("../../../contracts/OR/ORFPMarket.sol");
+const CollatContract = artifacts.require("canonical-weth/contracts/WETH9.sol");
+const CollateralToken2Contract = artifacts.require("../../../contracts/mocks/ERC20DemoToken.sol");
 
 const PredictionMarketFactoryMock = artifacts.require('PredictionMarketFactoryMock')
 const ORFPMarket = artifacts.require('ORFPMarket')
 const RoomsGovernor = artifacts.require('ORGovernanceMock')
 const CentralTimeForTestingContract = artifacts.require('CentralTimeForTesting')
 const RewardProgram = artifacts.require('RewardProgramMock')
+const RewardCenterMockController = artifacts.require("../../../contracts/mock/RewardCenterMock.sol");
 
 const ORMarketLib = artifacts.require('ORMarketLib')
 var BigNumber = require('bignumber.js');
@@ -34,7 +33,7 @@ let centralTime
 let marketLibrary;
 
 let rewardProgram;
-let permissionsController;
+// let permissionsController;
 
 const {
   marketValidationPeriod,
@@ -44,15 +43,14 @@ const {
   oneDay,
 } = require('./constants')
 
-let disputeThreshold = toBN(100e18)
-let minHoldingToDispute = toBN(10e18)
+const disputeThreshold = toBN(100e18)
+const minHoldingToDispute = toBN(10e18)
 
 const questionString = 'Test'
 const feeFactor = toBN(3e15) // (0.3%)
 
 let positionIds
 let deployer;
-
 let rewardCenter;
 
 function setDeployer(deployerAccount) {
@@ -76,15 +74,18 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   rewardProgram = await RewardProgram.deployed();
   await rewardProgram.setCentralTimeForTesting(centralTime.address);
   await rewardProgram.doInitialization();
-
-  let deployer1 = await rewardProgram.guardianAddress.call();
-
-  rewardCenter = await RewardCenterController.new();
   
+  rewardCenter = await RewardCenterMockController.new();
+  await rewardCenter.setCentralTimeForTesting(centralTime.address);
+
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
+  // Two very important calls...
+  await rewardProgram.setRewardCenter(rewardCenter.address);
+  await rewardCenter.setRewardProgram(rewardProgram.address);
 
-
-  await fixedProductMarketMakerFactory.setRewardCenter(rewardProgram.address);
+  // Setting the reward program here.
+  await fixedProductMarketMakerFactory.setRewardProgram(rewardProgram.address);
+  await fixedProductMarketMakerFactory.setRewardCenter(rewardCenter.address);
   
   let deployedMarketMakerContract = await ORFPMarket.deployed();
   await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
@@ -98,7 +99,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter];
+  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens];
 }
 
 async function createNewMarket(creator) {
@@ -116,23 +117,25 @@ async function createNewMarket(creator) {
   ]
 
   await centralTime.initializeTime();
+  await fixedProductMarketMakerFactory.setCollateralAllowed(collateralToken.address, true);
 
-  const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposalTest.call(...createArgs)
   const createTx = await fixedProductMarketMakerFactory.createMarketProposalTest(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
     creator,
-    fixedProductMarketMaker: fixedProductMarketMakerAddress,
     conditionalTokens: conditionalTokens.address,
     collateralToken: collateralToken.address,
   })
 
-
-  let marketToReturn = await ORFPMarket.at(fixedProductMarketMakerAddress)
+  const { fixedProductMarketMaker } = createTx.logs.find(
+    ({ event }) => event === 'FixedProductMarketMakerCreation'
+  ).args;
+  
+  const marketToReturn = await ORFPMarket.at(fixedProductMarketMaker)
   positionIds = await marketToReturn.getPositionIds();
   return [marketToReturn, collateralToken, positionIds];
 }
 
-async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
+async function createNewMarketWithCollateral(creator, isERC20, addedFunds, question) {
   let now = new Date()
   let resolvingEndDate = addDays(now, 5)
   let endTime = Math.floor(addDays(now, 3).getTime() / 1000)
@@ -141,15 +144,20 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
   let col;
   if (isERC20) {
     col = await CollateralToken2Contract.new();
+    await fixedProductMarketMakerFactory.setCollateralAllowed(col.address, true);
+    await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
+
     await col.mint(addedFunds, { from: creator })
     await col.transfer(creator, addedFunds, { from: creator })
   }  else {
-    col = collateralToken;
-    await col.deposit({ value: addedFunds, from: creator });
+    col =await CollatContract.new() ;
+    await fixedProductMarketMakerFactory.setCollateralAllowed(col.address, true);
+    await fixedProductMarketMakerFactory.assignCollateralTokenAddress(col.address);
+    await col.deposit({ value: addedFunds, from: creator })
   }
 
   const createArgs = [
-    questionString,
+    question,
     endTime,
     resolvingEndTime,
     col.address,
@@ -161,13 +169,21 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds) {
 
   await col.approve(fixedProductMarketMakerFactory.address, addedFunds, { from: creator })
   
-  const fixedProductMarketMakerAddress = await fixedProductMarketMakerFactory.createMarketProposal.call(...createArgs)
   const createTx = await fixedProductMarketMakerFactory.createMarketProposal(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
     creator,
     conditionalTokens: conditionalTokens.address,
     collateralToken: col.address,
   })
+
+  const { fixedProductMarketMaker } = createTx.logs.find(
+    ({ event }) => event === 'FixedProductMarketMakerCreation'
+  ).args;
+
+  // Return those attributes to the creation, so that we can check on them.
+  const marketToReturn = await ORFPMarket.at(fixedProductMarketMaker)
+  positionIds = await marketToReturn.getPositionIds();
+  return [marketToReturn, col, positionIds];
 }
 
 function addDays(theDate, days) {
@@ -216,7 +232,7 @@ async function moveToResolving() {
 }
 
 async function moveToResolved() {
-  centralTime.increaseTime(marketResolvingPeriod + 10);
+  centralTime.increaseTime((oneDay * 5) + 10);
 }
 
 async function moveToResolved11() {
@@ -240,6 +256,13 @@ async function moveOneDay() {
   centralTime.increaseTime(oneDay + 100);
 }
 
+async function forwardMarketToResolving(fixedProductMarketMaker, investor1, trader, investor2) {
+  await fixedProductMarketMakerFactory.castGovernanceValidatingVote(fixedProductMarketMaker.address,true, 
+    { from: investor2 });
+  
+  await moveToActive();
+}
+
 module.exports = {
   setDeployer,
   moveToResolved11,
@@ -260,5 +283,6 @@ module.exports = {
   conditionalApproveForAll,
   conditionalBalanceOf,
   conditionalApproveFor,
+  forwardMarketToResolving,
   getCollateralBalance,
 }

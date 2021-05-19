@@ -4,22 +4,27 @@ import "../RewardCenter/IRoomOraclePrice.sol";
 
 contract RoomOraclePriceMock is IRoomOraclePrice {
 
-    uint256 numerator;
-    uint256 denominator;
+    uint256 roomAmountValue = 1e18;
+    uint256 usdAmountValue = 1250000;
+    uint8 usdDecimalsValue = 6;
     
-    function setNum(uint256 value) public {
-        numerator = value;
-    }
-
-    function setDen(uint256 value) public {
-        denominator = value;
+    function setValues(uint256 roomAmount, uint256 usdAmount, uint8 usdDecimals) public {
+        roomAmountValue = roomAmount;
+        usdAmountValue = usdAmount;
+        usdDecimalsValue = usdDecimals;
     }
 
     function getPrice() external view returns(uint256 roomAmount, uint256 usdAmount, uint8 usdDecimals){
-        roomAmount = 1e18;
-        usdAmount = 1250000;
-        usdDecimals = 6;
+        return (roomAmountValue,usdAmountValue,usdDecimalsValue);
+    }
+    
 
-        return (roomAmount,usdAmount,usdDecimals);
+    function buyRoom(address tokenA, uint256 amountTokenA, uint256  minRoom, address to) external {
+
+    }
+
+
+    function getExpectedRoomByToken(address tokenA, uint256 amountTokenA) external view returns(uint256) {
+        return 1e18;
     }
 }
