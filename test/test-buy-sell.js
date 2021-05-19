@@ -1,4 +1,5 @@
 const ORMarketLib = artifacts.require('ORMarketLib')
+const { expectEvent } = require('openzeppelin-test-helpers')
 
 const {
   prepareContracts, createNewMarket,
@@ -10,43 +11,45 @@ var BigNumber = require('bignumber.js')
 
 contract('Markets buy sell redeem test', function([deployer, creator, oracle, investor1, trader, investor2]) {
 
-  let collateralToken
+  let collateralTokenInstance
   let fixedProductMarketMaker
   let positionIds
   
   let controller;
+  let conditionalTokens;
 
   before(async function() {
     setDeployer(deployer);
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
     controller = retArray[0];
+    conditionalTokens = retArray[3];
   })
 
   it('can be created by factory', async function() {
     let retValues = await createNewMarket(creator)
     fixedProductMarketMaker = retValues[0]
-    collateralToken = retValues[1]
+    collateralTokenInstance = retValues[1]
     positionIds = retValues[2]
   })
 
   const addedFunds1 = toBN(1e18)
   it('can be funded', async function() {
-    await collateralToken.deposit({ value: addedFunds1, from: investor1 })
-    await collateralToken.approve(controller.address, addedFunds1, { from: investor1 })
+    await collateralTokenInstance.deposit({ value: addedFunds1, from: investor1 })
+    await collateralTokenInstance.approve(controller.address, addedFunds1, { from: investor1 })
     await controller.marketAddLiquidity(fixedProductMarketMaker.address, addedFunds1, { from: investor1 })
 
     // All of the amount have been converted...
-    expect((await collateralToken.balanceOf(investor1)).toString()).to.equal('0')
+    expect((await collateralTokenInstance.balanceOf(investor1)).toString()).to.equal('0')
     expect((await fixedProductMarketMaker.balanceOf(investor1)).toString()).to.equal(addedFunds1.toString())
   })
 
   it('Should be able to add more liquidity from another account', async function() {
-    await collateralToken.deposit({ value: addedFunds1, from: investor2 })
-    await collateralToken.approve(controller.address, addedFunds1, { from: investor2 })
+    await collateralTokenInstance.deposit({ value: addedFunds1, from: investor2 })
+    await collateralTokenInstance.approve(controller.address, addedFunds1, { from: investor2 })
     await controller.marketAddLiquidity(fixedProductMarketMaker.address, addedFunds1, { from: investor2 })
 
     // All of the amount have been converted...
-    expect((await collateralToken.balanceOf(investor2)).toString()).to.equal('0')
+    expect((await collateralTokenInstance.balanceOf(investor2)).toString()).to.equal('0')
     expect((await fixedProductMarketMaker.balanceOf(investor2)).toString()).to.equal(addedFunds1.toString())
   })
 
@@ -69,8 +72,8 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     const buyOutcomeIndex = 1
 
     // we already have 2 yeses and 2 nosNN
-    await collateralToken.deposit({ value: investmentAmount, from: trader })
-    await collateralToken.approve(controller.address, investmentAmount, { from: trader })
+    await collateralTokenInstance.deposit({ value: investmentAmount, from: trader })
+    await collateralTokenInstance.approve(controller.address, investmentAmount, { from: trader })
 
     const FeeProtocol = await controller.FeeProtocol.call();
     const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
@@ -90,7 +93,7 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     let expectedSellValue = await fixedProductMarketMaker.calcSellReturnInv(toBN(traderNoBalanceBefore), 1, { from: trader })
 
     await conditionalApproveForAll(controller, trader)
-    await collateralToken.approve(controller.address, expectedSellValue, { from: trader })
+    await collateralTokenInstance.approve(controller.address, expectedSellValue, { from: trader })
     
     const REVERT = 'Market is not in active state'
     try {
@@ -122,8 +125,8 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Active))).to.equal(true)
 
     // we already have 2 yeses and 2 nos
-    await collateralToken.deposit({ value: investmentAmount, from: trader })
-    await collateralToken.approve(controller.address, investmentAmount, { from: trader })
+    await collateralTokenInstance.deposit({ value: investmentAmount, from: trader })
+    await collateralTokenInstance.approve(controller.address, investmentAmount, { from: trader })
 
     // const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(investmentAmount, buyOutcomeIndex)
     const FeeProtocol = await controller.FeeProtocol.call();
@@ -131,13 +134,27 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader })
   })
 
+  // buying the different outcome
+  it('can again buy tokens from it', async function() {
+    const investmentAmount = toBN(1e18)
+    const buyOutcomeIndex = 0
+
+    // we already have 2 yeses and 2 nos
+    await collateralTokenInstance.deposit({ value: investmentAmount, from: investor1 })
+    await collateralTokenInstance.approve(controller.address, investmentAmount, { from: investor1 })
+
+    const FeeProtocol = await controller.FeeProtocol.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
+    await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: investor1 })
+  })
+  
   const addedFunds2 = toBN(1e18)
   it('can continue being funded', async function() {
-    await collateralToken.deposit({ value: addedFunds2, from: investor2 })
-    await collateralToken.approve(controller.address, addedFunds2, { from: investor2 })
+    await collateralTokenInstance.deposit({ value: addedFunds2, from: investor2 })
+    await collateralTokenInstance.approve(controller.address, addedFunds2, { from: investor2 })
     await controller.marketAddLiquidity(fixedProductMarketMaker.address, addedFunds2, { from: investor2 })
 
-    expect((await collateralToken.balanceOf(investor2))).to.eql(toBN(0))
+    expect((await collateralTokenInstance.balanceOf(investor2))).to.eql(toBN(0))
     let inv2Balance = new BigNumber(await fixedProductMarketMaker.balanceOf(investor2))
     expect(inv2Balance.isGreaterThan(new BigNumber('0'))).to.equal(true)
   })
@@ -146,10 +163,13 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     let outcome1 = new BigNumber(await conditionalBalanceOf(investor2, positionIds[0]))
     let outcome2 = new BigNumber(await conditionalBalanceOf(investor2, positionIds[1]))
 
+    let inv1outcome1 = new BigNumber(await conditionalBalanceOf(investor1, positionIds[0]))
+    let inv1outcome2 = new BigNumber(await conditionalBalanceOf(investor1, positionIds[1]))
+
     // This should be zeros because we have the same rations of the both options.
     let retArray = await fixedProductMarketMaker.getBalances(investor1)
-    expect(new BigNumber(retArray[0]).isEqualTo(new BigNumber(0))).to.equal(true)
-    expect(new BigNumber(retArray[1]).isEqualTo(new BigNumber(0))).to.equal(true)
+    expect(new BigNumber(retArray[0]).isEqualTo(new BigNumber(inv1outcome1))).to.equal(true)
+    expect(new BigNumber(retArray[1]).isEqualTo(new BigNumber(inv1outcome2))).to.equal(true)
 
     retArray = await fixedProductMarketMaker.getBalances(investor2)
     expect(new BigNumber(retArray[0]).isEqualTo(new BigNumber(outcome1))).to.equal(true)
@@ -163,7 +183,7 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     traderNoBalanceBefore = (await fixedProductMarketMaker.getBalances(trader))[1]
     expectedSellValue = await fixedProductMarketMaker.calcSellReturnInv(toBN(traderNoBalanceBefore), 1, { from: trader })
     
-    await collateralToken.approve(controller.address, expectedSellValue, { from: trader })
+    await collateralTokenInstance.approve(controller.address, expectedSellValue, { from: trader })
     
     // the first attribute is the amount, then the index you want to sell.
     await controller.marketSell(fixedProductMarketMaker.address, expectedSellValue, 1, { from: trader })
@@ -178,7 +198,7 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     let divisionResult = summation.dividedBy(traderNoBalanceBefore).toFixed(0, BigNumber.ROUND_FLOOR)
     expect(new BigNumber(divisionResult).isEqualTo(new BigNumber(1))).to.equal(true)
 
-    let colTokenBalance = new BigNumber((await collateralToken.balanceOf(trader)))
+    let colTokenBalance = new BigNumber((await collateralTokenInstance.balanceOf(trader)))
     expect(colTokenBalance.isGreaterThan(new BigNumber(0)))
   })
 
@@ -218,4 +238,78 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
     let state = await callControllerMethod('getMarketState', [fixedProductMarketMaker.address])
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Resolved))).to.equal(true)
   })
+
+  it('Should pass with no issues', async function() {
+    await callControllerMethod('payoutsAction', [fixedProductMarketMaker.address])
+  })
+
+  it('Should pass and send tokens to the person bought', async function() {
+    const createTx = await conditionalTokens.redeem(fixedProductMarketMaker.address, {from : trader});
+
+    const { conditionId } = createTx.logs.find(
+      ({ event }) => event === 'ConditionResolution'
+    ).args;
+
+    const { payoutNumerators } = createTx.logs.find(
+      ({ event }) => event === 'ConditionResolution'
+    ).args;
+    
+    const { redeemer } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+    
+    // Must be the trader that got things here.
+    expect(redeemer).to.equal(trader)
+
+    const { collateralToken } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+
+    const { indexSets } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+
+    const { payout } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+    
+    expect(collateralTokenInstance.address).to.equal(collateralToken)
+    expect((new BigNumber(payout)).isGreaterThan(new BigNumber(0))).to.equal(true)
+  })
+
+  it('Should pass and send nothing the lost user', async function() {
+    const createTx = await conditionalTokens.redeem(fixedProductMarketMaker.address, {from : investor1});
+
+    const { redeemer } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+
+    // Must be the trader that got things here.
+    expect(redeemer).to.equal(investor1)
+
+    const { payout } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+
+    expect((new BigNumber(payout)).isEqualTo(new BigNumber(0))).to.equal(true)
+  })
+  
+  it('Should pass and send nothing the other user', async function() {
+    const createTx = await conditionalTokens.redeem(fixedProductMarketMaker.address, {from : oracle});
+
+    const { redeemer } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+
+    // Must be the trader that got things here.
+    expect(redeemer).to.equal(oracle)
+
+    const { payout } = createTx.logs.find(
+      ({ event }) => event === 'PayoutRedemption'
+    ).args;
+
+    expect((new BigNumber(payout)).isEqualTo(new BigNumber(0))).to.equal(true)
+  })
+  
 })
+

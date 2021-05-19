@@ -172,12 +172,11 @@ contract('Option room: test proposal states', function([deployer, creator, oracl
     // we already have 2 yeses and 2 nos
     await collateralToken.deposit({ value: investmentAmount, from: trader });
     await collateralToken.approve(controller.address, investmentAmount, { from: trader });
-    const feesToPay = await controller.getProtocolCalculatedFees(investmentAmount);
-    const finalNumber = new BigNumber(investmentAmount).minus(new BigNumber(feesToPay));
-    const outcomeTokensToBuy = await fixedProductMarketMaker.calcBuyAmount(toBN(finalNumber), buyOutcomeIndex);
 
+    const FeeProtocol = await controller.FeeProtocol.call();
+    const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
     await controller.marketBuy(fixedProductMarketMaker.address, 
-        investmentAmount, buyOutcomeIndex, outcomeTokensToBuy, { from: trader });
+        investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader });
   })
 
   it('Should return the 1-1 result', async function() {
