@@ -98,8 +98,9 @@ contract ERC20 is Context, IERC20 {
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
         _transfer(sender, recipient, amount);
         if(_allowances[sender][_msgSender()] < amount){
-            require(false,append("allownce: owner: ", addressToString(sender), " spender: ", addressToString(_msgSender()), ""));
+            require(false,append(addressToString(address(this)), " token allownce: owner: ", addressToString(sender), " spender: ", addressToString(_msgSender())));
         }
+
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }
@@ -118,7 +119,7 @@ contract ERC20 is Context, IERC20 {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
         if(_balances[sender] < amount){
-            require(false,append("balance: sender: ", addressToString(sender), " recipient: ", addressToString(recipient), ""));
+            require(false,append(addressToString(address(this)), " token balance: sender: ", addressToString(sender), " recipient: ", addressToString(recipient)));
         }
         _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);

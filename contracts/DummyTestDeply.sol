@@ -12,6 +12,9 @@ import "./CourtStake/CourtStake.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 import {RoomDemoToken} from "./DemoToken.sol";
+import {TransferHelper} from "./Helpers/TransferHelper.sol";
+import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
+
 contract AAA0Time is CentralTimeForTesting{
     //0x3c4Fca7B5944A750C3EBF732dBf04591aCbb821d
 }
@@ -101,6 +104,35 @@ contract AAAQ{
     }
 }
 
+
+contract  aaaa1{
+    using TransferHelper for IERC20;
+    
+    function transfer(IERC20 token, address rec, uint256 amount) public{
+        token.safeTransfer(rec,amount);
+        
+    }
+    
+    function transferFrom(IERC20 token, address from, address rec, uint256 amount) public{
+        token.safeTransferFrom(from,rec,amount);
+        
+    }
+}
+
+
+contract  aaaaa2{
+    using SafeERC20 for IERC20;
+    
+    function transfer(IERC20 token, address rec, uint256 amount) public{
+        token.safeTransfer(rec,amount);
+        
+    }
+    
+    function transferFrom(IERC20 token, address from, address rec, uint256 amount) public{
+        token.safeTransferFrom(from,rec,amount);
+        
+    }
+}
 
 /*
 contract AAA6CourtStake is CourtStake{

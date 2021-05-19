@@ -127,10 +127,10 @@ module.exports = function(deployer) {
 	console.log("aaa9.address AAA9ORMarketsQuery");
 	console.log(aaa9.address);
 	
-	console.log("aaa9.address ");
+	console.log("aaa10.address ");
 	console.log(aaa10.address);
 	
-	console.log("aaa9.address AAA11DemoRoom1");
+	console.log("aaa11.address AAA11DemoRoom1");
 	console.log(aaa11.address);
 
   });
