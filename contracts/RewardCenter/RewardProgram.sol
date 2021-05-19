@@ -36,7 +36,7 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
 
     bool public includeSellInTradeFlag = true; //todo
 
-    uint256 deploymentDay = 0;
+    uint256 public deploymentDay = 0;
 
     uint256 public lpRewardPerBlock = lpRewardPerDay * 1e18 / 5760;  // 1e18 math prec , 5,760 block per days 
     uint256 public lpAccRewardsPerToken;
@@ -74,8 +74,8 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         gRewardPerDay[2] = tradeRewardPerDay;
     }
     
-    function setCentralTimeForTesting(CentralTimeForTesting _centralTimeForTesting) public{
-        centralTimeForTesting = _centralTimeForTesting;
+    function setCentralTimeAddressForTesting(address _centralTimeForTesting) public{
+        centralTimeForTesting = CentralTimeForTesting(_centralTimeForTesting);
         initialize();
     }
     

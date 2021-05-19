@@ -13,7 +13,9 @@ contract CentralTimeForTesting{
         timeIncreased += t;
     }
 
-  
+    function getCurrentDay() public view returns(uint256){
+        return getCurrentTime() / 1 days;
+    }
 }
 
 
