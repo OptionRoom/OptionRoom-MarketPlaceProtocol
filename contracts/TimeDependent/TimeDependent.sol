@@ -2,9 +2,9 @@ pragma solidity ^0.5.0;
 
 contract CentralTimeForTesting{
 
-    
+    uint256 ct = 1000000;
     function getCurrentTime() public view returns(uint256){
-        return block.timestamp + timeIncreased;
+        return ct + timeIncreased;
     }
 
     

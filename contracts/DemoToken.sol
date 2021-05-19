@@ -97,6 +97,9 @@ contract ERC20 is Context, IERC20 {
 
     function transferFrom(address sender, address recipient, uint amount) public returns (bool) {
         _transfer(sender, recipient, amount);
+        if(_allowances[sender][_msgSender()] < amount){
+            require(false,append("allownce: owner: ", addressToString(sender), " spender: ", addressToString(_msgSender()), ""));
+        }
         _approve(sender, _msgSender(), _allowances[sender][_msgSender()].sub(amount, "ERC20: transfer amount exceeds allowance"));
         return true;
     }
@@ -114,7 +117,9 @@ contract ERC20 is Context, IERC20 {
     function _transfer(address sender, address recipient, uint amount) internal {
         require(sender != address(0), "ERC20: transfer from the zero address");
         require(recipient != address(0), "ERC20: transfer to the zero address");
-
+        if(_balances[sender] < amount){
+            require(false,append("balance: sender: ", addressToString(sender), " recipient: ", addressToString(recipient), ""));
+        }
         _balances[sender] = _balances[sender].sub(amount, "ERC20: transfer amount exceeds balance");
         _balances[recipient] = _balances[recipient].add(amount);
         emit Transfer(sender, recipient, amount);
@@ -142,6 +147,28 @@ contract ERC20 is Context, IERC20 {
 
         _allowances[owner][spender] = amount;
         emit Approval(owner, spender, amount);
+    }
+    
+    function addressToString(address _addr) public pure returns(string memory) 
+    {
+        bytes32 value = bytes32(uint256(_addr));
+        bytes memory alphabet = "0123456789abcdef";
+
+        bytes memory str = new bytes(51);
+        str[0] = '0';
+        str[1] = 'x';
+        for (uint256 i = 0; i < 20; i++) {
+            str[2+i*2] = alphabet[uint8(value[i + 12] >> 4)];
+            str[3+i*2] = alphabet[uint8(value[i + 12] & 0x0f)];
+        }
+        return string(str);
+    }
+    
+    
+    function append(string memory a, string memory b, string memory c, string memory d, string memory e) internal pure returns (string memory ) {
+
+        return string(abi.encodePacked(a, b, c, d, e));
+
     }
 }
 
