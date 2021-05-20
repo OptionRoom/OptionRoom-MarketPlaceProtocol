@@ -620,4 +620,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         marketsStopped[market] = true;
     }
 
+
+    function setBuyRoomThreshold(uint256 value) public onlyGovOrGur {
+        buyRoomThreshold = value;
+    }
+
 }
