@@ -58,6 +58,13 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         address[] marketsResolving;
     }
     
+    mapping(address => address[]) public marketsProposedByUser;
+    mapping(address => address[]) public marketsLiquidityByUser;
+    mapping(address => address[]) public marketsTradeByUser;
+    
+    mapping(address => mapping(address => bool)) marketsLiquidityFlag;
+    mapping(address => mapping(address => bool)) marketsTradeFlag;
+    
     IORGovernor public orGovernor;
     ConditionalTokens public ct; 
     IERC20 roomToken;
@@ -411,7 +418,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     ////////////////////////
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public returns(address){
         require(allowedCollaterals[address(collateralToken)] == true, "Collateral token is not allowed");
-        
+    
         roomToken.safeTransferFrom(msg.sender, rewardCenterAddress ,marketCreationFees);
         bytes32 questionId = bytes32(marketsCount);
         require(proposalIds[questionId] == address(0), "proposal Id already used");
@@ -422,6 +429,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         //ORMarketController marketController =  ORMarketController(governanceAdd);
         
         ORFPMarket fpMarket = createFixedProductMarketMaker(ct, collateralToken, conditionIds, feeMarketLP, FeeProposer, msg.sender, roomOracleAddress);
+        
+        marketsProposedByUser[msg.sender].push(address(fpMarket));
+        
         fpMarket.setConfig(marketQuestionID, address(this), questionId);
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
         
@@ -451,6 +461,12 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         uint sharesAmount = fpMarket.addLiquidityTo(msg.sender,amount);
         
         RP.lpMarketAdd(market, msg.sender, sharesAmount);
+        
+       
+        if( marketsLiquidityFlag[msg.sender][market] == false){
+            marketsLiquidityFlag[msg.sender][market] = true;
+            marketsLiquidityByUser[msg.sender].push(market);
+        }
     }
     
     function marketRemoveLiquidity(address market,uint256 sharesAmount, bool autoMerg) public{
@@ -494,6 +510,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
         
         RP.tradeAmount(market, msg.sender, investmentAmount, true);
+       
+        if( marketsTradeFlag[msg.sender][market] == false){
+            marketsTradeFlag[msg.sender][market] = true;
+            marketsTradeByUser[msg.sender].push(market);
+        }
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
@@ -516,6 +537,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         collateralToken.safeTransfer(msg.sender,tradeVolume - pFee);
         RP.tradeAmount(market, msg.sender, tradeVolume, false);
+        
+        if( marketsTradeFlag[msg.sender][market] == false){
+            marketsTradeFlag[msg.sender][market] = true;
+            marketsTradeByUser[msg.sender].push(market);
+        }
     }
     
     function buyRoom(address IERCaddress) internal{
