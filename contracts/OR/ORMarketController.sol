@@ -53,10 +53,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         bool    disputedFlag;
     }
     
-    struct MarketsVoted{
-        uint256 wrongVotingCount;
-        address[] marketsResolving;
-    }
+    
     
     mapping(address => address[]) public marketsProposedByUser;
     mapping(address => address[]) public marketsLiquidityByUser;
@@ -99,7 +96,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     uint256 public marketCreationFees = 0;
     
     bool penaltyOnWrongResolving;
-    mapping(address => MarketsVoted) marketsVotedPerUse;
+    mapping(address => address[]) marketsVotedPerUser;
     
     mapping(bytes32 => address) public proposalIds;
     
@@ -286,8 +283,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         }
         
         if(penaltyOnWrongResolving){
-            MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
-            marketsVoted.marketsResolving.push(marketAddress);
+            marketsVotedPerUser[account].push(marketAddress);
         }
         
         if(marketVotersInfo.insertedFlag == 0){
@@ -351,11 +347,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     }
     
     function deleteMarketVoting(address account, address market) internal{
-        MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
-        for(uint256 i = marketsVoted.marketsResolving.length -1; i==0; i--){
-            if(marketsVoted.marketsResolving[i] == market){
-               marketsVoted.marketsResolving[i] = marketsVoted.marketsResolving[marketsVoted.marketsResolving.length -1];
-               marketsVoted.marketsResolving.length--;
+        address[] storage marketsVoted = marketsVotedPerUser[account];
+        for(uint256 i = marketsVoted.length -1; i==0; i--){
+            if(marketsVoted[i] == market){
+               marketsVoted[i] = marketsVoted[marketsVoted.length -1];
+               marketsVoted.length--;
                 break;
             }
         }
@@ -363,20 +359,21 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     function checkForWrongVoting(address account) internal returns(address[] memory wrongVoting){
        
-        MarketsVoted storage marketsVoted = marketsVotedPerUse[account];
-        wrongVoting = new address[](marketsVoted.marketsResolving.length);
+        address[] storage marketsVoted = marketsVotedPerUser[account];
+        wrongVoting = new address[](marketsVoted.length);
         uint256 wrongVoteIndex =0;
-        for(uint256 i = marketsVoted.marketsResolving.length -1; i==0; i--){
-            address marketAddress = marketsVoted.marketsResolving[i];
+        for(uint256 i = marketsVoted.length -1; i==0; i--){
+            address marketAddress = marketsVoted[i];
             if(getMarketState(marketAddress) == ORMarketLib.MarketState.Resolved){
                 //todo check wrongVoting
                 
                 // delete it
-                marketsVoted.marketsResolving[i] = marketsVoted.marketsResolving[marketsVoted.marketsResolving.length -1];
-                marketsVoted.marketsResolving.length--;
+                marketsVoted[i] = marketsVoted[marketsVoted.length -1];
+                marketsVoted.length--;
                 
                 uint256[] memory indexSet = getResolvingOutcome(marketAddress);
-                if( indexSet[marketResolvingVotersInfo[marketAddress][account].selection] == 1){
+                uint8 userSelection = marketResolvingVotersInfo[marketAddress][account].selection;
+                if( indexSet[userSelection] != 1){
                     
                     wrongVoting[wrongVoteIndex] = marketAddress;
                     wrongVoteIndex++;
