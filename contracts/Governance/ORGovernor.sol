@@ -3,8 +3,9 @@ import "./IORGovernor.sol";
 import "../CourtStake/ICourtStake.sol";
 import "../TimeDependent/TimeDependent.sol";
 import "../Guardian/GnGOwnable.sol";
+import {IORGovernor} from "./IORGovernor.sol";
 
-contract ORGovernor is TimeDependent, GnGOwnable{
+contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
     
     struct WrongMarketsVoting{
         uint256 lastwrongVotingCount;
