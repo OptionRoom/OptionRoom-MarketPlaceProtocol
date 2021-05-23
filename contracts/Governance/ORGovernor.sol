@@ -64,7 +64,8 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
         WrongMarketsVoting storage wrongVoting = WrongVoting[account];
         uint256 arrLength = markets.length;
         uint256 wrongVotingCount=0;
-        for(uint256 i=0;i <arrLength -1; i++){
+        
+        for(uint256 i=0;i < arrLength; i++){
             if(markets[i] != address(0)){
                 wrongVotingCount++;
                 wrongVoting.wrongMarkets.push(markets[i]);
@@ -72,7 +73,6 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
         }
         
         wrongVoting.lastwrongVotingCount = wrongVotingCount;
-        
         wrongVoting.lastUpdateDate = block.timestamp;
         
         if(wrongVotingCount >0){
