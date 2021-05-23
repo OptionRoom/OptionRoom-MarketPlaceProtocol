@@ -66,12 +66,12 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     function initialize() internal {
         uint256 cDay = getCurrentTime() / 1 days;
         deploymentDay = cDay;
-        gLastRewardsDistributedDay[0] = cDay;
-        gLastRewardsDistributedDay[1] = cDay;
-        gLastRewardsDistributedDay[2] = cDay;
-        gRewardPerDay[0] = validationRewardPerDay;
-        gRewardPerDay[1] = resolveRewardPerDay;
-        gRewardPerDay[2] = tradeRewardPerDay;
+        gLastRewardsDistributedDay[uint256(RewardType.Validation)] = cDay;
+        gLastRewardsDistributedDay[uint256(RewardType.Resolve)] = cDay;
+        gLastRewardsDistributedDay[uint256(RewardType.Trade)] = cDay;
+        gRewardPerDay[uint256(RewardType.Validation)] = validationRewardPerDay;
+        gRewardPerDay[uint256(RewardType.Resolve)] = resolveRewardPerDay;
+        gRewardPerDay[uint256(RewardType.Trade)] = tradeRewardPerDay;
     }
     
     
@@ -228,7 +228,6 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     }
     
     function gClaimUserRewards(uint256 poolID) internal {
-        //todo: check if there is penalty
         
         gInstallRewards(poolID);
         
@@ -242,11 +241,12 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
             lastClaimedDay = deploymentDay;
         }
         
-        for (uint256 index = lastClaimedDay ; index < cDay; index++) {
-            if (gTotalVolumePerDay[poolID][index] != 0) {
-                rewardsCanClaim += gRewardsPerDay[poolID][index] * gTotalVolumePerDayPerUser[poolID][index][account] * 1e18 / gTotalVolumePerDay[poolID][index];
+        for ( ; lastClaimedDay < cDay; lastClaimedDay++) {
+            if (gTotalVolumePerDay[poolID][lastClaimedDay] != 0) {
+                rewardsCanClaim += gRewardsPerDay[poolID][lastClaimedDay] * gTotalVolumePerDayPerUser[poolID][lastClaimedDay][account] * 1e18 / gTotalVolumePerDay[poolID][lastClaimedDay];
             }
         }
+        
         rewardsCanClaim = rewardsCanClaim / 1e18;
         gLastClaimedDayPerUser[poolID][account] = lastClaimedDay;
 
@@ -279,7 +279,6 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     }
     
     function tradeAmount(address , address account, uint256 amount, bool buyFlag) external{
-        require(msg.sender == marketControllerAddress , "caller is not market controller");
         
         if(buyFlag || includeSellInTradeRewards){
             gAdd( uint256(RewardType.Trade) ,account, amount);
