@@ -348,7 +348,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     function deleteMarketVoting(address account, address market) internal{
         address[] storage marketsVoted = marketsVotedPerUser[account];
-        for(uint256 i = marketsVoted.length -1; i==0; i--){
+        for(uint256 i = 0; i < marketsVoted.length; i++){
             if(marketsVoted[i] == market){
                marketsVoted[i] = marketsVoted[marketsVoted.length -1];
                marketsVoted.length--;
@@ -362,13 +362,13 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         address[] storage marketsVoted = marketsVotedPerUser[account];
         wrongVoting = new address[](marketsVoted.length);
         uint256 wrongVoteIndex =0;
-        for(uint256 i = marketsVoted.length -1; i==0; i--){
-            address marketAddress = marketsVoted[i];
+        for(int i = int(marketsVoted.length) -1; i >= 0; i--){
+            address marketAddress = marketsVoted[uint256(i)];
             if(getMarketState(marketAddress) == ORMarketLib.MarketState.Resolved){
                 //todo check wrongVoting
                 
                 // delete it
-                marketsVoted[i] = marketsVoted[marketsVoted.length -1];
+                marketsVoted[uint256(i)] = marketsVoted[marketsVoted.length -1];
                 marketsVoted.length--;
                 
                 uint256[] memory indexSet = getResolvingOutcome(marketAddress);
