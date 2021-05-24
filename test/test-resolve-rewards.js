@@ -89,6 +89,7 @@ contract('Options room resolve rewards tests', function([deployer, creator, orac
   })
 
   it('Should check rewards for the resolved investor 1', async function() {
+    await moveOneDay();
     let investor1Rewards = await rewardsProgram.resolveRewards(investor1);
     expect(new BigNumber(investor1Rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(investor1Rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
@@ -124,7 +125,7 @@ contract('Options room resolve rewards tests', function([deployer, creator, orac
     let rewards = await rewardsProgram.resolveRewards(investor1);
     expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
-    // expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
 
   })
 

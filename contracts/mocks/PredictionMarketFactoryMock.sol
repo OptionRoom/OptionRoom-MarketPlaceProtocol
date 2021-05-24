@@ -44,4 +44,8 @@ contract PredictionMarketFactoryMock is ORMarketController {
         
         return fpMarket;
     }
+
+    function getAddressPenalties(address account) public view returns(address[] memory)  {
+        return marketsVotedPerUser[account];
+    }
 }

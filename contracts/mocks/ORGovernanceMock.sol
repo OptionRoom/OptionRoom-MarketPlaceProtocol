@@ -2,20 +2,22 @@ pragma solidity ^0.5.1;
 pragma experimental ABIEncoderV2;
 
 import "../Governance/ORGovernor.sol";
+import "./CourtStakeMock.sol";
 
-contract ORGovernanceMock is DummyORGovernor {
+contract ORGovernanceMock is ORGovernor {
+    
+    CourtStakeDummy dummy;
 
-    function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
-        // Mocking this.
-        power = powerPerUser[account];
-        governorFlag = true;
-        suspendedFlag = false;
+    function setCourtStake(address courtStakeAddress) public onlyGovOrGur{
+        courtStake = ICourtStake(courtStakeAddress);
+        dummy = CourtStakeDummy(courtStakeAddress);
     }
+    
     function getSuspendReason(address account) external view returns(string memory reason){
         "Testing suspension";
     }
-
-    function userhasWrongVoting(address account, address[] calldata markets) external  returns (bool) {
-        return false;
+    
+    function setPower(address account, uint256 power) public {
+        dummy.setUserPower(account, power);
     }
 }

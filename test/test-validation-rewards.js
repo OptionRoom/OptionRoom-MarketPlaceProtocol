@@ -64,45 +64,40 @@ contract('Options room trade rewards tests', function([deployer, creator, oracle
     expect((await fixedProductMarketMaker.balanceOf(investor1)).toString()).to.equal(addedFunds1.toString())
   })
 
-
   it('Should vote for the approval of this created market', async function() {
-    const inv1Attr = [fixedProductMarketMaker.address, true, { from: investor1 }]
-    await executeControllerMethod('castGovernanceValidatingVote', inv1Attr)
-  })
-
-  it('Should return the correct validation reward value for the invistor because he validated system', async function() {
-    let rewards = await rewardsProgram.validationRewards(investor1);
-    expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
-
-    let investor2Rewards = await rewardsProgram.validationRewards(investor2);
-    expect(new BigNumber(investor2Rewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
-
-    let oracleRewards = await rewardsProgram.validationRewards(oracle);
-    expect(new BigNumber(oracleRewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
-  })
-
-
-  it('Should vote for the approval of this created market', async function() {
+    const inv1Attr = [fixedProductMarketMaker.address, false, { from: investor1 }]
     const inv2Attr = [fixedProductMarketMaker.address, false, { from: investor2 }]
     const oracleAttr = [fixedProductMarketMaker.address, false, { from: oracle }]
 
-    await executeControllerMethod('castGovernanceValidatingVote', inv2Attr)
-    await executeControllerMethod('castGovernanceValidatingVote', oracleAttr)
-
-    let rewards = await rewardsProgram.validationRewards(investor1);
-    expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
-
-    let investor2Rewards = await rewardsProgram.validationRewards(investor2);
-    expect(new BigNumber(investor2Rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
-
-    let oracleRewards = await rewardsProgram.validationRewards(oracle);
-    expect(new BigNumber(oracleRewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    await executeControllerMethod('castGovernanceValidatingVote', inv1Attr)
+    // await executeControllerMethod('castGovernanceValidatingVote', inv2Attr)
+    // await executeControllerMethod('castGovernanceValidatingVote', oracleAttr)
   })
 
+  it('Should check rewards for the resolved investor 1', async function() {
+    
+    let investor1Rewards = await rewardsProgram.validationRewards(investor1);
+    expect(new BigNumber(investor1Rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(investor1Rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(investor1Rewards['claimedRewards']).isEqualTo(new BigNumber('0'))).to.equal(true)
 
+    let investor2Rewards = await rewardsProgram.validationRewards(investor2);
+    expect(new BigNumber(investor2Rewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(investor2Rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(investor2Rewards['claimedRewards']).isEqualTo(new BigNumber('0'))).to.equal(true)
+
+    let traderRewards = await rewardsProgram.validationRewards(trader);
+    expect(new BigNumber(traderRewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(traderRewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(traderRewards['claimedRewards']).isEqualTo(new BigNumber('0'))).to.equal(true)
+
+    await moveOneDay();
+  })
+  
   let todayClaimedBalance = 0;
 
   it('Should be able to claim user rewards', async function() {
+
     let balance = await roomTokenFake.balanceOf(investor1);
     await rewardsProgram.claimRewards(true, false, false, {from : investor1});
     todayClaimedBalance = new BigNumber(await roomTokenFake.balanceOf(investor1));
@@ -116,9 +111,9 @@ contract('Options room trade rewards tests', function([deployer, creator, oracle
 
   it('Should keep claimable if another user buys', async function() {
     let rewards = await rewardsProgram.validationRewards(investor1);
-    expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(rewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
-    // expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
 
   })
 
