@@ -19,6 +19,12 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
     mapping(address => string) suspendReason;
     mapping(address => WrongMarketsVoting) public WrongVoting;
     
+    uint8 coefficientPrevWrog =  3;
+    
+    function setCoefficientPrevWrog(uint8 newCoefficient) public onlyGovOrGur {
+        coefficientPrevWrog = newCoefficient;
+    }
+    
     function setCourtStake(address courtStakeAddress) public onlyGovOrGur{
         courtStake = ICourtStake(courtStakeAddress);
     }
@@ -77,7 +83,9 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
         
         if(wrongVotingCount >0){
             
-            courtStake.suspendAccount(account, wrongVoting.wrongMarkets.length + 3);
+            uint256 suspedDayes = wrongVotingCount + coefficientPrevWrog * wrongVoting.wrongMarkets.length ;
+            _suspendAccount(account, suspedDayes, "wrong settlment vote");
+            
             return true;
         }
         
