@@ -362,20 +362,12 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         rewardCenter = IRewardCenter(rewardCenterAddress);
     }
     
-
-
-    //////////////////////
-
-    uint256 cbn; // todo
-
     function getBlockNumber() public view returns (uint256) {
-        return cbn;
-        //return block.number;
+        
+        return block.number;
     }
 
-    function increaseBlockNumber(uint256 n) public {
-        cbn += n;
-    }
+    
 
 
 }
