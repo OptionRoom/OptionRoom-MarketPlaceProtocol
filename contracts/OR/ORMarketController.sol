@@ -468,7 +468,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         }
     }
     
-    function marketRemoveLiquidity(address market,uint256 sharesAmount, bool autoMerg) public{
+    function marketRemoveLiquidity(address market,uint256 sharesAmount, bool autoMerg, bool withdrawFees) public{
         
         address beneficiary = msg.sender;
         
@@ -484,7 +484,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             }
         }
         
-        fpMarket.removeLiquidityTo(beneficiary,sharesAmount, autoMerg);
+        fpMarket.removeLiquidityTo(beneficiary,sharesAmount, autoMerg, withdrawFees);
         
         RP.lpMarketRemove(market, msg.sender, sharesAmount);
     }
