@@ -74,6 +74,11 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         gRewardPerDay[uint256(RewardType.Trade)] = tradeRewardPerDay;
     }
     
+    function addMarket(address market) external{
+        require(msg.sender == marketControllerAddress , "caller is not market controller");
+        _setMarketWeight(market,1);
+    }
+    
     
     function lpUpdateReward(address market, address account) public {
         uint256 cBlockNumber = getBlockNumber();
