@@ -314,7 +314,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
     
 
-    function removeFundingTo(address beneficiary, uint sharesToBurn) internal {
+    function removeFundingTo(address beneficiary, uint sharesToBurn, bool withdrawFeesFlag) internal {
 
         _beforeRemoveFundingTo(beneficiary, sharesToBurn);
 
@@ -328,7 +328,11 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         }
 
         uint collateralRemovedFromFeePool = collateralToken.balanceOf(address(this));
-        _withdrawFees(beneficiary,0);
+        
+        if(withdrawFeesFlag){
+            _withdrawFees(beneficiary,0);
+        }
+        
         _burn(beneficiary, sharesToBurn);
         collateralRemovedFromFeePool = collateralRemovedFromFeePool.sub(
             collateralToken.balanceOf(address(this))
