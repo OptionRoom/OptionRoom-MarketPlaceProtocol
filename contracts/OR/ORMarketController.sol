@@ -434,6 +434,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         proposalIds[questionId] = address(fpMarket);
         
+        RP.addMarket(address(fpMarket));
+        
         _marketAddLiquidity(address(fpMarket),initialLiq);
         
         
