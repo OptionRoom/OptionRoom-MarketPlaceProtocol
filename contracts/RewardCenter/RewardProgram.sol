@@ -122,6 +122,7 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         ORMarketLib.MarketState marketState = marketController.getMarketState(market);
         require(marketState >= ORMarketLib.MarketState.Active, "can not claim in Invalid, Validating, Rejected state"); //can not claim in the following proposal states (Invalid, Validating, Rejected )
         LPUserInfoPMarket storage lpUser = lpUsers[market][msg.sender];
+        lpUpdateReward(market, msg.sender);
 
         uint256 amountToClaim = lpUser.totalRewards.sub(lpUser.claimedRewards);
         lpUser.claimedRewards = lpUser.totalRewards;
@@ -156,7 +157,7 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
             uint256 accRewardPerTokenForUser = lpAccRewardsPerTokenView.sub(lpUser.prevAccRewardsPerToken);
             uint256 userEffectiveTotalVolume = lpUser.totalVolume.mul(lpMarketsWeight[market]);
             uint256 newRewardsForUser = accRewardPerTokenForUser.mul(userEffectiveTotalVolume);
-            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser);
+            lpUser.totalRewards = lpUser.totalRewards.add(newRewardsForUser.div(1e18));
 
             lpUser.prevAccRewardsPerToken = lpAccRewardsPerToken;
 
