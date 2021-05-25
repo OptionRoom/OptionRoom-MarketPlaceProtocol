@@ -2,8 +2,7 @@ const ORMarketLib = artifacts.require('ORMarketLib')
 
 const {
   prepareContracts, createNewMarket,
-  executeControllerMethod, moveToActive, conditionalApproveForAll, callControllerMethod,
-  conditionalBalanceOf, moveToResolving,resetTimeIncrease,increaseTime,moveToResolved,conditionalApproveFor
+  executeControllerMethod,
 } = require('./utils/market.js')
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
@@ -16,6 +15,8 @@ contract('OR validation rewards', function([, creator, oracle, investor1, trader
 
   let controller;
   let rewardsProgram;
+  
+  let oneDayBlocks = 5761;
 
   before(async function() {
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2)
@@ -58,8 +59,39 @@ contract('OR validation rewards', function([, creator, oracle, investor1, trader
     today.setHours(0,0,0,0);
     let todayInSeconds = Math.floor(today.getTime() / 1000);
     
-    let rewards = await rewardsProgram.getLPReward(fixedProductMarketMaker.address, investor1, 
-      toBN(todayInSeconds));
+    let rewardsDaily = await rewardsProgram.lpRewardPerDay.call();
+    
+    let rewards = await rewardsProgram.getLPReward(fixedProductMarketMaker.address, investor1);
+    let pendingRewards = rewards['pendingRewards'];
+    let claimedRewards = rewards['claimedRewards'];
+    
+    // Information about the first user that added a new liquidity.
+    let inv1UserInformation = await rewardsProgram.lpUsers.call(fixedProductMarketMaker.address, investor1);
+    let inv1UserTotalVolume = inv1UserInformation['totalVolume'];
+    expect(new BigNumber(inv1UserTotalVolume).isGreaterThan(new BigNumber(0))).to.equal(true)
+
+
+    // Information about the new user.
+    let inv2UserInformation = await rewardsProgram.lpUsers.call(fixedProductMarketMaker.address, investor2);
+    let inv2UserTotalVolume = inv2UserInformation['totalVolume'];
+    expect(new BigNumber(inv2UserTotalVolume).isEqualTo(new BigNumber(0))).to.equal(true)
+
+    await rewardsProgram.increaseBlockNumber(oneDayBlocks + 1);
+    // rewardsDaily
+    
+    rewards = await rewardsProgram.getLPReward(fixedProductMarketMaker.address, investor1);
+    pendingRewards = rewards['pendingRewards'];
+    claimedRewards = rewards['claimedRewards'];
+    
+    expect(new BigNumber(pendingRewards).isGreaterThan(new BigNumber(0))).to.equal(true)
+    expect(new BigNumber(pendingRewards).isGreaterThan(new BigNumber(rewardsDaily))).to.equal(true)
+    expect(new BigNumber(claimedRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+
+    rewards = await rewardsProgram.getLPReward(fixedProductMarketMaker.address, investor2);
+    pendingRewards = rewards['pendingRewards'];
+    claimedRewards = rewards['claimedRewards'];
+    expect(new BigNumber(pendingRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+    expect(new BigNumber(claimedRewards).isEqualTo(new BigNumber(0))).to.equal(true)
   })
 
   //tradeClaimUserRewards test for this .

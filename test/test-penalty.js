@@ -155,11 +155,28 @@ contract('Options room, testing penalty system for governance', function([deploy
     expect(new BigNumber(userPower).isEqualTo(new BigNumber(3)));
     
     // This guys should have a single invalid vote for a market.
+    // investor1 has more power to trader lets see
     await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 0, { from: investor1 });
+    await controller.castGovernanceResolvingVote(fixedProductMarketMaker.address, 1, { from: trader });
     let state = await controller.getMarketState(fixedProductMarketMaker.address);
 
-    let somethingWasWrong = await governance.WrongVoting.call(investor1);
-    let lastwrongVotingCount = somethingWasWrong['lastwrongVotingCount'];
+    let wrongVotings = await governance.WrongVoting.call(investor1);
+    let lastwrongVotingCount = wrongVotings['lastwrongVotingCount'];
     expect(new BigNumber(lastwrongVotingCount).isEqualTo(new BigNumber(1)));
+
+    wrongVotings = await governance.WrongVoting.call(trader);
+    lastwrongVotingCount = wrongVotings['lastwrongVotingCount'];
+    expect(new BigNumber(lastwrongVotingCount).isEqualTo(new BigNumber(0)));
+
+    wrongVotings = await governance.WrongVoting.call(investor2);
+    lastwrongVotingCount = wrongVotings['lastwrongVotingCount'];
+    expect(new BigNumber(lastwrongVotingCount).isEqualTo(new BigNumber(0)));
+    
+    await  moveToResolved();
+
+    let resolvingOutcome = await controller.getResolvingOutcome(fixedProductMarketMaker.address);
+    expect(new BigNumber(resolvingOutcome[0]).isEqualTo(new BigNumber(0)));
+    expect(new BigNumber(resolvingOutcome[1]).isEqualTo(new BigNumber(1)));
+
   });
 })
