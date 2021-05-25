@@ -204,13 +204,17 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         if(withdrawableAmount > 0){
             withdrawnProposerFee = withdrawnProposerFee.add(withdrawableAmount);
             
-             collateralToken.safeApprove(roomOracle,withdrawableAmount);
+            collateralToken.safeApprove(roomOracle,withdrawableAmount);
             IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,msg.sender);
         }
         
     }
+    
+    function withdrawFees(uint256 minRoom) internal {
+        _withdrawFees(msg.sender,minRoom);
+    }
 
-    function withdrawFees(address account, uint256 minRoom) public {
+    function _withdrawFees(address account, uint256 minRoom) internal {
         uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
         uint withdrawableAmount = rawAmount.sub(withdrawnFees[account]);
         if (withdrawableAmount > 0) {
@@ -221,6 +225,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
             IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,account);
         }
     }
+    
     /*
     function _beforeTokenTransfer(address from, address to, uint256 amount) internal {
         if (from != address(0)) {
@@ -309,7 +314,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
     
 
-    function removeFundingTo(address beneficiary, uint sharesToBurn) internal {
+    function removeFundingTo(address beneficiary, uint sharesToBurn, bool withdrawFeesFlag) internal {
 
         _beforeRemoveFundingTo(beneficiary, sharesToBurn);
 
@@ -323,7 +328,11 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         }
 
         uint collateralRemovedFromFeePool = collateralToken.balanceOf(address(this));
-        withdrawFees(beneficiary,0);
+        
+        if(withdrawFeesFlag){
+            _withdrawFees(beneficiary,0);
+        }
+        
         _burn(beneficiary, sharesToBurn);
         collateralRemovedFromFeePool = collateralRemovedFromFeePool.sub(
             collateralToken.balanceOf(address(this))
