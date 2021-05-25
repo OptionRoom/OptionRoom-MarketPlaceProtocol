@@ -54,8 +54,8 @@ contract ORFPMarket is FixedProductMarketMaker {
         return shares;
     }
 
-    function removeLiquidityTo(address beneficiary, uint256 shares, bool autoMerge) public {
-        removeFundingTo(beneficiary, shares);
+    function removeLiquidityTo(address beneficiary, uint256 shares, bool autoMerge, bool withdrawFees) public {
+        removeFundingTo(beneficiary, shares, withdrawFees);
         if(autoMerge == true){
             _merge(beneficiary);
         }
