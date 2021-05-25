@@ -1,6 +1,7 @@
 pragma solidity ^0.5.1;
 
 interface IRewardProgram {
+    function addMarket(address market) external;
     
     function lpMarketAdd(address market, address account, uint256 amount) external;
 
@@ -16,6 +17,10 @@ interface IRewardProgram {
 
 
 contract DummyRewardProgram {
+    
+    function addMarket(address market) external{
+        
+    }
     
     function lpMarketAdd(address market, address account, uint256 amount) external{
         
