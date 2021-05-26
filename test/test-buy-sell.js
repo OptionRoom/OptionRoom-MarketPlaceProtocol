@@ -54,7 +54,7 @@ contract('Markets buy sell redeem test', function([deployer, creator, oracle, in
   })
 
   it('Should be able to add more liquidity from another account', async function() {
-    await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds1,false,  { from: investor2 })
+    await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds1,false, true,  { from: investor2 })
   })
   
 
