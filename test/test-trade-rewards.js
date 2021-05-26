@@ -45,6 +45,9 @@ contract('Options room trade rewards tests', function([deployer, creator, oracle
     await roomTokenFake.transfer(rewardCenter.address, toBN(200e18), {from : deployer});
 
     rewardCenterBalance = await roomTokenFake.balanceOf(rewardCenter.address);
+
+    // setting the reward value here.
+    await rewardsProgram.setTradeRewardPerDay(toBN(10e18));
   })
 
   it('can be created by factory', async function() {
@@ -187,9 +190,6 @@ contract('Options room trade rewards tests', function([deployer, creator, oracle
     expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
-    console.log("rewards['claimedRewards']");
-    console.log(rewards['claimedRewards'].toString());
-    
   })
 
   it('Should be able to claim user rewards', async function() {

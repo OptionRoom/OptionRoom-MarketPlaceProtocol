@@ -45,6 +45,11 @@ contract('Options room rewards with multiple markets: Should be extended further
     await roomTokenFake.transfer(rewardCenter.address, toBN(200e18), {from : deployer});
 
     rewardCenterBalance = await roomTokenFake.balanceOf(rewardCenter.address);
+
+    // Changing rewards values so that I can send
+    await rewardsProgram.setTradeRewardPerDay(toBN(10e18));
+    await rewardsProgram.setValidationRewardPerDay(toBN(10e18));
+    await rewardsProgram.setResolveRewardPerDay(toBN(10e18));
   })
 
   it('can be to create multiple markets', async function() {

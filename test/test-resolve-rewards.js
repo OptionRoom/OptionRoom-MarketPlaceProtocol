@@ -46,6 +46,10 @@ contract('Options room resolve rewards tests', function([deployer, creator, orac
     await roomTokenFake.transfer(rewardCenter.address, toBN(200e18), {from : deployer});
 
     rewardCenterBalance = await roomTokenFake.balanceOf(rewardCenter.address);
+
+
+    // setting the reward value here.
+    await rewardsProgram.setResolveRewardPerDay(toBN(10e18));
   })
 
   it('can be created by factory', async function() {

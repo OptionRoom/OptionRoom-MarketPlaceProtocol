@@ -44,6 +44,8 @@ contract('Options room trade rewards tests', function([deployer, creator, oracle
     await roomTokenFake.transfer(rewardCenter.address, toBN(200e18), {from : deployer});
 
     rewardCenterBalance = await roomTokenFake.balanceOf(rewardCenter.address);
+
+    await rewardsProgram.setValidationRewardPerDay(toBN(10e18));
   })
 
   it('can be created by factory', async function() {
