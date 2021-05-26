@@ -376,6 +376,12 @@ contract RoomOraclePrice  is GnGOwnable{
     }
     
     function buyRoom(address tokenA, uint256 tokenAmount, uint256  minRoom, address to) external {
+        
+        if(tokenA == ROOM_Address){
+            TransferHelper.safeTransferFrom(tokenA, msg.sender, to, tokenAmount );
+            return;
+        }
+        
         TransferHelper.safeTransferFrom(tokenA, msg.sender, address(this), tokenAmount );
         TransferHelper.safeApprove(tokenA, address(routerV2), tokenAmount);
         
