@@ -161,16 +161,16 @@ contract('Options room, testing penalty system for governance', function([deploy
     let state = await controller.getMarketState(fixedProductMarketMaker.address);
 
     let wrongVotings = await governance.WrongVoting.call(investor1);
-    let lastwrongVotingCount = wrongVotings['lastwrongVotingCount'];
-    expect(new BigNumber(lastwrongVotingCount).isEqualTo(new BigNumber(1)));
+    let lastWrongVotingCount = wrongVotings['lastWrongVotingCount'];
+    expect(new BigNumber(lastWrongVotingCount).isEqualTo(new BigNumber(1)));
 
     wrongVotings = await governance.WrongVoting.call(trader);
-    lastwrongVotingCount = wrongVotings['lastwrongVotingCount'];
-    expect(new BigNumber(lastwrongVotingCount).isEqualTo(new BigNumber(0)));
+    lastWrongVotingCount = wrongVotings['lastWrongVotingCount'];
+    expect(new BigNumber(lastWrongVotingCount).isEqualTo(new BigNumber(0)));
 
     wrongVotings = await governance.WrongVoting.call(investor2);
-    lastwrongVotingCount = wrongVotings['lastwrongVotingCount'];
-    expect(new BigNumber(lastwrongVotingCount).isEqualTo(new BigNumber(0)));
+    lastWrongVotingCount = wrongVotings['lastWrongVotingCount'];
+    expect(new BigNumber(lastWrongVotingCount).isEqualTo(new BigNumber(0)));
     
     await  moveToResolved();
 

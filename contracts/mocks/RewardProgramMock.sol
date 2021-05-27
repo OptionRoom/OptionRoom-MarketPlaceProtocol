@@ -5,6 +5,8 @@ import "../RewardCenter/RewardProgram.sol";
 
 contract RewardProgramMock is RewardProgram {
 
+    uint256 cbn;
+    
     function initialize() internal {
     }
     
@@ -18,4 +20,13 @@ contract RewardProgramMock is RewardProgram {
         gRewardPerDay[uint256(RewardType.Resolve)] = resolveRewardPerDay;
         gRewardPerDay[uint256(RewardType.Trade)] = tradeRewardPerDay;
     }
+    
+    function getBlockNumber() public view returns (uint256) {
+        return cbn;
+    }
+
+    function increaseBlockNumber(uint256 n) public {
+        cbn += n;
+    }
+
 }

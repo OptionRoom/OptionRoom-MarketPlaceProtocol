@@ -8,21 +8,21 @@ import {IORGovernor} from "./IORGovernor.sol";
 contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
     
     struct WrongMarketsVoting{
-        uint256 lastwrongVotingCount;
+        uint256 lastWrongVotingCount;
         uint256 lastUpdateDate;
         address[] wrongMarkets;
     }
     
     ICourtStake courtStake;
-    address public marketsControllarAddress;
+    address public marketsControllerAddress;
     mapping(address => uint256) suspended;
     mapping(address => string) suspendReason;
     mapping(address => WrongMarketsVoting) public WrongVoting;
     
-    uint8 coefficientPrevWrog =  3;
+    uint8 coefficientPrevWrong =  3;
     
-    function setCoefficientPrevWrog(uint8 newCoefficient) public onlyGovOrGur {
-        coefficientPrevWrog = newCoefficient;
+    function setCoefficientPrevWrong(uint8 newCoefficient) public onlyGovOrGur {
+        coefficientPrevWrong = newCoefficient;
     }
     
     function setCourtStake(address courtStakeAddress) public onlyGovOrGur{
@@ -30,8 +30,8 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
     }
     
     
-    function setMarketsControllarAddress(address controllerAddress) public onlyGovOrGur{
-        marketsControllarAddress = controllerAddress;
+    function setMarketsControllerAddress(address controllerAddress) public onlyGovOrGur{
+        marketsControllerAddress = controllerAddress;
     }
     
     
@@ -50,22 +50,19 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
         return suspendReason[account];
     }
     
-    
     function suspendAccount(address account, uint256 numOfDays, string memory reason) public onlyGovOrGur{
-        
         _suspendAccount(account,numOfDays,reason);
     }
     
     function _suspendAccount(address account, uint256 numOfDays, string memory reason) internal {
-        
         suspended[account] =  numOfDays + (getCurrentTime() /1 days);
         suspendReason[account] = reason;
         
         courtStake.suspendAccount(account,numOfDays);
     }
     
-    function userhasWrongVoting(address account, address[] calldata markets) external  returns (bool){
-        require(msg.sender == marketsControllarAddress, "caller is not market controller");
+    function userHasWrongVoting(address account, address[] calldata markets) external  returns (bool){
+        require(msg.sender == marketsControllerAddress, "caller is not market controller");
         
         WrongMarketsVoting storage wrongVoting = WrongVoting[account];
         uint256 arrLength = markets.length;
@@ -78,14 +75,12 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
             }
         }
         
-        wrongVoting.lastwrongVotingCount = wrongVotingCount;
+        wrongVoting.lastWrongVotingCount = wrongVotingCount;
         wrongVoting.lastUpdateDate = block.timestamp;
         
         if(wrongVotingCount >0){
-            
-            uint256 suspedDayes = wrongVotingCount + coefficientPrevWrog * wrongVoting.wrongMarkets.length ;
-            _suspendAccount(account, suspedDayes, "wrong settlment vote");
-            
+            uint256 suspendDays = wrongVotingCount + coefficientPrevWrong * wrongVoting.wrongMarkets.length ;
+            _suspendAccount(account, suspendDays, "wrong settlement vote");
             return true;
         }
         

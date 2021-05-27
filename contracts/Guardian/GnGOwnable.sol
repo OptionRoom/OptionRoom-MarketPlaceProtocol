@@ -17,18 +17,18 @@ contract GnGOwnable {
         _;
     }
     
-    modifier onlyGurdian {
-        require(msg.sender == guardianAddress, "caller is not  guardian");
+    modifier onlyGuardian {
+        require(msg.sender == guardianAddress, "caller is not guardian");
         _;
     }
     
     
-    function transfeerGuardian(address newGuardianAddress) public onlyGovOrGur {
+    function transferGuardian(address newGuardianAddress) public onlyGovOrGur {
         emit GuardianTransferred(guardianAddress, newGuardianAddress);
         guardianAddress = newGuardianAddress;
     }
     
-    function transfeerGovernor(address newGovernorAddress) public onlyGovOrGur {
+    function transferGovernor(address newGovernorAddress) public onlyGovOrGur {
         emit GuardianTransferred(governorAddress, newGovernorAddress);
         governorAddress = newGovernorAddress;
     }

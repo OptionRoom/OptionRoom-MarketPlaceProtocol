@@ -51,7 +51,7 @@ contract('Option room Reward program permissions check', function([deployer,
   it('Should not be able to transfer the governance address because you are not deployer.', async function() {
     const REVERT = 'caller is not governor or guardian';
     try {
-      await rewardsProgram.transfeerGovernor(trader, {from : controller.address});
+      await rewardsProgram.transferGovernor(trader, {from : controller.address});
       throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')
@@ -60,7 +60,7 @@ contract('Option room Reward program permissions check', function([deployer,
   })
 
   it('Should be able to change the governance because I am a deployer', async function() {
-    await rewardsProgram.transfeerGovernor(trader, {from : deployer});
+    await rewardsProgram.transferGovernor(trader, {from : deployer});
   })
 
   it('Should pass changing attributes because I am a guadrian', async function() {
