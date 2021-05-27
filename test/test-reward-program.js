@@ -28,7 +28,8 @@ contract('Option room Reward program permissions check', function([deployer,
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
     controller = retArray[0];
     rewardsProgram = retArray[1];
-    let rewardCenter = retArray[4];
+    
+    let rewardCenter = retArray[2];
 
     roomTokenFake = await IERC20Contract.new();
     oracleInstance = await OracleMockContract.new();

@@ -17,6 +17,9 @@ const RoomsGovernor = artifacts.require('ORGovernanceMock')
 const CentralTimeForTestingContract = artifacts.require('CentralTimeForTesting')
 const RewardProgram = artifacts.require('RewardProgramMock')
 const RewardCenterMockController = artifacts.require("../../../contracts/mock/RewardCenterMock.sol");
+const CourtStakeMock = artifacts.require("../../../contracts/mock/CourtStakeMock.sol");
+const OracleMockContract = artifacts.require("../../contracts/mocks/RoomOraclePriceMock.sol");
+const IERC20Contract = artifacts.require("../../contracts/mocks/ERC20DemoToken.sol");
 
 const ORMarketLib = artifacts.require('ORMarketLib')
 var BigNumber = require('bignumber.js');
@@ -53,6 +56,9 @@ let positionIds
 let deployer;
 let rewardCenter;
 
+let oracleInstance;
+let roomTokenFake;
+
 function setDeployer(deployerAccount) {
   deployer = deployerAccount;
 }
@@ -61,11 +67,15 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   conditionalTokens = await ConditionalTokensContract.new();
   marketLibrary = await MarketLibContract.new();
   centralTime = await CentralTimeForTestingContract.new();
-  
+  oracleInstance = await OracleMockContract.new();
+  roomTokenFake = await IERC20Contract.new();
+
   collateralToken = await CollatContract.new() ;//await WETH9.deployed();
 
   fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
   governanceMock = await RoomsGovernor.deployed()
+  
+  let courtStakeContract = await CourtStakeMock.new();
 
   await centralTime.initializeTime();
 
@@ -77,6 +87,10 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   
   rewardCenter = await RewardCenterMockController.new();
   await rewardCenter.setCentralTimeForTesting(centralTime.address);
+  
+  // setting the time for the governance as well.
+  await governanceMock.setCentralTimeForTesting(centralTime.address);
+  await governanceMock.setMarketsControllarAddress(fixedProductMarketMakerFactory.address);
 
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
   // Two very important calls...
@@ -86,6 +100,9 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   // Setting the reward program here.
   await fixedProductMarketMakerFactory.setRewardProgram(rewardProgram.address);
   await fixedProductMarketMakerFactory.setRewardCenter(rewardCenter.address);
+
+  // Assingn the oracle for the controller.
+  await fixedProductMarketMakerFactory.setRoomoracleAddress(oracleInstance.address);
   
   let deployedMarketMakerContract = await ORFPMarket.deployed();
   await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
@@ -94,12 +111,19 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   await fixedProductMarketMakerFactory.assignGovernanceContract(governanceMock.address);
 
   // Setting the voting power.
+  // setting the court stake.
+  await governanceMock.setCourtStake(courtStakeContract.address);
+  await courtStakeContract.setCentralTimeForTesting(centralTime.address);
+
+  // add suspend permission for this controller.
+  await courtStakeContract.suspendPermission(governanceMock.address, true);
+  
   await governanceMock.setPower(investor1, 5);
   await governanceMock.setPower(investor2, 1);
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
   
-  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens];
+  return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens, governanceMock];
 }
 
 async function createNewMarket(creator) {
@@ -263,6 +287,14 @@ async function forwardMarketToResolving(fixedProductMarketMaker, investor1, trad
   await moveToActive();
 }
 
+function getOracleMock() {
+  return oracleInstance;
+}
+
+function getRoomFakeToken() {
+  return roomTokenFake;
+}
+
 module.exports = {
   setDeployer,
   moveToResolved11,
@@ -284,5 +316,7 @@ module.exports = {
   conditionalBalanceOf,
   conditionalApproveFor,
   forwardMarketToResolving,
+  getOracleMock,
+  getRoomFakeToken,
   getCollateralBalance,
 }

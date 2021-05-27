@@ -91,7 +91,7 @@ contract('FixedProductMarketMaker: general test', function([deployer, creator, o
     await collateralToken.deposit({ value: investmentAmount, from: trader });
     await collateralToken.approve(controller.address, investmentAmount, { from: trader })
 
-    const feeAmount = await controller.protocolFee.call();
+    const feeAmount = await controller.FeeProtocol.call();
     const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, feeAmount);
     await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader })
 

@@ -41,7 +41,13 @@ contract PredictionMarketFactoryMock is ORMarketController {
         addMarket(address(fpMarket),getCurrentTime(), participationEndTime, resolvingEndTime);
 
         proposalIds[questionId] = address(fpMarket);
+
+        RP.addMarket(address(fpMarket));
         
         return fpMarket;
+    }
+
+    function getAddressPenalties(address account) public view returns(address[] memory)  {
+        return marketsVotedPerUser[account];
     }
 }

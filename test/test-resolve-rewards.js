@@ -1,5 +1,6 @@
 const ORMarketLib = artifacts.require('ORMarketLib')
-
+const IERC20Contract = artifacts.require("../../contracts/mocks/ERC20DemoToken.sol");
+const OracleMockContract = artifacts.require("../../contracts/mocks/RoomOraclePriceMock.sol");
 const {
   prepareContracts, createNewMarket,
   executeControllerMethod, moveToActive, callControllerMethod,increaseTime,resetTimeIncrease,
@@ -8,7 +9,7 @@ const {
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('Options room resolve rewards tests', function([, creator, oracle, investor1, trader, investor2]) {
+contract('Options room resolve rewards tests', function([deployer, creator, oracle, investor1, trader, investor2]) {
 
   let collateralToken
   let fixedProductMarketMaker
@@ -18,10 +19,37 @@ contract('Options room resolve rewards tests', function([, creator, oracle, inve
   let rewardsProgram;
   let marketPendingPeriod = 1800;
 
+  let rewardCenter;
+
+  let roomTokenFake;
+  let oracleInstance;
+
+  let rewardCenterBalance;
+
   before(async function() {
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2)
     controller = retArray[0];
     rewardsProgram = retArray[1];
+
+    rewardCenter = retArray[2];
+    roomTokenFake = await IERC20Contract.new();
+    oracleInstance = await OracleMockContract.new();
+
+    // Mint some of the rooms at the system.
+    await roomTokenFake.mint(toBN(200e18), {from : creator});
+    await roomTokenFake.mint(toBN(200e18), {from : deployer});
+
+    await rewardCenter.setRoomOracleAddress(oracleInstance.address, {from : deployer});
+    await rewardCenter.setRoomAddress(roomTokenFake.address, {from : deployer});
+
+    await roomTokenFake.mint(toBN(200e18), {from : deployer});
+    await roomTokenFake.transfer(rewardCenter.address, toBN(200e18), {from : deployer});
+
+    rewardCenterBalance = await roomTokenFake.balanceOf(rewardCenter.address);
+
+
+    // setting the reward value here.
+    await rewardsProgram.setResolveRewardPerDay(toBN(10e18));
   })
 
   it('can be created by factory', async function() {
@@ -65,6 +93,7 @@ contract('Options room resolve rewards tests', function([, creator, oracle, inve
   })
 
   it('Should check rewards for the resolved investor 1', async function() {
+    await moveOneDay();
     let investor1Rewards = await rewardsProgram.resolveRewards(investor1);
     expect(new BigNumber(investor1Rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(investor1Rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
@@ -79,5 +108,36 @@ contract('Options room resolve rewards tests', function([, creator, oracle, inve
     expect(new BigNumber(traderRewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(traderRewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(traderRewards['claimedRewards']).isEqualTo(new BigNumber('0'))).to.equal(true)
+  })
+
+
+  let todayClaimedBalance = 0;
+
+  it('Should be able to claim user rewards', async function() {
+    let balance = await roomTokenFake.balanceOf(investor1);
+    await rewardsProgram.claimRewards(false, true, false, {from : investor1});
+    todayClaimedBalance = new BigNumber(await roomTokenFake.balanceOf(investor1));
+    expect(todayClaimedBalance.isGreaterThan(new BigNumber(0)))
+
+
+    let rewardCenterBalanceAfter = new BigNumber( await roomTokenFake.balanceOf(rewardCenter.address));
+    expect(rewardCenterBalanceAfter.isLessThan(new BigNumber(rewardCenterBalance)))
+
+  })
+
+  it('Should keep claimable if another user buys', async function() {
+    let rewards = await rewardsProgram.resolveRewards(investor1);
+    expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+
+  })
+
+  it('Should be able to claim user rewards', async function() {
+    await rewardsProgram.claimRewards(false, true, false, {from : investor1});
+    let balance = new BigNumber(await roomTokenFake.balanceOf(investor1));
+
+    expect(balance.isGreaterThan(new BigNumber(0)))
+    expect(new BigNumber(todayClaimedBalance).isEqualTo(new BigNumber(balance)));
   })
 })
