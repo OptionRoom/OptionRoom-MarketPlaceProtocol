@@ -93,34 +93,41 @@ contract('OR: tests rewards for providing liquidity for proposals', function([de
     // All of the amount have been converted...
     expect((await collateralToken.balanceOf(investor2)).toString()).to.equal('0')
     expect((await fixedProductMarketMaker.balanceOf(investor2)).toString()).to.equal(addedFunds1.toString())
-  })
 
-  it('Should return the correct balance of investor2', async function() {
     let iBalance = await fixedProductMarketMaker.balanceOf(investor2);
     expect(new BigNumber(iBalance).isEqualTo(new BigNumber(addedFunds1))).to.equal(true)
-  })
 
-  it('Should allow other account to withdraw liquidity with no issues', async function() {
     await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, addedFunds1,false,true,  { from: investor2 })
-  })
-
-  it('Should return the correct balance of investor2 after removing liq', async function() {
-    let iBalance = await fixedProductMarketMaker.balanceOf(investor2);
+    iBalance = await fixedProductMarketMaker.balanceOf(investor2);
     expect(new BigNumber(iBalance).isEqualTo(new BigNumber(0))).to.equal(true)
-  })
-  
-  it('Should withdraw, amount is lesser then the min liquidity and state in validation.', async function() {
-    await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, toRemoveFunds1, false,true, { from: creator })
-  })
 
+    await controller.marketRemoveLiquidity(fixedProductMarketMaker.address, toRemoveFunds1, false,true, { from: creator })
+
+  })
 
   it('Should show the correct values', async function() {
     let collectedFees = await fixedProductMarketMaker.collectedFees();
+    expect(new BigNumber(collectedFees).isEqualTo(new BigNumber(0))).to.equal(true)
 
     let amounts = await fixedProductMarketMaker.feeProposerWithdrawable();
     let collateralAmount = amounts['collateralAmount'];
     let roomAmount = amounts['roomAmount'];
+    expect(new BigNumber(roomAmount).isGreaterThan(new BigNumber(0))).to.equal(true)
+  })
 
+  it('Should revert because I am trying to get the fees from a none proposer', async function() {
+    const REVERT = 'only proposer can call'
+    try {
+      let amounts = await fixedProductMarketMaker.withdrawProposerFee(toBN(0), {from : trader});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should with draw fees of the proposer', async function() {
+      await fixedProductMarketMaker.withdrawProposerFee(toBN(0), {from : creator});
   })
 
   it('Should fail to withdraw trying to remove more liquidity than min liquidity', async function() {
