@@ -59,8 +59,14 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
     
     
     constructor() public {
-        initialize();
         
+        
+    }
+    
+    function setCentralTimeAddressForTesting(address _centralTimeForTesting) public{
+        centralTimeForTesting = CentralTimeForTesting(_centralTimeForTesting);
+        
+        initialize();
     }
 
     function initialize() internal {
