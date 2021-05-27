@@ -263,9 +263,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         require(marketVotersInfo.voteFlag == false, "user already voted");
         
         if(penaltyOnWrongResolving){
-            address[] memory wrongVoting = checkForWrongVoting(account);
-            bool doNoteVoteFalg = orGovernor.userhasWrongVoting(account, wrongVoting);
-            if(doNoteVoteFalg){
+            address[] memory checkedWrongVotingResult = checkForWrongVoting(account);
+            bool cannotVoteFlag = orGovernor.userHasWrongVoting(account, checkedWrongVotingResult);
+            if(cannotVoteFlag){
                 return;
             }
         }

@@ -24,7 +24,7 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     
     function setRevertIfPriceLessMin(bool flag) public onlyGovOrGur{
         // the transaction will be reverted if the current price less than allowed min, 
-        // otherwise the amount of room determined by minmum price allowed
+        // otherwise the amount of room determined by minimum price allowed
         revertIfPriceLessMin = flag;
     }
     
@@ -32,12 +32,12 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
         rewardProgramAddress = programAddress;
     }
     
-    function setRoomAddress(address roomAddres) public onlyGovOrGur{
-        roomToken = IERC20(roomAddres);
+    function setRoomAddress(address roomAddress) public onlyGovOrGur{
+        roomToken = IERC20(roomAddress);
     }
     
-    function setRoomOracleAddress(address oracelAddress) public onlyGovOrGur{
-        roomOraclePrice = IRoomOraclePrice(oracelAddress);
+    function setRoomOracleAddress(address oracleAddress) public onlyGovOrGur{
+        roomOraclePrice = IRoomOraclePrice(oracleAddress);
     }
     
     function setUpdatePeriod(uint256 newPeriod) public onlyGovOrGur{
@@ -92,7 +92,7 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     }
     
     
-    function sendRoomByGur(address beneficiary, uint256 amount) public onlyGurdian{
+    function sendRoomByGur(address beneficiary, uint256 amount) public onlyGuardian {
         roomToken.safeTransfer(beneficiary,amount);
     }
 }

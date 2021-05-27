@@ -90,7 +90,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   
   // setting the time for the governance as well.
   await governanceMock.setCentralTimeForTesting(centralTime.address);
-  await governanceMock.setMarketsControllarAddress(fixedProductMarketMakerFactory.address);
+  await governanceMock.setMarketsControllerAddress(fixedProductMarketMakerFactory.address);
 
   await rewardProgram.setMarketControllerAddress(fixedProductMarketMakerFactory.address);
   // Two very important calls...
