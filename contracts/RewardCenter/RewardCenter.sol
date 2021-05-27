@@ -2,7 +2,7 @@ pragma solidity ^0.5.1;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IRewardCenter.sol";
 import "../Guardian/GnGOwnable.sol";
-import "./IRoomOraclePrice.sol";
+import {IRoomOraclePrice} from "./IRoomOraclePrice.sol";
 import "../TimeDependent/TimeDependent.sol";
 import {TransferHelper} from "../Helpers/TransferHelper.sol";
 

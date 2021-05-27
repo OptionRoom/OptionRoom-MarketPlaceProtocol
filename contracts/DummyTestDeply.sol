@@ -7,10 +7,13 @@ import "./RewardCenter/RewardProgram.sol";
 import "./RewardCenter/RewardCenter.sol";
 import "./Governance/ORGovernor.sol";
 import "./CourtStake/CourtStake.sol";
-import "./RewardCenter/IRoomOraclePrice.sol";
+import {RoomOraclePriceDummy} from "./RewardCenter/IRoomOraclePrice.sol";
 import "./CourtStake/CourtStake.sol";
 
 import { DemoToken } from "./DemoToken.sol";
+import {RoomDemoToken} from "./DemoToken.sol";
+import {TransferHelper} from "./Helpers/TransferHelper.sol";
+import {SafeERC20} from "openzeppelin-solidity/contracts/token/ERC20/SafeERC20.sol";
 
 contract AAA0Time is CentralTimeForTesting{
     //0x3c4Fca7B5944A750C3EBF732dBf04591aCbb821d
@@ -18,9 +21,10 @@ contract AAA0Time is CentralTimeForTesting{
 
 contract AAA1DemoToken1 is DemoToken{
 
-} 
+}
 
-contract AAA2ConditnalToken1 is ORConditionalTokens{
+
+    contract AAA2ConditnalToken1 is ORConditionalTokens{
 
 } 
 
@@ -56,122 +60,76 @@ contract AAA8CourtStakeDummy is CourtStakeDummy{
     
 }
 
-contract AAA8CourtStake is CourtStake{
-    
-}
 
 contract AAA9ORMarketsQuery is ORMarketsQuery{
     
 }
 
-contract MainDeployer{
-    AAA0Time public aa0;
-    AAA1DemoToken1 public aa1;
-    AAA2ConditnalToken1 public  aa2;
-    AAA3MarketController1 public aa3;
-    AAA4Market public aa4;
-    AAA5RewardProgram public aa5;
-    AAA6RewardCenter public aa6;
-    AAA7ORGovernor public aa7;
-    AAA8CourtStakeDummy public aa8d;
-    AAA8CourtStake public aa8;
-    AAA9ORMarketsQuery public aa9;
+contract AAA10OracleDummy is RoomOraclePriceDummy{
     
-    function a0(address a ) public{
-        aa0 =  AAA0Time(a);
+}
+
+contract AAA11DemoRoom1 is RoomDemoToken{
+
+} 
+
+
+contract AAAQ{
+    
+    address aaa0;
+    AAA1DemoToken1 aaa1;
+    AAA2ConditnalToken1 aaa2;
+    AAA3MarketController1 aaa3;
+    AAA4Market aaa4;
+    AAA5RewardProgram aaa5;
+    AAA6RewardCenter aaa6;
+    AAA7ORGovernor aaa7;
+    AAA8CourtStakeDummy aaa8;
+    AAA9ORMarketsQuery aaa9;
+    AAA10OracleDummy aaa10;
+    AAA11DemoRoom1 aaa11;
+    
+    function a() public{
+     //aaa1.setCentralTimeAddressForTesting(aaa0);
+	 //aaa2.setCentralTimeAddressForTesting(aaa0);
+	 aaa3.setCentralTimeAddressForTesting(aaa0);
+	 //aaa4.setCentralTimeAddressForTesting(aaa0);
+	 aaa5.setCentralTimeAddressForTesting(aaa0);
+	 aaa6.setCentralTimeAddressForTesting(aaa0);
+	 aaa7.setCentralTimeAddressForTesting(aaa0);
+	 aaa8.setCentralTimeAddressForTesting(aaa0);
+	 //aaa9.setCentralTimeAddressForTesting(aaa0);
+	 //aaa10.setCentralTimeAddressForTesting(aaa0);
+	// aaa11.setCentralTimeAddressForTesting(aaa0);
+    }
+}
+
+
+contract  aaaa1{
+    using TransferHelper for IERC20;
+    
+    function transfer(IERC20 token, address rec, uint256 amount) public{
+        token.safeTransfer(rec,amount);
+        
     }
     
-    function a1(address a) public{
-        aa1 =  AAA1DemoToken1(a);
-    }
-    
-    function a2(address a) public{
-        aa2 =  AAA2ConditnalToken1(a);
-    }
-    function a3(address a) public{
-        aa3 =  AAA3MarketController1(a);
-    }
-    function a4(address a) public{
-        aa4 =  AAA4Market(a);
-    }
-    function a5(address a) public{
-        aa5 =  AAA5RewardProgram(a);
-    }
-    function a6(address a) public{
-        aa6 =  AAA6RewardCenter(a);
-    }
-    function a7(address a) public{
-        aa7 =  AAA7ORGovernor(a);
-    }
-    
-    function a8d(address a) public{
-        aa8d=  AAA8CourtStakeDummy(a);
+    function transferFrom(IERC20 token, address from, address rec, uint256 amount) public{
+        token.safeTransferFrom(from,rec,amount);
         
     }
-    function a8(address a) public{
+}
+
+
+contract  aaaaa2{
+    using SafeERC20 for IERC20;
+    
+    function transfer(IERC20 token, address rec, uint256 amount) public{
+        token.safeTransfer(rec,amount);
         
-        aa8 =  AAA8CourtStake(a);
     }
     
-    function a9(address a) public{
-        
-        aa9 =  AAA9ORMarketsQuery(a);
-    }
-    
-    
-    
-   
-    
-    
-    function setTime() public{
-        //aa1.setCentralTimeAddressForTesting(address(aa0));
-        //aa2.setCentralTimeAddressForTesting(address(aa0));
-        aa3.setCentralTimeAddressForTesting(address(aa0));
-        //aa4.setCentralTimeAddressForTesting(address(aa0));
-        aa5.setCentralTimeAddressForTesting(address(aa0));
-        //aa6.setCentralTimeAddressForTesting(address(aa0));
-        aa7.setCentralTimeAddressForTesting(address(aa0));
-        aa8.setCentralTimeAddressForTesting(address(aa0));
-        aa8d.setCentralTimeAddressForTesting(address(aa0));
-        //aa9.setCentralTimeAddressForTesting(address(aa0));
-    }
-    
-    
-    
-    function linkAll() public{
-        
-        //a0 config (CentralTimeForTesting) : none
-        
-        //a1 config (DemoToken) : none
-        
-        //a2 config (ORConditionalTokens) : None
-        
-        //a3 config (marketController)
-        aa3.setConditionalToken(address(aa2));
-        aa3.setRewardProgram(address(aa5));
-        aa3.setIORGoverner(address(aa7));
-        aa3.setTemplateAddress(address(aa4));
-        
-        //a4 config (ORFPMarket) : none
-        
-        //a5 config (RewardProgram)
-        aa5.setMarketControllerAddress(address(aa3));
-        aa5.setRewardCenter(address(aa6));
-        
-        //a6 config (RewardCenter)
-        aa6.setRewardProgram(address(aa5));
-        //aa6.setRoomAddress(roomAddress); //todo: set room addres for reward center
-        //aa6.setRoomOraclePrice(oracleaddress) //todo: set oracle 
-        
-        //a7 config (AAA7ORGovernor)
-        aa7.setCourtStake(address(aa8d));
-        
-        //a8 config (AAA8CourtStake)
-        //aa8.setCourtTokenAddress(courtTokenAddress)
-        
-        //a9 config (AAA9ORMarketsQuery)
-        aa9.setMarketsController(address(aa3));
-        
+    function transferFrom(IERC20 token, address from, address rec, uint256 amount) public{
+        token.safeTransferFrom(from,rec,amount);
         
     }
 }

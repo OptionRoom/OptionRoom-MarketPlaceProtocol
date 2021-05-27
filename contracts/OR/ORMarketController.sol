@@ -8,7 +8,7 @@ import "../TimeDependent/TimeDependent.sol";
 import "./FixedProductMarketMakerFactoryOR.sol";
 import "../RewardCenter/IRewardCenter.sol";
 import "../RewardCenter/IRewardProgram.sol";
-import "../RewardCenter/IRoomOraclePrice.sol";
+import {IRoomOraclePrice} from "../RewardCenter/IRoomOraclePrice.sol";
 import "../Guardian/GnGOwnable.sol";
 import {TransferHelper} from "../Helpers/TransferHelper.sol";
 
@@ -93,7 +93,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     uint256 public marketDisputePeriod = 4 * 1800; // todo
     uint256 public marketReCastResolvingPeriod = 4 * 1800; //todo
     uint256 public disputeThreshold = 100e18; // todo
-    uint256 public marketCreationFees = 0;
+    uint256 public marketCreationFees = 100e18;
     
     bool penaltyOnWrongResolving;
     mapping(address => address[]) marketsVotedPerUser;
