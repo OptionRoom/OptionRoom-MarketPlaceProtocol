@@ -3,7 +3,6 @@ pragma experimental ABIEncoderV2;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IORMarketController.sol";
 import "../Governance/IORGovernor.sol";
-import "../TimeDependent/TimeDependent.sol";
 
 import "./FixedProductMarketMakerFactoryOR.sol";
 import "../RewardCenter/IRewardCenter.sol";
@@ -24,7 +23,7 @@ interface IReportPayouts{
 }
 
 
-contract ORMarketController is IORMarketController, TimeDependent, FixedProductMarketMakerFactory, GnGOwnable{
+contract ORMarketController is IORMarketController, FixedProductMarketMakerFactory, GnGOwnable{
     using SafeMath for uint256;
     using TransferHelper for IERC20;
     
@@ -595,8 +594,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     // market configuration
     
-    function setMarketCreationFees(uint256 fees) public onlyGovOrGur{
-        marketCreationFees = fees;    
+    function setMarketCreationFees(uint256 newfees) public onlyGovOrGur{
+        marketCreationFees = newfees;    
     }
     
     function setMarketMinShareLiq(uint256 minLiq) public onlyGovOrGur {
@@ -648,6 +647,11 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
 
     function setBuyRoomThreshold(uint256 value) public onlyGovOrGur {
         buyRoomThreshold = value;
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+
+        return block.timestamp;
     }
 
 }

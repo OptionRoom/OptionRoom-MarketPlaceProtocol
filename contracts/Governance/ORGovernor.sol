@@ -1,11 +1,10 @@
 pragma solidity ^0.5.1;
 import "./IORGovernor.sol";
 import "../CourtStake/ICourtStake.sol";
-import "../TimeDependent/TimeDependent.sol";
 import "../Guardian/GnGOwnable.sol";
 import {IORGovernor} from "./IORGovernor.sol";
 
-contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
+contract ORGovernor is GnGOwnable, IORGovernor{
     
     struct WrongMarketsVoting{
         uint256 lastWrongVotingCount;
@@ -85,5 +84,10 @@ contract ORGovernor is TimeDependent, GnGOwnable, IORGovernor{
         }
         
         return false;
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+
+        return block.timestamp;
     }
 }

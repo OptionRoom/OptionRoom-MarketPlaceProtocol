@@ -1,13 +1,12 @@
 pragma solidity ^0.5.1;
 
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
-import "../TimeDependent/TimeDependent.sol";
 import "./IRewardCenter.sol";
 import "./IRewardProgram.sol";
 import "../Guardian/GnGOwnable.sol";
 import "../OR/IORMarketController.sol";
 
-contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
+contract RewardProgram is IRewardProgram, GnGOwnable {
 
     using SafeMath for uint256;
 
@@ -367,7 +366,9 @@ contract RewardProgram is TimeDependent, IRewardProgram, GnGOwnable {
         return block.number;
     }
 
-    
+    function getCurrentTime() public view returns(uint256){
 
+        return block.timestamp;
+    }
 
 }

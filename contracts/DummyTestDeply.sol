@@ -12,9 +12,7 @@ import "./CourtStake/CourtStake.sol";
 
 import { DemoToken } from "./DemoToken.sol";
 
-contract AAA0Time is CentralTimeForTesting{
-    //0x3c4Fca7B5944A750C3EBF732dBf04591aCbb821d
-}
+
 
 contract AAA1DemoToken1 is DemoToken{
 
@@ -65,7 +63,7 @@ contract AAA9ORMarketsQuery is ORMarketsQuery{
 }
 
 contract MainDeployer{
-    AAA0Time public aa0;
+
     AAA1DemoToken1 public aa1;
     AAA2ConditnalToken1 public  aa2;
     AAA3MarketController1 public aa3;
@@ -77,9 +75,7 @@ contract MainDeployer{
     AAA8CourtStake public aa8;
     AAA9ORMarketsQuery public aa9;
     
-    function a0(address a ) public{
-        aa0 =  AAA0Time(a);
-    }
+
     
     function a1(address a) public{
         aa1 =  AAA1DemoToken1(a);
@@ -118,23 +114,6 @@ contract MainDeployer{
         aa9 =  AAA9ORMarketsQuery(a);
     }
     
-    
-    
-   
-    
-    
-    function setTime() public{
-        //aa1.setCentralTimeAddressForTesting(address(aa0));
-        //aa2.setCentralTimeAddressForTesting(address(aa0));
-        aa3.setCentralTimeAddressForTesting(address(aa0));
-        //aa4.setCentralTimeAddressForTesting(address(aa0));
-        aa5.setCentralTimeAddressForTesting(address(aa0));
-        //aa6.setCentralTimeAddressForTesting(address(aa0));
-        aa7.setCentralTimeAddressForTesting(address(aa0));
-        aa8.setCentralTimeAddressForTesting(address(aa0));
-        aa8d.setCentralTimeAddressForTesting(address(aa0));
-        //aa9.setCentralTimeAddressForTesting(address(aa0));
-    }
     
     
     

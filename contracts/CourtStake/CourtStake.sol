@@ -2,10 +2,9 @@ pragma solidity ^0.5.0;
 
 import "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
 import "./ICourtStake.sol";
-import "../TimeDependent/TimeDependent.sol";
 import "../Guardian/GnGOwnable.sol";
 
-contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
+contract CourtStake is ICourtStake, GnGOwnable {
     //using SafeMath for uint256;
     
     // This is  ERC20 address. //todo getCourt address
@@ -131,6 +130,11 @@ contract CourtStake is TimeDependent, ICourtStake, GnGOwnable {
     
     function getCurrentDay() public view returns(uint256){
         return getCurrentTime() / 1 days;
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+
+        return block.timestamp;
     }
 }
 

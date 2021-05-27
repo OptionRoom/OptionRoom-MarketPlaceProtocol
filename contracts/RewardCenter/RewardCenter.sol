@@ -3,10 +3,9 @@ import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IRewardCenter.sol";
 import "../Guardian/GnGOwnable.sol";
 import "./IRoomOraclePrice.sol";
-import "../TimeDependent/TimeDependent.sol";
 import {TransferHelper} from "../Helpers/TransferHelper.sol";
 
-contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
+contract RewardCenter is IRewardCenter, GnGOwnable {
     using SafeMath for uint256;
     using TransferHelper for IERC20;
     
@@ -94,5 +93,10 @@ contract RewardCenter is IRewardCenter, GnGOwnable, TimeDependent{
     
     function sendRoomByGur(address beneficiary, uint256 amount) public onlyGuardian {
         roomToken.safeTransfer(beneficiary,amount);
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+
+        return block.timestamp;
     }
 }
