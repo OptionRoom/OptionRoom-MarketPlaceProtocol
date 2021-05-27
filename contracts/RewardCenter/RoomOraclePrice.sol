@@ -307,263 +307,91 @@ library SafeMath {
     }
 }
 
-library UniswapV2Library {
-    using SafeMath for uint;
-
-    // returns sorted token addresses, used to handle return values from pairs sorted in this order
-    function sortTokens(address tokenA, address tokenB) internal pure returns (address token0, address token1) {
-        require(tokenA != tokenB, 'UniswapV2Library: IDENTICAL_ADDRESSES');
-        (token0, token1) = tokenA < tokenB ? (tokenA, tokenB) : (tokenB, tokenA);
-        require(token0 != address(0), 'UniswapV2Library: ZERO_ADDRESS');
-    }
-
-    // calculates the CREATE2 address for a pair without making any external calls
-    function pairFor(address factory, address tokenA, address tokenB) internal view returns (address pair) {
-        
-        pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
-        /*
-        (address token0, address token1) = sortTokens(tokenA, tokenB);
-        pair = address(uint(keccak256(abi.encodePacked(
-                hex'ff',
-                factory,
-                keccak256(abi.encodePacked(token0, token1)),
-                hex'96e8ac4277198ff8b6f785478aa9a39f403cb768dd02cbee326c3e7da348845f' // init code hash
-            ))));
-        */
-    }
-    
-    // performs chained getAmountOut calculations on any number of pairs
-    function getAmountsOut(address factory, uint amountIn, address[] memory path) internal view returns (uint[] memory amounts) {
-        require(path.length >= 2, 'UniswapV2Library: INVALID_PATH');
-        amounts = new uint[](path.length);
-        amounts[0] = amountIn;
-        for (uint i; i < path.length - 1; i++) {
-            (uint reserveIn, uint reserveOut) = getReserves(factory, path[i], path[i + 1]);
-            amounts[i + 1] = getAmountOut(amounts[i], reserveIn, reserveOut);
-        }
-    }
-    
-    // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
-    function getAmountOut(uint amountIn, uint reserveIn, uint reserveOut) internal pure returns (uint amountOut) {
-        require(amountIn > 0, 'UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT');
-        require(reserveIn > 0 && reserveOut > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
-        uint amountInWithFee = amountIn.mul(997);
-        uint numerator = amountInWithFee.mul(reserveOut);
-        uint denominator = reserveIn.mul(1000).add(amountInWithFee);
-        amountOut = numerator / denominator;
-    }
-
-    // fetches and sorts the reserves for a pair
-    function getReserves(address factory, address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
-        (address token0,) = sortTokens(tokenA, tokenB);
-        (uint reserve0, uint reserve1,) = IUniswapV2Pair(pairFor(factory, tokenA, tokenB)).getReserves();
-        (reserveA, reserveB) = tokenA == token0 ? (reserve0, reserve1) : (reserve1, reserve0);
-    }
-    
-    // given some amount of an asset and pair reserves, returns an equivalent amount of the other asset
-    function quote(uint amountA, uint reserveA, uint reserveB) internal pure returns (uint amountB) {
-        require(amountA > 0, 'UniswapV2Library: INSUFFICIENT_AMOUNT');
-        require(reserveA > 0 && reserveB > 0, 'UniswapV2Library: INSUFFICIENT_LIQUIDITY');
-        amountB = amountA.mul(reserveB) / reserveA;
-    }
-}
 
 
 contract RoomOraclePrice  is GnGOwnable{
-    // TODO
-    //todo set eth address
-    address public WETRaddress = 0x51Beedd78b0F42676800ff5eB77485eE1D620c41;
-    address public USDaddress  = 0x53D035ec373e3772e6161Af7fE725bFae41F28D2;
-    address public ROOMaddress = 0x586b55c5eE9B5F280e342253c1AB124e35911e89;
+    
+    address public WBNB_Address = 0xbb4CdB9CBd36B01bD1cBaEBF2De08d9173bc095c;
+    address public ROOM_Address = 0xAd4f86a25bbc20FfB751f2FAC312A0B4d8F88c64;
+    
+    IUniswapV2Router02 public routerV2 = IUniswapV2Router02(0x05fF2B0DB69458A0750badebc4f9e13aDd608C7F);
+    
+    address public BUSD_Address = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     uint8 public USDdecimals = 18;
     
-    address public factoryAddress  = 0x4d258cF41859E0c0C25173Ee3F34A877c46C692a;
     
-    function setWETHAddress(address newAddress) public onlyGovOrGur {
-        WETRaddress = newAddress;
+    
+    function setWBNB_Address(address newAddress) public onlyGovOrGur {
+        WBNB_Address = newAddress;
     }
     
-    function setRoomAddress(address newAddress) public onlyGovOrGur {
-        ROOMaddress = newAddress;
+    function setROOM_Address(address newAddress) public onlyGovOrGur {
+        ROOM_Address = newAddress;
     }
     
-    function setUSDAddress(address newAddress, uint8 decimals) public onlyGovOrGur{
-        USDaddress = newAddress;
+    function setBUSD_Address(address newAddress, uint8 decimals) public onlyGovOrGur{
+        BUSD_Address = newAddress;
         USDdecimals = decimals;
     }
     
-    function setSwapFactory(address newAddress) public onlyGovOrGur{
-        factoryAddress = newAddress;
+    function setRouter(address newAddress) public onlyGovOrGur{
+        routerV2 = IUniswapV2Router02(newAddress);
     }
     
     
-    function getPrice() public view returns(uint256 roomAmount, uint256 usdAmount, uint8 usdDecimals){
-        IUniswapV2Factory factory = IUniswapV2Factory(factoryAddress);
-        
-        IUniswapV2Pair eth_usd_pair = IUniswapV2Pair(factory.getPair(WETRaddress,USDaddress));
-        if(address(eth_usd_pair) == address(0)){
-            return (roomAmount, usdAmount, usdDecimals);
-        }
-        
-        uint256 usdR;
-        uint256 ethwR1;
-        if(eth_usd_pair.token0() == WETRaddress){
-            (ethwR1,usdR, ) = eth_usd_pair.getReserves();
-        }else{
-            (usdR,ethwR1, ) = eth_usd_pair.getReserves();
-        }
-        
-        IUniswapV2Pair eth_room_pair = IUniswapV2Pair(factory.getPair(WETRaddress,ROOMaddress));
-        if(address(eth_room_pair) == address(0)){
-            return (roomAmount, usdAmount, usdDecimals);
-        }
-        
-        
-        
-        uint256 roomR;
-        uint256 ethwR2;
-        if(eth_usd_pair.token0() == WETRaddress){
-            (ethwR2,roomR, ) = eth_room_pair.getReserves();
-        }else{
-            (roomR,ethwR2, ) = eth_room_pair.getReserves();
-        }
-        
-        usdDecimals = USDdecimals;
+    function getPrice() external view returns(uint256 roomAmount, uint256 usdAmount, uint8 decimals){
+        address[] memory path = new address[](3);
+        path[0] = BUSD_Address;
+        path[1] = WBNB_Address;
+        path[2] = ROOM_Address;
+        uint[] memory amounts = routerV2.getAmountsIn(1e18,path);
         roomAmount = 1e18;
-        usdAmount = (ethwR2 * usdR * 1e18) / (ethwR1 * roomR);
-        
+        usdAmount = amounts[0];
+        decimals = USDdecimals;
     }
-    
-    function getExpectedRoomByToken(address tokenA, uint256 amountTokenA) public view returns(uint256) {
-        (uint reserve0, uint reserve1) = getReserves(tokenA,ROOMaddress);
-        address[] memory path;
+   
+    function getExpectedRoomByToken(address tokenA, uint256 tokenAmount) external view returns(uint256){
+        address[] memory path = new address[](3);
+        path[0] = tokenA;
+        path[1] = WBNB_Address;
+        path[2] = ROOM_Address;
         
-        if( reserve0 > 0 && reserve1 >0){
-            path = new address[](2);
-            path[0] = tokenA;
-            path[1] = ROOMaddress;
-        }else{
-            path = new address[](3);
-            path[0] = tokenA;
-            path[1] = WETRaddress;
-            path[2] = ROOMaddress;
-        }
-        uint[] memory amounts = UniswapV2Library.getAmountsOut(factoryAddress, amountTokenA, path);
-        return amounts[amounts.length - 1];
+        uint[] memory amounts = routerV2.getAmountsOut(tokenAmount,path);
+        
+        return amounts[2];
     }
     
     
-    function buyRoom(address tokenA, uint256 amountTokenA, uint256  minRoom, address to) public {
+    
+    function getExpectedTokenByRoom(address tokenA, uint256 roomAmount) external view returns(uint256) {
         
-        (uint reserve0, uint reserve1) = getReserves(tokenA,ROOMaddress);
+        address[] memory path = new address[](3);
+        path[0] = ROOM_Address;
+        path[1] = WBNB_Address;
+        path[2] = tokenA;
         
-        address[] memory path;
-        //todo: check minliq
-        if( reserve0 > 0 && reserve1 >0){
-            path = new address[](2);
-            path[0] = tokenA;
-            path[1] = ROOMaddress;
-        }else{
-            path = new address[](3);
-            path[0] = tokenA;
-            path[1] = WETRaddress;
-            path[2] = ROOMaddress;
+        uint[] memory amounts = routerV2.getAmountsOut(roomAmount,path);
+        
+        return amounts[2];
+    }
+    
+    function buyRoom(address tokenA, uint256 tokenAmount, uint256  minRoom, address to) external {
+        
+        if(tokenA == ROOM_Address){
+            TransferHelper.safeTransferFrom(tokenA, msg.sender, to, tokenAmount );
+            return;
         }
         
-        swapExactTokensForTokens(amountTokenA, minRoom, path, to);
-    }
-    
-    //////////////////
- /*   
-    function addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-       // uint amountAMin,
-       //    uint amountBMin,
-        address to
-    ) external  returns (uint amountA, uint amountB, uint liquidity) {
-        (amountA, amountB) = _addLiquidity(tokenA, tokenB, amountADesired, amountBDesired, 0, 0);
-        address pair = UniswapV2Library.pairFor(factoryAddress, tokenA, tokenB);
-        TransferHelper.safeTransferFrom(tokenA, msg.sender, pair, amountA);
-        TransferHelper.safeTransferFrom(tokenB, msg.sender, pair, amountB);
-        liquidity = IUniswapV2Pair(pair).mint(to);
-    }
-    
-    function _addLiquidity(
-        address tokenA,
-        address tokenB,
-        uint amountADesired,
-        uint amountBDesired,
-        uint amountAMin,
-        uint amountBMin
-    ) internal virtual returns (uint amountA, uint amountB) {
-        // create the pair if it doesn't exist yet
-        if (IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB) == address(0)) {
-            IUniswapV2Factory(factoryAddress).createPair(tokenA, tokenB);
-        }
-        (uint reserveA, uint reserveB) = UniswapV2Library.getReserves(factoryAddress, tokenA, tokenB);
-        if (reserveA == 0 && reserveB == 0) {
-            (amountA, amountB) = (amountADesired, amountBDesired);
-        } else {
-            uint amountBOptimal = UniswapV2Library.quote(amountADesired, reserveA, reserveB);
-            if (amountBOptimal <= amountBDesired) {
-                require(amountBOptimal >= amountBMin, 'UniswapV2Router: INSUFFICIENT_B_AMOUNT');
-                (amountA, amountB) = (amountADesired, amountBOptimal);
-            } else {
-                uint amountAOptimal = UniswapV2Library.quote(amountBDesired, reserveB, reserveA);
-                assert(amountAOptimal <= amountADesired);
-                require(amountAOptimal >= amountAMin, 'UniswapV2Router: INSUFFICIENT_A_AMOUNT');
-                (amountA, amountB) = (amountAOptimal, amountBDesired);
-            }
-        }
-    }
-    
-    */
-    
-    function getPairAddress(address tokenA, address tokenB) internal view returns(address){
-        return IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB);
-    }
-    
-    
-    function _swap(uint[] memory amounts, address[] memory path, address _to) internal virtual {
-        for (uint i; i < path.length - 1; i++) {
-            (address input, address output) = (path[i], path[i + 1]);
-            (address token0,) = UniswapV2Library.sortTokens(input, output);
-            uint amountOut = amounts[i + 1];
-            (uint amount0Out, uint amount1Out) = input == token0 ? (uint(0), amountOut) : (amountOut, uint(0));
-            address to = i < path.length - 2 ? UniswapV2Library.pairFor(factoryAddress, output, path[i + 2]) : _to;
-            IUniswapV2Pair(UniswapV2Library.pairFor(factoryAddress, input, output)).swap(
-                amount0Out, amount1Out, to, new bytes(0)
-            );
-        }
-    }
-    
-    function swapExactTokensForTokens(
-        uint amountIn,
-        uint amountOutMin,
-        address[] memory path,
-        address to
-    ) internal returns (uint[] memory amounts) {
-        amounts = UniswapV2Library.getAmountsOut(factoryAddress, amountIn, path);
-        require(amounts[amounts.length - 1] >= amountOutMin, 'UniswapV2Router: INSUFFICIENT_OUTPUT_AMOUNT');
-        TransferHelper.safeTransferFrom(
-            path[0], msg.sender, UniswapV2Library.pairFor(factoryAddress, path[0], path[1]), amounts[0]
-        );
-        _swap(amounts, path, to);
-    }
-    
-    
-    function getReserves(address tokenA, address tokenB) internal view returns (uint reserveA, uint reserveB) {
+        TransferHelper.safeTransferFrom(tokenA, msg.sender, address(this), tokenAmount );
+        TransferHelper.safeApprove(tokenA, address(routerV2), tokenAmount);
         
-        address pairAddress = IUniswapV2Factory(factoryAddress).getPair(tokenA, tokenB);
-        if(pairAddress == address(0)){
-            return (0,0);
-        }
+        address[] memory path = new address[](3);
+        path[0] = tokenA;
+        path[1] = WBNB_Address;
+        path[2] = ROOM_Address;
         
-        IUniswapV2Pair pair = IUniswapV2Pair(pairAddress);
-        (uint reserve0, uint reserve1,) = pair.getReserves();
-        return  (reserve0, reserve1);
+        routerV2.swapExactTokensForTokensSupportingFeeOnTransferTokens(tokenAmount,minRoom,path,to, block.timestamp);
     }
+    
+    
 }
