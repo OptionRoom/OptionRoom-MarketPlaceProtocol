@@ -21,7 +21,9 @@ contract DummyORGovernor is IORGovernor{
         return "";
     }
     
-    
+    function userhasWrongVoting(address account, address[] calldata markets) external  returns (bool){
+        
+    }
     
     ////////
     mapping(address => uint256) powerPerUser;
