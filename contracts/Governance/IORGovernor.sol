@@ -11,7 +11,10 @@ interface IORGovernor{
 contract DummyORGovernor is IORGovernor{
     
   
-    function getAccountInfo(address ) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
+    function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power){
+        if(powerSetForUser[account]){
+            return(true,false,powerPerUser[account]);
+        }
         return (true,false, 100);
     }
     function getSuspendReason(address ) external view returns(string memory reason){
@@ -22,8 +25,10 @@ contract DummyORGovernor is IORGovernor{
     
     ////////
     mapping(address => uint256) powerPerUser;
+    mapping(address => bool) powerSetForUser;
      // todo: not a real function, just to mimic the Governance power
     function setAccountPower(address account, uint256 power) public {
+        powerSetForUser[account] = true;
         powerPerUser[account] = power;
     }
     

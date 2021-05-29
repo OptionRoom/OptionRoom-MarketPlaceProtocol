@@ -52,7 +52,7 @@ contract AAA6RewardCenter is RewardCenter{
 }
 
 
-contract AAA7ORGovernor is ORGovernor{
+contract AAA7ORGovernor is DummyORGovernor{
     
 }
 
@@ -96,7 +96,7 @@ contract AAAQ{
 	 //aaa4.setCentralTimeAddressForTesting(aaa0);
 	 aaa5.setCentralTimeAddressForTesting(aaa0);
 	 aaa6.setCentralTimeAddressForTesting(aaa0);
-	 aaa7.setCentralTimeAddressForTesting(aaa0);
+	 // aaa7.setCentralTimeAddressForTesting(aaa0);
 	 aaa8.setCentralTimeAddressForTesting(aaa0);
 	 //aaa9.setCentralTimeAddressForTesting(aaa0);
 	 //aaa10.setCentralTimeAddressForTesting(aaa0);
@@ -141,3 +141,7 @@ contract AAA6CourtStake is CourtStake{
 
 */
 
+
+interface AAAAAAAAAAAAAAAAAAAAAAAQQQQ{
+    function getAccountInfo(address account) external view returns(bool canVote, uint256 votePower);
+}
