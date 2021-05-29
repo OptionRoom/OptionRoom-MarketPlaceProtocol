@@ -97,40 +97,40 @@ module.exports = function(deployer) {
 
 
 ///////
-	console.log("aaa0.address ");
+	console.log("aaa0.address time control");
 	console.log(aaa0.address);
 	
-	console.log("aaa1.address (AAA1DemoToken1)");
+	console.log("aaa1.address (AAA1DemoToken1) --> Collatreal token");
 	console.log(aaa1.address);
 	
-	console.log("aaa2.address ");
+	console.log("aaa2.address ConditnalToken --> Option Token");
 	console.log(aaa2.address);
 	
-	console.log("aaa3.address (AAA3MarketController1)");
+	console.log("aaa3.address MarketControllerContract");
 	console.log(aaa3.address);
 	
-	console.log("aaa4.address ");
+	console.log("aaa4.address --> MarketTemplate ");
 	console.log(aaa4.address);
 	
-	console.log("aaa5.address ");
+	console.log("aaa5.address --> RewardsPrograme");
 	console.log(aaa5.address);
 	
-	console.log("aaa6.address ");
+	console.log("aaa6.address --> RewardsCenter");
 	console.log(aaa6.address);
 	
-	console.log("aaa7.address ");
+	console.log("aaa7.address --> OrGovernor");
 	console.log(aaa7.address);
 	
-	console.log("aaa8.address ");
+	console.log("aaa8.address --> CourtStakeDummy");
 	console.log(aaa8.address);
 	
-	console.log("aaa9.address AAA9ORMarketsQuery");
+	console.log("aaa9.address --> MarktesQuery");
 	console.log(aaa9.address);
 	
-	console.log("aaa10.address ");
+	console.log("aaa10.address --> OracelDummy, ROOM buy");
 	console.log(aaa10.address);
 	
-	console.log("aaa11.address AAA11DemoRoom1");
+	console.log("aaa11.address --> ROOM Demo Token");
 	console.log(aaa11.address);
 
   });
