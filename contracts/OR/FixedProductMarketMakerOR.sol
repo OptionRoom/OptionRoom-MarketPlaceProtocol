@@ -497,7 +497,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         collateralToken.safeTransfer(beneficiary, returnAmount);
 
-        emit FPMMSell(msg.sender, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
+        emit FPMMSell(beneficiary, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
     }
 
     

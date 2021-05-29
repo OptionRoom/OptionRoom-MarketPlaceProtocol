@@ -44,7 +44,7 @@ module.exports = function(deployer) {
 	//await aaa4.setCentralTimeAddressForTesting(aaa0.address);
 	await aaa5.setCentralTimeAddressForTesting(aaa0.address);
 	await aaa6.setCentralTimeAddressForTesting(aaa0.address);
-	await aaa7.setCentralTimeAddressForTesting(aaa0.address);
+	//await aaa7.setCentralTimeAddressForTesting(aaa0.address);
 	await aaa8.setCentralTimeAddressForTesting(aaa0.address);
 	//await aaa9.setCentralTimeAddressForTesting(aaa0.address);
 	//await aaa10.setCentralTimeAddressForTesting(aaa0.address);
@@ -78,8 +78,8 @@ module.exports = function(deployer) {
 	await aaa6.setRoomAddress(aaa11.address);
 	
 	console.log("a7 config (AAA7ORGovernor)");
-	await aaa7.setCourtStake(aaa8.address);
-	await aaa7.setMarketsControllarAddress(aaa3.address);
+	//await aaa7.setCourtStake(aaa8.address);
+	//await aaa7.setMarketsControllarAddress(aaa3.address);
 	
 	console.log("a8 config (AAA8CourtStake)");
     //aa8.setCourtTokenAddress(courtTokenAddress)
