@@ -32,6 +32,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint collateralRemovedFromFeePool,
         uint sharesBurnt
     );
+/*    
     event FPMMBuy(
         address indexed buyer,
         uint investmentAmount,
@@ -46,7 +47,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint indexed outcomeIndex,
         uint outcomeTokensSold
     );
-
+*/
     using SafeMath for uint;
     using CeilDiv for uint;
     
@@ -476,7 +477,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         conditionalTokens.safeTransferFrom(address(this), beneficiary, positionIds[outcomeIndex], outcomeTokensToBuy, "");
 
-        emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
+        //emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
     }
 
     function sellByReturnAmountTo(address beneficiary, uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
@@ -497,7 +498,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         collateralToken.safeTransfer(beneficiary, returnAmount);
 
-        emit FPMMSell(beneficiary, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
+        //emit FPMMSell(beneficiary, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
     }
 
     

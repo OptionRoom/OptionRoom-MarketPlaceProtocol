@@ -28,6 +28,21 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     using SafeMath for uint256;
     using TransferHelper for IERC20;
     
+    
+    event MCBuy(
+        address indexed market,
+        address indexed buyer,
+        uint investmentAmount,
+        uint outcomeTokensBought
+    );
+    event MCSell(
+        address indexed market,
+        address indexed seller,
+        uint returnAmount,
+        uint outcomeTokensSold
+    );
+
+    
     struct MarketVotersInfo{
         uint256 power;
         bool voteFlag;
@@ -438,6 +453,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         _marketAddLiquidity(address(fpMarket),initialLiq);
         
+        ct.setApprovalForAll(address(fpMarket),true);
         
         return address(fpMarket);
     }
@@ -514,6 +530,12 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             marketsTradeFlag[msg.sender][market] = true;
             marketsTradeByUser[msg.sender].push(market);
         }
+        
+        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex);
+        
+        
+    
+
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
@@ -522,7 +544,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         ORFPMarket fpMarket = ORFPMarket(market);
         uint256[] memory PositionIds = fpMarket.getPositionIds();
-        ct.setApprovalForAll(address(fpMarket),true);
+        
         ct.safeTransferFrom(msg.sender, address(this), PositionIds[index], amount, "");
         uint256 tradeVolume = fpMarket.sellTo(address(this),amount,index);
        
@@ -541,6 +563,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             marketsTradeFlag[msg.sender][market] = true;
             marketsTradeByUser[msg.sender].push(market);
         }
+        
+        emit MCSell(market, msg.sender, tradeVolume - pFee, index);
+        
     }
     
     function buyRoom(address IERCaddress) internal{
