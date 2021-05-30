@@ -28,6 +28,21 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     using SafeMath for uint256;
     using TransferHelper for IERC20;
     
+    event MCBuy(
+        address indexed market,
+        address indexed buyer,
+        uint investmentAmount,
+        uint indexed outcomeIndex,
+        uint outcomeTokensBought
+    );
+    event MCSell(
+        address indexed market,
+        address indexed seller,
+        uint returnAmount,
+        uint indexed outcomeIndex,
+        uint outcomeTokensSold
+    );
+    
     struct MarketVotersInfo{
         uint256 power;
         bool voteFlag;
@@ -506,7 +521,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         buyRoom(address(collateralToken));
         
-        fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
+        uint256 outcomeTokensToBuy = fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
         
         RP.tradeAmount(market, msg.sender, investmentAmount, true);
        
@@ -514,6 +529,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             marketsTradeFlag[msg.sender][market] = true;
             marketsTradeByUser[msg.sender].push(market);
         }
+        
+        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex, outcomeTokensToBuy);
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
@@ -541,6 +558,10 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             marketsTradeFlag[msg.sender][market] = true;
             marketsTradeByUser[msg.sender].push(market);
         }
+        
+        emit MCSell(market, msg.sender, tradeVolume - pFee, index, amount);
+        
+       
     }
     
     function buyRoom(address IERCaddress) internal{
