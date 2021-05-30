@@ -33,12 +33,14 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         address indexed market,
         address indexed buyer,
         uint investmentAmount,
+        uint indexed outcomeIndex,
         uint outcomeTokensBought
     );
     event MCSell(
         address indexed market,
         address indexed seller,
         uint returnAmount,
+        uint indexed outcomeIndex,
         uint outcomeTokensSold
     );
 
@@ -522,7 +524,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         
         buyRoom(address(collateralToken));
         
-        fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
+        uint256 tokenAmount = fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
         
         RP.tradeAmount(market, msg.sender, investmentAmount, true);
        
@@ -531,11 +533,10 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             marketsTradeByUser[msg.sender].push(market);
         }
         
-        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex);
+        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex, tokenAmount);
         
         
     
-
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
@@ -564,8 +565,9 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
             marketsTradeByUser[msg.sender].push(market);
         }
         
-        emit MCSell(market, msg.sender, tradeVolume - pFee, index);
+        emit MCSell(market, msg.sender, tradeVolume - pFee, index, amount);
         
+
     }
     
     function buyRoom(address IERCaddress) internal{

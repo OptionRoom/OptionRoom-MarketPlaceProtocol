@@ -460,7 +460,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
     
     
-    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
+    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public returns(uint256){
         _beforeBuyTo(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
@@ -477,6 +477,8 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         conditionalTokens.safeTransferFrom(address(this), beneficiary, positionIds[outcomeIndex], outcomeTokensToBuy, "");
 
+        return outcomeTokensToBuy;
+        
         //emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
     }
 
