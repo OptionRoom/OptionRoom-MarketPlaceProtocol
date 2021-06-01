@@ -95,8 +95,8 @@ contract('Options room resolve rewards tests', function([deployer, creator, orac
   it('Should check rewards for the resolved investor 1', async function() {
     await moveOneDay();
     let investor1Rewards = await rewardsProgram.resolveRewards(investor1);
-    expect(new BigNumber(investor1Rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
-    expect(new BigNumber(investor1Rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(investor1Rewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(investor1Rewards['rewardsCanClaim']).isGreaterThan(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(investor1Rewards['claimedRewards']).isEqualTo(new BigNumber('0'))).to.equal(true)
 
     let investor2Rewards = await rewardsProgram.resolveRewards(investor2);
@@ -127,10 +127,9 @@ contract('Options room resolve rewards tests', function([deployer, creator, orac
 
   it('Should keep claimable if another user buys', async function() {
     let rewards = await rewardsProgram.resolveRewards(investor1);
-    expect(new BigNumber(rewards['todayExpectedReward']).isGreaterThan(new BigNumber('0'))).to.equal(true)
+    expect(new BigNumber(rewards['todayExpectedReward']).isEqualTo(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(rewards['rewardsCanClaim']).isEqualTo(new BigNumber('0'))).to.equal(true)
     expect(new BigNumber(rewards['claimedRewards']).isGreaterThan(new BigNumber('0'))).to.equal(true)
-
   })
 
   it('Should be able to claim user rewards', async function() {
