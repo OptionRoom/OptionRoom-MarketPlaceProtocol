@@ -107,6 +107,17 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
       reachThresholdFlag: (marketsInfo['disputedFlag'] == 'true' ),
     });
 
+    let traderBalances = await fixedProductMarketMaker.getBalances(trader);
+    
+    let totalBalances = new BigNumber(traderBalances[0]).plus(new BigNumber(traderBalances[1]));
+    
+    const { disputeTotalBalances } = createTx.logs.find(
+      ({ event }) => event === 'DisputeSubmittedEvent'
+    ).args;
+    
+    let disputeTotalBalancesValue = new BigNumber(disputeTotalBalances);
+    expect(disputeTotalBalancesValue.isEqualTo(totalBalances)).to.equal(true);
+    
     state = await controller.getMarketState(fixedProductMarketMaker.address);
     expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.DisputePeriod))).to.equal(true);
 
@@ -117,6 +128,8 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
     
     // some question about this one...
     let disputersInfo =await  controller.marketDisputersInfo.call(fixedProductMarketMaker.address, trader);
+    // let balances = disputersInfo['balances'];
+    // let reason = disputersInfo['reason'];
   });
 
 
@@ -146,4 +159,36 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
       assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
     }
   });
+
+  it('Should revert when adding new liquidity, we are not active', async function() {
+    const REVERT = "liquidity can be added only in active/Validating state";
+
+    try {
+      await collateralToken.deposit({ value: addedFunds1, from: investor1 });
+      await collateralToken.approve(controller.address, addedFunds1, { from: investor1 });
+      await controller.marketAddLiquidity(fixedProductMarketMaker.address, addedFunds1, { from: investor1 });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
+  });
+
+  it('Should revert when adding new liquidity, we are not active', async function() {
+    const REVERT = "Market is not in active state";
+    const investmentAmount = toBN(1e18)
+    const buyOutcomeIndex = 1;
+    try {
+      const FeeProtocol = await controller.FeeProtocol.call();
+      const outcomeTokensToBuyFinal = await fixedProductMarketMaker.calcBuyAmountProtocolFeesIncluded(investmentAmount, buyOutcomeIndex, FeeProtocol);
+      await controller.marketBuy(fixedProductMarketMaker.address, investmentAmount, buyOutcomeIndex, outcomeTokensToBuyFinal, { from: trader });
+      throw null;
+    }
+    catch (error) {
+      assert(error, "Expected an error but did not get one");
+      assert(error.message.includes(REVERT), "Expected '" + REVERT + "' but got '" + error.message + "' instead");
+    }
+  });
+
 })
