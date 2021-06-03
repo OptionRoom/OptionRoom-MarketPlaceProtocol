@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 interface ICourtStake{
     function suspendAccount(address account, uint256 numOfDays) external;

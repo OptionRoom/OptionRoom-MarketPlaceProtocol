@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 interface IORGovernor{
     function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power) ;
