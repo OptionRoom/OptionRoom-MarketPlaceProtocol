@@ -89,4 +89,20 @@ contract('Option room Reward program permissions check', function([deployer,
       await forwardMarketToResolving(fixedProductMarketMaker, investor1, trader, investor2);
       await rewardsProgram.claimLPReward(fixedProductMarketMaker.address, {from : creator});
   })
+
+
+  it('Should revert because I am not the deployer or a gua', async function() {
+    const REVERT = 'caller is not governor or guardian';
+    try {
+      await controller.withdrawFees(roomTokenFake.address, oracle, {from : oracle});
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+  it('Should transfer the result to the other address.', async function() {
+    await controller.withdrawFees(roomTokenFake.address, deployer, {from : deployer});
+  })
 })
