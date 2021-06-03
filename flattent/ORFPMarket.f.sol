@@ -2027,7 +2027,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         
     }
     
-    function withdrawFees(uint256 minRoom) internal {
+    function withdrawFees(uint256 minRoom) public {
         _withdrawFees(msg.sender,minRoom);
     }
 
