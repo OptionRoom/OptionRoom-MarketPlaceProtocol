@@ -1849,7 +1849,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint collateralRemovedFromFeePool,
         uint sharesBurnt
     );
-    event FPMMBuy(
+    /*event FPMMBuy(
         address indexed buyer,
         uint investmentAmount,
         uint feeAmount,
@@ -1862,7 +1862,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint feeAmount,
         uint indexed outcomeIndex,
         uint outcomeTokensSold
-    );
+    );*/
 
     using SafeMath for uint;
     using CeilDiv for uint;
@@ -2276,7 +2276,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
     
     
-    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
+    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public returns(uint256) {
         _beforeBuyTo(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
@@ -2292,8 +2292,8 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         splitPositionThroughAllConditions(investmentAmountMinusFees);
 
         conditionalTokens.safeTransferFrom(address(this), beneficiary, positionIds[outcomeIndex], outcomeTokensToBuy, "");
-
-        emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
+        return outcomeTokensToBuy;
+        //emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
     }
 
     function sellByReturnAmountTo(address beneficiary, uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
@@ -2314,7 +2314,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         collateralToken.safeTransfer(beneficiary, returnAmount);
 
-        emit FPMMSell(msg.sender, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
+        //emit FPMMSell(msg.sender, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
     }
 
     

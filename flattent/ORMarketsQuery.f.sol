@@ -1872,7 +1872,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint collateralRemovedFromFeePool,
         uint sharesBurnt
     );
-    event FPMMBuy(
+    /*event FPMMBuy(
         address indexed buyer,
         uint investmentAmount,
         uint feeAmount,
@@ -1885,7 +1885,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint feeAmount,
         uint indexed outcomeIndex,
         uint outcomeTokensSold
-    );
+    );*/
 
     using SafeMath for uint;
     using CeilDiv for uint;
@@ -2299,7 +2299,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
     
     
-    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public{
+    function buyTo(address beneficiary, uint investmentAmount, uint outcomeIndex, uint minOutcomeTokensToBuy) public returns(uint256) {
         _beforeBuyTo(beneficiary, investmentAmount);
         uint outcomeTokensToBuy = calcBuyAmount(investmentAmount, outcomeIndex);
         require(outcomeTokensToBuy >= minOutcomeTokensToBuy, "minimum buy amount not reached");
@@ -2315,8 +2315,8 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         splitPositionThroughAllConditions(investmentAmountMinusFees);
 
         conditionalTokens.safeTransferFrom(address(this), beneficiary, positionIds[outcomeIndex], outcomeTokensToBuy, "");
-
-        emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
+        return outcomeTokensToBuy;
+        //emit FPMMBuy(beneficiary, investmentAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToBuy);
     }
 
     function sellByReturnAmountTo(address beneficiary, uint returnAmount, uint outcomeIndex, uint maxOutcomeTokensToSell) internal {
@@ -2337,7 +2337,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
         collateralToken.safeTransfer(beneficiary, returnAmount);
 
-        emit FPMMSell(msg.sender, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
+        //emit FPMMSell(msg.sender, returnAmount, feeLPAmount + feeProposer, outcomeIndex, outcomeTokensToSell);
     }
 
     
@@ -2900,6 +2900,21 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
     using SafeMath for uint256;
     using TransferHelper for IERC20;
     
+    event MCBuy(
+        address indexed market,
+        address indexed buyer,
+        uint investmentAmount,
+        uint indexed outcomeIndex,
+        uint outcomeTokensBought
+    );
+    event MCSell(
+        address indexed market,
+        address indexed seller,
+        uint returnAmount,
+        uint indexed outcomeIndex,
+        uint outcomeTokensSold
+    );
+    
     struct MarketVotersInfo{
         uint256 power;
         bool voteFlag;
@@ -3377,7 +3392,7 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
         
         buyRoom(address(collateralToken));
         
-        fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
+        uint256 outcomeTokensToBuy = fpMarket.buyTo(msg.sender,investmentAmount-pFee,outcomeIndex,minOutcomeTokensToBu);
         
         RP.tradeAmount(market, msg.sender, investmentAmount, true);
        
@@ -3385,6 +3400,8 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
             marketsTradeFlag[msg.sender][market] = true;
             marketsTradeByUser[msg.sender].push(market);
         }
+        
+        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex, outcomeTokensToBuy);
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
@@ -3412,6 +3429,8 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
             marketsTradeFlag[msg.sender][market] = true;
             marketsTradeByUser[msg.sender].push(market);
         }
+        
+        emit MCSell(market, msg.sender, tradeVolume - pFee, index, amount);
     }
     
     function buyRoom(address IERCaddress) internal{
