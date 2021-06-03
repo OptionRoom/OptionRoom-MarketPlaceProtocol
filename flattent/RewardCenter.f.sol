@@ -1,6 +1,6 @@
 // File: openzeppelin-solidity\contracts\math\SafeMath.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -159,7 +159,7 @@ library SafeMath {
 
 // File: openzeppelin-solidity\contracts\token\ERC20\IERC20.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -238,7 +238,7 @@ interface IERC20 {
 
 // File: contracts\RewardCenter\IRewardCenter.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IRewardCenter {
@@ -265,7 +265,7 @@ contract DummyRewardCenter is IRewardCenter {
 
 // File: contracts\Guardian\GnGOwnable.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 contract GnGOwnable {
@@ -303,7 +303,7 @@ contract GnGOwnable {
 
 // File: contracts\RewardCenter\IRoomOraclePrice.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IRoomOraclePrice{
@@ -315,7 +315,7 @@ interface IRoomOraclePrice{
 
 // File: contracts\Helpers\TransferHelper.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 library TransferHelper {
@@ -343,7 +343,7 @@ library TransferHelper {
 
 // File: contracts\RewardCenter\RewardCenter.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 

@@ -1,6 +1,6 @@
 // File: contracts\Governance\IORGovernor.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 interface IORGovernor{
     function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power) ;
@@ -10,7 +10,7 @@ interface IORGovernor{
 
 // File: contracts\CourtStake\ICourtStake.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 interface ICourtStake{
     function suspendAccount(address account, uint256 numOfDays) external;
@@ -20,7 +20,7 @@ interface ICourtStake{
 
 // File: contracts\Guardian\GnGOwnable.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 contract GnGOwnable {
@@ -58,7 +58,7 @@ contract GnGOwnable {
 
 // File: contracts\Governance\ORGovernor.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 

@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 import "./OR/ORConditionalTokens.sol";
 import "./OR/ORMarketController.sol";

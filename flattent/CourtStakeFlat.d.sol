@@ -2,7 +2,7 @@
  *Submitted for verification at BscScan.com on 2021-05-12
 */
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 contract GnGOwnable {

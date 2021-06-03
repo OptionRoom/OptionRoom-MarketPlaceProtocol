@@ -1,6 +1,6 @@
 // File: openzeppelin-solidity\contracts\math\SafeMath.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -159,7 +159,7 @@ library SafeMath {
 
 // File: openzeppelin-solidity\contracts\token\ERC20\IERC20.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -238,7 +238,7 @@ interface IERC20 {
 
 // File: contracts\RewardCenter\IRewardCenter.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IRewardCenter {
@@ -265,7 +265,7 @@ contract DummyRewardCenter is IRewardCenter {
 
 // File: contracts\RewardCenter\IRewardProgram.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 interface IRewardProgram {
     function addMarket(address market) external;
@@ -313,7 +313,7 @@ contract DummyRewardProgram {
 
 // File: contracts\Guardian\GnGOwnable.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 contract GnGOwnable {
@@ -351,7 +351,7 @@ contract GnGOwnable {
 
 // File: contracts\OR\ORMarketLib.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 library ORMarketLib{
     enum MarketState {
@@ -370,7 +370,7 @@ library ORMarketLib{
 
 // File: contracts\OR\IORMarketController.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IORMarketController {
@@ -382,7 +382,7 @@ interface IORMarketController {
 
 // File: contracts\RewardCenter\RewardProgram.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 

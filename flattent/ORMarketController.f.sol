@@ -1,6 +1,6 @@
 // File: openzeppelin-solidity\contracts\math\SafeMath.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Wrappers over Solidity's arithmetic operations with added overflow
@@ -159,7 +159,7 @@ library SafeMath {
 
 // File: contracts\OR\ORMarketLib.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 library ORMarketLib{
     enum MarketState {
@@ -178,7 +178,7 @@ library ORMarketLib{
 
 // File: contracts\OR\IORMarketController.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IORMarketController {
@@ -190,7 +190,7 @@ interface IORMarketController {
 
 // File: contracts\Governance\IORGovernor.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 interface IORGovernor{
     function getAccountInfo(address account) external view returns(bool governorFlag, bool suspendedFlag, uint256 power) ;
@@ -200,7 +200,7 @@ interface IORGovernor{
 
 // File: openzeppelin-solidity\contracts\token\ERC20\IERC20.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Interface of the ERC20 standard as defined in the EIP. Does not include
@@ -279,7 +279,7 @@ interface IERC20 {
 
 // File: openzeppelin-solidity\contracts\introspection\IERC165.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /**
  * @dev Interface of the ERC165 standard, as defined in the
@@ -304,7 +304,7 @@ interface IERC165 {
 
 // File: gnosis.pm\conditional-tokens-contracts\contracts\ERC1155\IERC1155.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 /**
@@ -335,7 +335,7 @@ contract IERC1155 is IERC165 {
 
 // File: gnosis.pm\conditional-tokens-contracts\contracts\ERC1155\IERC1155TokenReceiver.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 /**
@@ -464,7 +464,7 @@ library Address {
 
 // File: openzeppelin-solidity\contracts\introspection\ERC165.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 /**
@@ -518,7 +518,7 @@ contract ERC165 is IERC165 {
 
 // File: gnosis.pm\conditional-tokens-contracts\contracts\ERC1155\ERC1155.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 
@@ -798,7 +798,7 @@ contract ERC1155 is ERC165, IERC1155
 
 // File: gnosis.pm\conditional-tokens-contracts\contracts\CTHelpers.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 library CTHelpers {
@@ -1232,7 +1232,7 @@ library CTHelpers {
 
 // File: gnosis.pm\conditional-tokens-contracts\contracts\ConditionalTokens.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 
@@ -1521,7 +1521,7 @@ contract ConditionalTokens is ERC1155 {
 
 // File: gnosis.pm\conditional-tokens-contracts\contracts\ERC1155\ERC1155TokenReceiver.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 
@@ -1536,7 +1536,7 @@ contract ERC1155TokenReceiver is ERC165, IERC1155TokenReceiver {
 
 // File: node_modules\openzeppelin-solidity\contracts\GSN\Context.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 /*
  * @dev Provides information about the current execution context, including the
@@ -1566,7 +1566,7 @@ contract Context {
 
 // File: openzeppelin-solidity\contracts\token\ERC20\ERC20.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 
@@ -1798,7 +1798,7 @@ contract ERC20 is Context, IERC20 {
 
 // File: contracts\Helpers\TransferHelper.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 library TransferHelper {
@@ -1826,7 +1826,7 @@ library TransferHelper {
 
 // File: contracts\RewardCenter\IRoomOraclePrice.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IRoomOraclePrice{
@@ -1838,7 +1838,7 @@ interface IRoomOraclePrice{
 
 // File: contracts\OR\FixedProductMarketMakerOR.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 
@@ -2396,7 +2396,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
 
 // File: contracts\OR\ORFPMarket.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 
@@ -2565,7 +2565,7 @@ contract ORFPMarket is FixedProductMarketMaker {
 
 // File: contracts\OR\CloneFactory.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 /*
 The MIT License (MIT)
@@ -2623,7 +2623,7 @@ contract CloneFactory {
 
 // File: contracts\OR\FixedProductMarketMakerFactoryOR.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 
@@ -2757,7 +2757,7 @@ contract FixedProductMarketMakerFactory is CloneFactory {
 
 // File: contracts\RewardCenter\IRewardCenter.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 
 interface IRewardCenter {
@@ -2784,7 +2784,7 @@ contract DummyRewardCenter is IRewardCenter {
 
 // File: contracts\RewardCenter\IRewardProgram.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 
 interface IRewardProgram {
     function addMarket(address market) external;
@@ -2832,7 +2832,7 @@ contract DummyRewardProgram {
 
 // File: contracts\Guardian\GnGOwnable.sol
 
-pragma solidity ^0.5.0;
+pragma solidity ^0.5.16;
 
 
 contract GnGOwnable {
@@ -2870,7 +2870,7 @@ contract GnGOwnable {
 
 // File: contracts\OR\ORMarketController.sol
 
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 pragma experimental ABIEncoderV2;
 
 
