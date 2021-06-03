@@ -1923,6 +1923,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         address _roomOracle
     ) public {
         require(initiated == false, "Market Already initiated");
+		initiated = true;
 
         conditionalTokens = _conditionalTokens;
         collateralToken = _collateralToken;
