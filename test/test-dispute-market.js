@@ -2,7 +2,7 @@ const ORMarketLib = artifacts.require('ORMarketLib')
 const { expectEvent } = require('openzeppelin-test-helpers')
 const {
   prepareContracts, createNewMarket,resetTimeIncrease,increaseTime,
-  setDeployer, moveToActive,moveToResolved11
+  setDeployer, moveToActive,moveToResolved11, moveOneDay,
 } = require('./utils/market.js')
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
@@ -18,6 +18,9 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
     setDeployer(deployer);
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
     controller = retArray[0];
+    
+    // Need to change the dispute period to a value that we can measure. Do it for one day
+    await controller.setMarketDisputePeriod(86400);
   })
 
   it('can be created by factory', async function() {
@@ -25,9 +28,7 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
     fixedProductMarketMaker = retValues[0]
     collateralToken = retValues[1]
   })
-
-  let orgTimeStamp;
-
+  
   it('Should check on the state change when voting from governance', async function() {
     await resetTimeIncrease();
 
@@ -191,4 +192,10 @@ contract('MarketMakerStates: test dispute market', function([deployer, creator, 
     }
   });
 
+  it('Should revert because address already submitted', async function() {
+    await moveOneDay();
+
+    let state = await controller.getMarketState(fixedProductMarketMaker.address);
+    expect(new BigNumber(state).isEqualTo(new BigNumber(ORMarketLib.MarketState.Resolved))).to.equal(true);
+  });
 })
