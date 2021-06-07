@@ -319,7 +319,11 @@ contract RoomOraclePrice  is GnGOwnable{
     address public BUSD_Address = 0xe9e7CEA3DedcA5984780Bafc599bD69ADd087D56;
     uint8 public USDdecimals = 18;
     
+    uint256 public roomAvgPrice = 1e18;
     
+    mapping(address => bool) hasUpdatePricePermission;
+    
+    event PriceUpdated(address account, uint256 roomAmount, uint256 usdAmount, uint8 decimals);
     
     function setWBNB_Address(address newAddress) public onlyGovOrGur {
         WBNB_Address = newAddress;
@@ -338,18 +342,24 @@ contract RoomOraclePrice  is GnGOwnable{
         routerV2 = IUniswapV2Router02(newAddress);
     }
     
+    // updateRoomPrice: to set the room avg price , planed to be called dailly at 12:00 AM GMT based on previous day or week avg price
+    function updateRoomPrice(uint256 roomPrice, uint8 decimals) public{
+        require(hasUpdatePricePermission[msg.sender] == true, "caller has no permission to update rom price");
+        roomAvgPrice = roomPrice;
+        USDdecimals = decimals;
+        
+        emit PriceUpdated(msg.sender, 1e18, roomAvgPrice, USDdecimals);
+    }
     
+    
+    // used to get the avarge price for Room, which will be used by rewrd center to determine how much room will be sent based on Reward
     function getPrice() external view returns(uint256 roomAmount, uint256 usdAmount, uint8 decimals){
-        address[] memory path = new address[](3);
-        path[0] = BUSD_Address;
-        path[1] = WBNB_Address;
-        path[2] = ROOM_Address;
-        uint[] memory amounts = routerV2.getAmountsIn(1e18,path);
-        roomAmount = 1e18;
-        usdAmount = amounts[0];
-        decimals = USDdecimals;
+       roomAmount = 1e18;
+       usdAmount = roomAvgPrice;
+       decimals = USDdecimals;
     }
    
+    // getExpectedRoomByToken: used to display how much room will be get from Uniswap/bancake agains tokaneA amount
     function getExpectedRoomByToken(address tokenA, uint256 tokenAmount) external view returns(uint256){
         address[] memory path = new address[](3);
         path[0] = tokenA;
@@ -391,6 +401,10 @@ contract RoomOraclePrice  is GnGOwnable{
         path[2] = ROOM_Address;
         
         routerV2.swapExactTokensForTokensSupportingFeeOnTransferTokens(tokenAmount,minRoom,path,to, block.timestamp);
+    }
+    
+    function setUpdatePricePermission(address account, bool permissionFlag) public onlyGovOrGur{
+        hasUpdatePricePermission[account] = permissionFlag;
     }
     
     

@@ -65,7 +65,6 @@ pragma solidity ^0.5.16;
 
 
 contract ORGovernor is GnGOwnable, IORGovernor{
-    
     struct WrongMarketsVoting{
         uint256 lastWrongVotingCount;
         uint256 lastUpdateDate;
@@ -74,6 +73,9 @@ contract ORGovernor is GnGOwnable, IORGovernor{
     
     ICourtStake courtStake;
     address public marketsControllerAddress;
+    
+    uint16 public maxSuspendDays = 365;
+    
     mapping(address => uint256) suspended;
     mapping(address => string) suspendReason;
     mapping(address => WrongMarketsVoting) public WrongVoting;
@@ -110,6 +112,10 @@ contract ORGovernor is GnGOwnable, IORGovernor{
     }
     
     function suspendAccount(address account, uint256 numOfDays, string memory reason) public onlyGovOrGur{
+        
+        if(numOfDays > maxSuspendDays){
+            numOfDays = maxSuspendDays;
+        }
         _suspendAccount(account,numOfDays,reason);
     }
     
@@ -144,6 +150,10 @@ contract ORGovernor is GnGOwnable, IORGovernor{
         }
         
         return false;
+    }
+    
+    function setMaxSuspendDays(uint16 max) public onlyGovOrGur{
+        maxSuspendDays = max;
     }
     
     function getCurrentTime() public view returns(uint256){
