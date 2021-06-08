@@ -1,4 +1,4 @@
-pragma solidity ^0.5.1;
+pragma solidity ^0.5.16;
 import "openzeppelin-solidity/contracts/math/SafeMath.sol";
 import "./IRewardCenter.sol";
 import "../Guardian/GnGOwnable.sol";
