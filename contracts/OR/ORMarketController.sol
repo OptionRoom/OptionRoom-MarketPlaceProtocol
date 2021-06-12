@@ -429,6 +429,14 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     function getMarketInfo(address marketAddress) public view returns (MarketInfo memory) {
         return marketsInfo[marketAddress];
     }
+    
+    function getMarketsCountByTrader(address trader) public view returns(uint256){
+        return marketsTradeByUser[trader].length;
+    }
+    
+    function getMarketsByTrader(address trader) public view returns(address[] memory){
+        return marketsTradeByUser[trader];
+    }
     ////////////////////////
     function createMarketProposal(string memory marketQuestionID, uint256 participationEndTime, uint256 resolvingEndTime, IERC20 collateralToken, uint256 initialLiq) public returns(address){
         require(allowedCollaterals[address(collateralToken)] == true, "Collateral token is not allowed");
@@ -622,8 +630,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     // market configuration
     
-    function setMarketCreationFees(uint256 fees) public onlyGovOrGur{
-        marketCreationFees = fees;    
+    function setMarketCreationFees(uint256 neefees) public onlyGovOrGur{
+        marketCreationFees = neefees;    
     }
     
     function setMarketMinShareLiq(uint256 minLiq) public onlyGovOrGur {
