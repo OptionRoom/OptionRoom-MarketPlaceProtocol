@@ -533,6 +533,7 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex, outcomeTokensToBuy);
     }
     
+    
     function marketSell(address market, uint256 amount, uint256 index) public{
         ORMarketLib.MarketState marketState = getMarketState(market);
         require(marketState == ORMarketLib.MarketState.Active, "Market is not in active state");
@@ -581,6 +582,13 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
         erc20.safeTransfer(to, erc20.balanceOf(address(this)));
     }
     
+    function getMarketsCountByTrader(address trader) public view returns(uint256){
+        return marketsTradeByUser[trader].length;
+    }
+    
+    function getMarketsByTrader(address trader) public view returns(address[] memory){
+        return marketsTradeByUser[trader];
+    }
     
     //
     function setTemplateAddress(address templateAddress) public onlyGovOrGur{
@@ -616,8 +624,8 @@ contract ORMarketController is IORMarketController, TimeDependent, FixedProductM
     
     // market configuration
     
-    function setMarketCreationFees(uint256 fees) public onlyGovOrGur{
-        marketCreationFees = fees;    
+    function setMarketCreationFees(uint256 newfees) public onlyGovOrGur{
+        marketCreationFees = newfees;    
     }
     
     function setMarketMinShareLiq(uint256 minLiq) public onlyGovOrGur {
