@@ -2421,7 +2421,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     
     IORMarketController public marketController;
     
-    mapping(address => bool) public traders;
+    //mapping(address => bool) public traders;
 
     function setConfig(
             string memory _marketQuestionID,
@@ -2541,22 +2541,17 @@ contract ORFPMarket is FixedProductMarketMaker {
         require(msg.sender == address(marketController), "caller is not market controller");
     }
 
-    function _beforeBuyTo(address beneficiary, uint256 ) internal {
+    function _beforeBuyTo(address , uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
         
-        if(traders[beneficiary] == false){
-            traders[beneficiary] == true;
-        }
     }
 
-    function _beforeSellTo(address beneficiary, uint256 ) internal {
+    function _beforeSellTo(address , uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
         
-        if(traders[beneficiary] == false){
-            traders[beneficiary] == true;
-        }
+        
     }
 
      function state() public view returns (ORMarketLib.MarketState) {
@@ -3451,6 +3446,13 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
         erc20.safeTransfer(to, erc20.balanceOf(address(this)));
     }
     
+	function getMarketsCountByTrader(address trader) public view returns(uint256){
+        return marketsTradeByUser[trader].length;
+    }
+    
+    function getMarketsByTrader(address trader) public view returns(address[] memory){
+        return marketsTradeByUser[trader];
+    }
     
     //
     function setTemplateAddress(address templateAddress) public onlyGovOrGur{
@@ -3610,44 +3612,6 @@ contract ORMarketsQuery is GnGOwnable{
         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
             if(fpMarkets[marketIndex].proposer() == account && fpMarkets[marketIndex].state() == marketState){
                 marketstByProposerNStateCount++;
-            }
-        }
-
-    }
-    
-    function getMarketCountByTrader(address trader) external view returns(uint256 marketsCountByTrader){
-        
-        (marketsCountByTrader, , ) = _getMarketCountByTrader(trader);
-    }
-    
-    function _getMarketCountByTrader(address trader) internal view returns(uint256 marketsCountByTrader, uint256 marketsCount, ORFPMarket[] memory fpMarkets){
-        
-        marketsCount = marketsController.getAllMarketsCount();
-        fpMarkets = marketsController.getAllMarkets();
-        
-        marketsCountByTrader = 0;
-        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-            if(fpMarkets[marketIndex].traders(trader) == true){
-                marketsCountByTrader++;
-            }
-        }
-    }
-    
-    
-    function getMarketCountByTraderNState(address trader, ORMarketLib.MarketState marketState) external view returns(uint256 marketCountByTraderNState){
-        
-        (marketCountByTraderNState, ,) = _getMarketCountByTraderNState(trader, marketState);
-    }
-    
-    function _getMarketCountByTraderNState(address trader, ORMarketLib.MarketState marketState) internal view returns(uint256 marketCountByTraderNState, uint256 marketsCount, ORFPMarket[] memory fpMarkets){
-        
-        marketsCount = marketsController.getAllMarketsCount();
-        fpMarkets = marketsController.getAllMarkets();
-        
-        marketCountByTraderNState = 0;
-        for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
-                marketCountByTraderNState++;
             }
         }
 
@@ -3907,129 +3871,7 @@ contract ORMarketsQuery is GnGOwnable{
         return (markets,questionsIDs);
     }
     
-    function getMarketsByTrader(address trader, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
-        uint256 uLength;
-        uint256 marketsCount;
-        ORFPMarket[] memory fpMarkets;
-
-        if(length <0){
-            uint256 mc;
-            (mc, marketsCount, fpMarkets) = _getMarketCountByTrader(trader);
-            if(startIndex >= mc){
-                return markets;
-            }
-            uLength = mc - startIndex;
-        }else{
-            uLength = uint256(length);
-            marketsCount = marketsController.getAllMarketsCount();
-            fpMarkets = marketsController.getAllMarkets();
-        }
-
-        markets = new ORFPMarket[](uLength);
-        
-        
-        
-        uint256 marketInStateIndex = 0;
-         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-            if(fpMarkets[marketIndex].traders(trader) == true){
-                if(marketInStateIndex >= startIndex){
-                    uint256 currentIndex = marketInStateIndex - startIndex;
-                    if(currentIndex >=  uLength){
-                        return markets;
-                    }
-
-                    markets[currentIndex] = fpMarkets[marketIndex];
-                }
-                marketInStateIndex++;
-            }
-        }
-
-        return markets;
-    }
-    
-    
-    function getMarketsByTraderNState(address trader, ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets){
-        uint256 uLength;
-        uint256 marketsCount;
-        ORFPMarket[] memory fpMarkets;
-
-        if(length <0){
-            uint256 mc;
-            (mc, marketsCount, fpMarkets)= _getMarketCountByTraderNState(trader,marketState);
-            if(startIndex >= mc){
-                return markets;
-            }
-            uLength = mc - startIndex;
-        }else{
-            uLength = uint256(length);
-            marketsCount = marketsController.getAllMarketsCount();
-            fpMarkets = marketsController.getAllMarkets();
-        }
-
-        markets = new ORFPMarket[](uLength);
-        
-        
-        
-        uint256 marketInStateIndex = 0;
-         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
-                if(marketInStateIndex >= startIndex){
-                    uint256 currentIndex = marketInStateIndex - startIndex;
-                    if(currentIndex >=  uLength){
-                        return markets;
-                    }
-
-                    markets[currentIndex] = fpMarkets[marketIndex];
-                }
-                marketInStateIndex++;
-            }
-        }
-
-        return markets;
-    }
-    
-    
-    function getMarketsQuestionIDsByTraderNState(address trader, ORMarketLib.MarketState marketState, uint256 startIndex, int256 length) public view returns(ORFPMarket[] memory markets,string[] memory questionsIDs){
-        uint256 uLength;
-        uint256 marketsCount;
-        ORFPMarket[] memory fpMarkets;
-
-        if(length <0){
-            uint256 mc;
-            (mc, marketsCount, fpMarkets)= _getMarketCountByTraderNState(trader,marketState);
-            if(startIndex >= mc){
-                return(markets,questionsIDs);
-            }
-            uLength = mc - startIndex;
-        }else{
-            uLength = uint256(length);
-            marketsCount = marketsController.getAllMarketsCount();
-            fpMarkets = marketsController.getAllMarkets();
-        }
-
-        markets = new ORFPMarket[](uLength);
-        questionsIDs = new string[](uLength);
-        
-        uint256 marketInStateIndex = 0;
-         for(uint256 marketIndex=0;marketIndex < marketsCount;marketIndex ++){
-            if(fpMarkets[marketIndex].traders(trader) == true && fpMarkets[marketIndex].state() == marketState){
-                if(marketInStateIndex >= startIndex){
-                    uint256 currentIndex = marketInStateIndex - startIndex;
-                    if(currentIndex >=  uLength){
-                        return (markets,questionsIDs);
-                    }
-
-                    markets[currentIndex] = fpMarkets[marketIndex];
-                    questionsIDs[currentIndex] = fpMarkets[marketIndex].getMarketQuestionID();
-                }
-                marketInStateIndex++;
-            }
-        }
-
-        return (markets,questionsIDs);
-    }
-    
-     function hashCompareWithLengthCheck(string memory a, string memory b) internal pure returns (bool) {
+    function hashCompareWithLengthCheck(string memory a, string memory b) internal pure returns (bool) {
         bytes memory bytesA = bytes(a);
         bytes memory bytesB = bytes(b);
 
