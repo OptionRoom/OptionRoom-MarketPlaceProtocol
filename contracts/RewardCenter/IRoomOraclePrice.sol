@@ -22,11 +22,11 @@ contract RoomOraclePriceDummy is IRoomOraclePrice{
     }
 
 
-    function getExpectedRoomByToken(address tokenA, uint256 tokenAmount) external view returns(uint256) {
+    function getExpectedRoomByToken(address , uint256 ) external view returns(uint256) {
         return 1e18;
     }
     
-    function getExpectedTokenByRoom(address tokenA, uint256 roomAmount) external view returns(uint256) {
+    function getExpectedTokenByRoom(address , uint256 ) external view returns(uint256) {
         return 1e18;
     }
 }
