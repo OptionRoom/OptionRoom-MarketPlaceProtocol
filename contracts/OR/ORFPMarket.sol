@@ -22,7 +22,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     
     IORMarketController public marketController;
     
-    mapping(address => bool) public traders;
+    //mapping(address => bool) public traders;
 
     function setConfig(
             string memory _marketQuestionID,
@@ -142,22 +142,16 @@ contract ORFPMarket is FixedProductMarketMaker {
         require(msg.sender == address(marketController), "caller is not market controller");
     }
 
-    function _beforeBuyTo(address beneficiary, uint256 ) internal {
+    function _beforeBuyTo(address , uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
         
-        if(traders[beneficiary] == false){
-            traders[beneficiary] == true;
-        }
     }
 
-    function _beforeSellTo(address beneficiary, uint256 ) internal {
+    function _beforeSellTo(address , uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
         
-        if(traders[beneficiary] == false){
-            traders[beneficiary] == true;
-        }
     }
 
      function state() public view returns (ORMarketLib.MarketState) {

@@ -2420,7 +2420,7 @@ contract ORFPMarket is FixedProductMarketMaker {
     
     IORMarketController public marketController;
     
-    mapping(address => bool) public traders;
+    //mapping(address => bool) public traders;
 
     function setConfig(
             string memory _marketQuestionID,
@@ -2540,22 +2540,14 @@ contract ORFPMarket is FixedProductMarketMaker {
         require(msg.sender == address(marketController), "caller is not market controller");
     }
 
-    function _beforeBuyTo(address beneficiary, uint256 ) internal {
+    function _beforeBuyTo(address , uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
-        
-        if(traders[beneficiary] == false){
-            traders[beneficiary] == true;
-        }
     }
 
-    function _beforeSellTo(address beneficiary, uint256 ) internal {
+    function _beforeSellTo(address , uint256 ) internal {
         
         require(msg.sender == address(marketController), "caller is not market controller");
-        
-        if(traders[beneficiary] == false){
-            traders[beneficiary] == true;
-        }
     }
 
      function state() public view returns (ORMarketLib.MarketState) {
@@ -3449,6 +3441,13 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
         erc20.safeTransfer(to, erc20.balanceOf(address(this)));
     }
     
+	function getMarketsCountByTrader(address trader) public view returns(uint256){
+        return marketsTradeByUser[trader].length;
+    }
+    
+    function getMarketsByTrader(address trader) public view returns(address[] memory){
+        return marketsTradeByUser[trader];
+    }
     
     //
     function setTemplateAddress(address templateAddress) public onlyGovOrGur{

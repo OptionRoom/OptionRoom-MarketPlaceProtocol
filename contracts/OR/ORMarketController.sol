@@ -578,6 +578,13 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
         erc20.safeTransfer(to, erc20.balanceOf(address(this)));
     }
     
+    function getMarketsCountByTrader(address trader) public view returns(uint256){
+        return marketsTradeByUser[trader].length;
+    }
+    
+    function getMarketsByTrader(address trader) public view returns(address[] memory){
+        return marketsTradeByUser[trader];
+    }
     
     //
     function setTemplateAddress(address templateAddress) public onlyGovOrGur{
