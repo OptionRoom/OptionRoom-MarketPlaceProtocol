@@ -32,14 +32,16 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
         address indexed buyer,
         uint investmentAmount,
         uint indexed outcomeIndex,
-        uint outcomeTokensBought
+        uint outcomeTokensBought,
+        uint256 timestamp
     );
     event MCSell(
         address indexed market,
         address indexed seller,
         uint returnAmount,
         uint indexed outcomeIndex,
-        uint outcomeTokensSold
+        uint outcomeTokensSold,
+        uint256 timestamp
     );
     
     struct MarketVotersInfo{
@@ -529,7 +531,7 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
             marketsTradeByUser[msg.sender].push(market);
         }
         
-        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex, outcomeTokensToBuy);
+        emit MCBuy(market, msg.sender, investmentAmount, outcomeIndex, outcomeTokensToBuy, block.timestamp);
     }
     
     function marketSell(address market, uint256 amount, uint256 index) public{
@@ -558,7 +560,7 @@ contract ORMarketController is IORMarketController, FixedProductMarketMakerFacto
             marketsTradeByUser[msg.sender].push(market);
         }
         
-        emit MCSell(market, msg.sender, tradeVolume - pFee, index, amount);
+        emit MCSell(market, msg.sender, tradeVolume - pFee, index, amount, block.timestamp);
     }
     
     function buyRoom(address IERCaddress) internal{
