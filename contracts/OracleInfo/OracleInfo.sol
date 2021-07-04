@@ -1,8 +1,8 @@
 pragma solidity ^0.5.0;
 pragma experimental ABIEncoderV2;
 
-import {IERC20} from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
-import "../Guardian/GnGOwnable.sol";
+import {IERC20}     from "openzeppelin-solidity/contracts/token/ERC20/IERC20.sol";
+import {GnGOwnable} from "../Guardian/GnGOwnable.sol";
 
 contract  OROracleInfo is  GnGOwnable{
     
@@ -16,7 +16,7 @@ contract  OROracleInfo is  GnGOwnable{
         uint256 choicesLen;
         string question;
         string[] choices;
-        uint256 voterCount;
+        uint256 votersCount;
         uint256[] votesCounts;
         uint256[] roomHolding;
         uint256[] optionalTokenHolding;
@@ -42,10 +42,14 @@ contract  OROracleInfo is  GnGOwnable{
     uint256 public feesCollected;
     
     QuestionStruct[] public questions;
+    
     KnownAccountStruct[] public knownAccounts;
     mapping(address => uint256) proposersIDmap;
     
     mapping(uint256 => mapping (address => bool)) voteCheck;
+    
+    mapping(address => uint256[]) userPindingRewards;
+    mapping(address => uint256) userClaimedRewards;
     
     constructor() public{
         addProposer(address(this), 0, 0, "");
@@ -98,12 +102,12 @@ contract  OROracleInfo is  GnGOwnable{
             optionalTokenHolding: optionalTokenHolding,
             createdTiem:  block.timestamp,
             endTime: endTime,
-            voterCount: 0
+            votersCount: 0
         }));
     }
     
     
-    function vote(uint256 qid, uint256 choise) public{ //todo change to internal
+    function vote(uint256 qid, uint256 choise) public{ 
         require(voteCheck[qid][msg.sender] == false ,"User already vote for this question");
         voteCheck[qid][msg.sender] == true;
         
@@ -116,19 +120,75 @@ contract  OROracleInfo is  GnGOwnable{
         if(questions[qid].optionalERC20Address != address(0)){
             uint256 optionalTokenBalance = IERC20(questions[qid].optionalERC20Address).balanceOf(msg.sender);
             require(optionalTokenBalance >= questions[qid].minOptinalERC20Holding, "User do not hold minimum optinal room");
-            
             questions[qid].optionalTokenHolding[choise] += optionalTokenBalance;
         }
         
         uint256 roomBalance = ROOM.balanceOf(msg.sender);
         require(roomBalance >= questions[qid].minRoomHolding, "User do not hold minimum room");
-        
-        questions[qid].voterCount++;
-        questions[qid].votesCounts[choise]++;
         questions[qid].roomHolding[choise] += roomBalance;
+        
+        questions[qid].votersCount++;
+        questions[qid].votesCounts[choise]++;
+        
+        userPindingRewards[msg.sender].push(qid);
+        
     }
     
-    function getQuestionStruct(uint256 qid) public view returns(QuestionStruct memory){
+    function claimRewards() public{
+        address account = msg.sender;
+        
+        int256 pindingVotedIndex = int256(userPindingRewards[account].length - 1);
+        uint256 claimableRewards =0;
+        
+        uint256 cTime = getCurrentTime();
+        for(pindingVotedIndex; pindingVotedIndex > 0; pindingVotedIndex--){
+            uint256 qid = userPindingRewards[account][uint256(pindingVotedIndex)];
+            
+            uint256 reward = 0;
+            reward = questions[qid].reward / questions[qid].votersCount;
+            
+            if(questions[qid].endTime > cTime){
+               claimableRewards += reward;
+               
+               // delete the quetion from pindingVotedIndex: by reblace the current value by last value in the array, and remove last value
+               userPindingRewards[account][uint256(pindingVotedIndex)] = userPindingRewards[account][userPindingRewards[account].length - 1];
+               userPindingRewards[account].length--;
+            }
+        }
+        
+        userClaimedRewards[account] += claimableRewards;
+        
+        ROOM.transfer(account,claimableRewards);
+    }
+    
+    function getRewardsInfo(address account) public view returns(uint256 expectedRewards, uint256 claimableRewards){
+        
+        int256 pindingVotedIndex = int256(userPindingRewards[account].length);
+        
+        uint256 cTime = getCurrentTime();
+        for(pindingVotedIndex; pindingVotedIndex > 0; pindingVotedIndex--){
+            uint256 qid = userPindingRewards[account][uint256(pindingVotedIndex)];
+            
+            uint256 reward = 0;
+            reward = questions[qid].reward / questions[qid].votersCount;
+            
+            if(questions[qid].endTime > cTime){
+               claimableRewards += reward;
+            }else{
+                expectedRewards += reward;
+            }
+        }
+    }
+    
+    function getQuestionsCount() public view returns(uint256){
+        return questions.length;
+    }
+    
+    function getAllQuestions() public view returns(QuestionStruct[] memory){
+        return questions;
+    }
+    
+    function getQuestionInfo(uint256 qid) public view returns(QuestionStruct memory){
         return questions[qid];
     }
     
@@ -208,5 +268,18 @@ contract  OROracleInfo is  GnGOwnable{
     
     function getCurrentTime() public view returns(uint256){
         return block.timestamp;
+    }
+}
+
+contract OROracleInfoForTest is OROracleInfo{
+    uint256 public currentTime=0;
+    
+    function increaseTime(uint256 t) public{
+        currentTime+=t;
+    }
+    
+    function getCurrentTime() public view returns(uint256){
+        //return block.timestamp;
+        return currentTime;
     }
 }
