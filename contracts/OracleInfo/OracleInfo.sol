@@ -229,9 +229,9 @@ contract OROracleInfo is GnGOwnable {
 
     }
 
-    function uppdateProposer(address account, uint256 minReward, uint256 fees, bool allowed, string memory name) public onlyGovOrGur {
+    function updateProposer(address account, uint256 minReward, uint256 fees, bool allowed, string memory name) public onlyGovOrGur {
         uint256 proposerID = proposersIDMap[account];
-        require(proposerID != 0, "account is not added");
+        require(proposerID != 0, "account does not exist");
 
         knownAccounts[proposerID].minReward = minReward;
         knownAccounts[proposerID].fees = fees;
