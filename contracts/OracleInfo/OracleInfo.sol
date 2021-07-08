@@ -50,6 +50,9 @@ contract OROracleInfo is GnGOwnable {
 
     mapping(address => uint256[]) userPendingRewards;
     mapping(address => uint256) userClaimedRewards;
+    
+    event QuestionCreated(address indexed creator, uint256 indexed qid);
+    event Vote(uint256 indexed qid, uint8 choice);
 
     constructor() public {
         addProposer(address(this), 0, 0, "");
@@ -104,10 +107,12 @@ contract OROracleInfo is GnGOwnable {
         endTime : endTime,
         votersCount : 0
         }));
+        
+        emit QuestionCreated(msg.sender,qid);
     }
 
 
-    function vote(uint256 qid, uint256 choice) public {
+    function vote(uint256 qid, uint8 choice) public {
         require(voteCheck[qid][msg.sender] == false, "User already voted for this question");
         voteCheck[qid][msg.sender] == true;
 
@@ -131,7 +136,8 @@ contract OROracleInfo is GnGOwnable {
         questions[qid].votesCounts[choice]++;
 
         userPendingRewards[msg.sender].push(qid);
-
+        
+        emit Vote(qid,choice);
     }
 
     function claimRewards() public {
