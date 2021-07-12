@@ -114,7 +114,7 @@ contract OROracleInfo is GnGOwnable {
 
     function vote(uint256 qid, uint8 choice) public {
         require(voteCheck[qid][msg.sender] == false, "User already voted for this question");
-        voteCheck[qid][msg.sender] == true;
+        voteCheck[qid][msg.sender] = true;
 
         uint256 cTime = getCurrentTime();
 
@@ -147,13 +147,14 @@ contract OROracleInfo is GnGOwnable {
         uint256 claimableRewards = 0;
 
         uint256 cTime = getCurrentTime();
-        for (pendingVotedIndex; pendingVotedIndex > 0; pendingVotedIndex--) {
+        for (pendingVotedIndex; pendingVotedIndex >= 0; pendingVotedIndex--) {
             uint256 qid = userPendingRewards[account][uint256(pendingVotedIndex)];
 
             uint256 reward = 0;
             reward = questions[qid].reward / questions[qid].votersCount;
 
-            if (questions[qid].endTime > cTime) {
+            // if current time > question end time , then its reward are claimable 
+            if (cTime > questions[qid].endTime) {
                 claimableRewards += reward;
 
                 // delete the question from pendingVotedIndex: by replace the current value by last value in the array, and remove last value
@@ -169,16 +170,17 @@ contract OROracleInfo is GnGOwnable {
 
     function getRewardsInfo(address account) public view returns (uint256 expectedRewards, uint256 claimableRewards) {
 
-        int256 pendingVotedIndex = int256(userPendingRewards[account].length);
+        int256 pendingVotedIndex = int256(userPendingRewards[account].length - 1);
 
         uint256 cTime = getCurrentTime();
-        for (pendingVotedIndex; pendingVotedIndex > 0; pendingVotedIndex--) {
+        for (pendingVotedIndex; pendingVotedIndex >= 0; pendingVotedIndex--) {
             uint256 qid = userPendingRewards[account][uint256(pendingVotedIndex)];
 
             uint256 reward = 0;
             reward = questions[qid].reward / questions[qid].votersCount;
 
-            if (questions[qid].endTime > cTime) {
+             // if current time > question end time , then its reward are claimable else its in pending state
+            if (cTime >questions[qid].endTime) {
                 claimableRewards += reward;
             } else {
                 expectedRewards += reward;
