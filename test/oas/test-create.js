@@ -4,7 +4,7 @@ const {
   prepareContracts, setDeployer, addDays,
 } = require('../utils/oas-utils.js')
 const { toBN } = web3.utils
-var BigNumber = require('bignumber.js')
+const BigNumber = require('bignumber.js')
 
 // Preparing the contract things.
 contract('Test create OAS contract', function([deployer, creator, oracle, investor1, trader, investor2]) {
@@ -32,7 +32,8 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
 
   it('Should be able to create a new question', async function() {
     const fees = toBN(1e17)
-    const rewards = toBN(1e18)
+    const reward = toBN(1e18)
+    const totalToApprove = toBN(2e18)
     const minRoomHolding = toBN(1e18)
     const minOptionalERC20Holding = toBN(1e18)
 
@@ -44,9 +45,9 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     let endDate = addDays(now, 5)
     let questionEndTime = Math.floor(endDate.getTime() / 1000)
 
-    await roomTokenFake.approve(contractInstance.address, rewards, { from: deployer });
+    await roomTokenFake.approve(contractInstance.address, totalToApprove, { from: deployer });
 
-    let createTx = await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
+    let createTx = await contractInstance.createQuestion('QITest', choices, reward, questionEndTime, minRoomHolding,
       roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
 
     expectEvent.inLogs(createTx.logs, 'QuestionCreated', {
@@ -143,6 +144,45 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     expect(new BigNumber(votesPower[2]).isEqualTo(new BigNumber(0))).to.equal(true)
   })
 
+
+  it('Should pass because we did not set the fees for the anonymous fees to 0', async function() {
+    const rewards = toBN(1e18)
+    const minRoomHolding = toBN(1e18)
+    const minOptionalERC20Holding = toBN(1e18)
+    let choices = ['1', '2', '3', '4']
+    let now = new Date()
+    let endDate = addDays(now, 5)
+    let questionEndTime = Math.floor(endDate.getTime() / 1000)
+    await contractInstance.setAnonymousFees(toBN(0), { from: deployer })
+
+    await roomTokenFake.approve(contractInstance.address, rewards, { from: deployer });
+
+    await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
+      roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
+  })
+
+  it('Should fail fees is not 0 and oracle do not have enough ROOM tokens', async function() {
+    const REVERT = 'transfer amount exceeds balance';
+    try {
+    const rewards = toBN(1e18)
+    const minRoomHolding = toBN(1e18)
+    const minOptionalERC20Holding = toBN(1e18)
+    let choices = ['1', '2', '3', '4']
+    let now = new Date()
+    let endDate = addDays(now, 5)
+    let questionEndTime = Math.floor(endDate.getTime() / 1000)
+    await contractInstance.setAnonymousFees(toBN(1e17), { from: deployer })
+
+    await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
+      roomTokenFake.address, minOptionalERC20Holding, { from: oracle })
+
+    throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
   it('Should revert because we do not hold enough', async function() {
     const REVERT = 'User already voted for this question'
     try {
@@ -158,6 +198,31 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     const REVERT = 'User does not hold minimum optional room'
     try {
       await contractInstance.vote(toBN(createdQuestionId), toBN(2), { from: oracle })
+      throw null
+    } catch (error) {
+      assert(error, 'Expected an error but did not get one')
+      assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
+    }
+  })
+
+
+  it('Should fail because we did not send enough choices', async function() {
+    const REVERT = 'choices must be at least 2';
+    try {
+      const rewards = toBN(1e18)
+      const totalToApprove = toBN(2e18)
+      const minRoomHolding = toBN(1e18)
+      const minOptionalERC20Holding = toBN(1e18)
+      let choices = ['1']
+      let now = new Date()
+      let endDate = addDays(now, 5)
+      let questionEndTime = Math.floor(endDate.getTime() / 1000)
+
+      await roomTokenFake.approve(contractInstance.address, totalToApprove, { from: deployer });
+
+      await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
+        roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
+
       throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')

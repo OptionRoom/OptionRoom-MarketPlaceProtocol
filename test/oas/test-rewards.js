@@ -34,6 +34,7 @@ contract('Test rewards', function([deployer, creator, oracle, investor1, trader,
   it('Should be able to create a new question', async function() {
     const fees = toBN(1e17)
     const rewards = toBN(1e18)
+    const totalToApprove = toBN(2e18)
     const minRoomHolding = toBN(1e18)
     const minOptionalERC20Holding = toBN(1e18)
 
@@ -46,7 +47,7 @@ contract('Test rewards', function([deployer, creator, oracle, investor1, trader,
     let questionEndTime = Math.floor(endDate.getTime() / 1000)
 
 
-    await roomTokenFake.approve(contractInstance.address, rewards, { from: deployer });
+    await roomTokenFake.approve(contractInstance.address, totalToApprove, { from: deployer });
 
     let createTx = await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
       roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
