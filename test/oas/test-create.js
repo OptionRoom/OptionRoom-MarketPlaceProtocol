@@ -164,19 +164,19 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
   it('Should fail fees is not 0 and oracle do not have enough ROOM tokens', async function() {
     const REVERT = 'transfer amount exceeds balance';
     try {
-    const rewards = toBN(1e18)
-    const minRoomHolding = toBN(1e18)
-    const minOptionalERC20Holding = toBN(1e18)
-    let choices = ['1', '2', '3', '4']
-    let now = new Date()
-    let endDate = addDays(now, 5)
-    let questionEndTime = Math.floor(endDate.getTime() / 1000)
-    await contractInstance.setAnonymousFees(toBN(1e17), { from: deployer })
+      const rewards = toBN(1e18)
+      const minRoomHolding = toBN(1e18)
+      const minOptionalERC20Holding = toBN(1e18)
+      let choices = ['1', '2', '3', '4']
+      let now = new Date()
+      let endDate = addDays(now, 5)
+      let questionEndTime = Math.floor(endDate.getTime() / 1000)
+      await contractInstance.setAnonymousFees(toBN(1e17), { from: deployer })
 
-    await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
-      roomTokenFake.address, minOptionalERC20Holding, { from: oracle })
+      await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
+        roomTokenFake.address, minOptionalERC20Holding, { from: oracle })
 
-    throw null
+      throw null
     } catch (error) {
       assert(error, 'Expected an error but did not get one')
       assert(error.message.includes(REVERT), 'Expected \'' + REVERT + '\' but got \'' + error.message + '\' instead')
