@@ -60,15 +60,22 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     uint public totalFee;
     uint public lpFee;
     uint public proposerFee;
-    uint internal feePoolWeight;
     
+    mapping(address => uint256) public userClaimedRewards;
+    mapping(address => uint256) public userTotalRewards;
+    mapping(address => uint256) public userPrevAccRewardsPerToken;
+    
+    uint256 public totalCollectedFees;
+    uint256 public lastUpdatedCollectedFees;
+    uint256 public lpAccFeesPerToken;
+	
     uint public totalProposerFee;
     uint public withdrawnProposerFee;
     
     uint[] outcomeSlotCounts;
     bytes32[][] collectionIds;
     uint[] positionIds;
-    mapping(address => uint256) withdrawnFees;
+
     uint internal totalWithdrawnFees;
 
     bool initiated;
@@ -184,12 +191,14 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
 
     function collectedFees() external view returns (uint) {
-        return feePoolWeight.sub(totalWithdrawnFees);
+        return totalCollectedFees;
     }
 
     function feeLPWithdrawableBy(address account) public view returns (uint collateralAmount, uint roomAmount) {
-        uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
-        collateralAmount = rawAmount.sub(withdrawnFees[account]);
+        
+        (uint256 pendingRewards,  ) =  getLPReward(account);
+        
+        collateralAmount = pendingRewards;
         roomAmount = IRoomOraclePrice(roomOracle).getExpectedRoomByToken(address(collateralToken),collateralAmount);
        
     }
@@ -216,11 +225,15 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     }
 
     function _withdrawFees(address account, uint256 minRoom) internal {
-        uint rawAmount = feePoolWeight.mul(balanceOf(account)) / totalSupply();
-        uint withdrawableAmount = rawAmount.sub(withdrawnFees[account]);
+        
+        lpUpdateReward(account);
+        
+        uint withdrawableAmount = userTotalRewards[account] - userClaimedRewards[account];
+        
+        
         if (withdrawableAmount > 0) {
-            withdrawnFees[account] = rawAmount;
-            totalWithdrawnFees = totalWithdrawnFees.add(withdrawableAmount);
+            
+            userClaimedRewards[account] += withdrawableAmount;
             
             collateralToken.safeApprove(roomOracle,withdrawableAmount);
             IRoomOraclePrice(roomOracle).buyRoom(address(collateralToken),withdrawableAmount,minRoom,account);
@@ -252,11 +265,61 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         }
     }
     */
+	
+	function lpUpdateReward(address account) public {
+       
+
+        if (totalCollectedFees > lastUpdatedCollectedFees) {
+            
+            uint256 addedFeesPerToken = (totalCollectedFees - lastUpdatedCollectedFees) * 1e36 / totalSupply();
+            
+            lpAccFeesPerToken = lpAccFeesPerToken.add(addedFeesPerToken);
+        }
+
+        lastUpdatedCollectedFees = totalCollectedFees;
+
+        if (account != address(0)) {
+            uint256 accRewardPerTokenForUser = lpAccFeesPerToken.sub(userPrevAccRewardsPerToken[account]);
+            
+            
+            uint256 newRewardsForUser = accRewardPerTokenForUser.mul(balances[account]);
+            userTotalRewards[account] += newRewardsForUser.div(1e36);
+
+            userPrevAccRewardsPerToken[account] = lpAccFeesPerToken;
+        }
+    }
+    
+    function getLPReward(address account) public view returns (uint256 pendingRewards, uint256 claimedRewards){
+       
+
+        // update accRewardPerToken, in case totalVolume is zero; do not increment accRewardPerToken
+
+        uint256 lpAccFeesPerTokenView = lpAccFeesPerToken;
+        if (totalCollectedFees > lastUpdatedCollectedFees) {
+
+            uint256 addedFeesPerToken = (totalCollectedFees - lastUpdatedCollectedFees) * 1e36 / totalSupply();
+            lpAccFeesPerTokenView = lpAccFeesPerTokenView.add(addedFeesPerToken);
+
+        }
+
+        if (account != address(0))
+        {
+            uint256 accRewardPerTokenForUser = lpAccFeesPerTokenView.sub(userPrevAccRewardsPerToken[account]);
+            
+            
+            uint256 newRewardsForUser = accRewardPerTokenForUser.mul(balances[account]);
+            uint256 totalRewards = userTotalRewards[account].add(newRewardsForUser.div(1e36));
+
+            claimedRewards = userClaimedRewards[account];
+            pendingRewards = totalRewards - claimedRewards;
+        }
+    }
 
     function addFundingTo(address beneficiary, uint addedFunds, uint[] memory distributionHint) internal returns(uint)
     {
         require(addedFunds > 0, "funding must be non-zero");
         _beforeAddFundingTo(beneficiary,addedFunds);
+		lpUpdateReward(beneficiary);
 
         uint[] memory sendBackAmounts = new uint[](positionIds.length);
         uint poolShareSupply = totalSupply();
@@ -318,6 +381,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
     function removeFundingTo(address beneficiary, uint sharesToBurn, bool withdrawFeesFlag) internal {
 
         _beforeRemoveFundingTo(beneficiary, sharesToBurn);
+		lpUpdateReward(beneficiary);
 
         uint[] memory poolBalances = getPoolBalances();
 
@@ -470,7 +534,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         uint feeLPAmount = investmentAmount.mul(lpFee) / ONE;
         uint feeProposer = investmentAmount.mul(proposerFee) / ONE;
         totalProposerFee += feeProposer;
-        feePoolWeight = feePoolWeight.add(feeLPAmount);
+        totalCollectedFees += feeLPAmount;
         uint investmentAmountMinusFees = investmentAmount.sub(feeLPAmount).sub(feeProposer);
         require(collateralToken.approve(address(conditionalTokens), investmentAmountMinusFees), "approval for splits failed");
         splitPositionThroughAllConditions(investmentAmountMinusFees);
@@ -492,7 +556,7 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
         //uint feeAmount = returnAmount.mul(fee) / (ONE.sub(fee));
         uint feeLPAmount = returnAmount.mul(lpFee) / ONE;
         
-        feePoolWeight = feePoolWeight.add(feeLPAmount);
+        totalCollectedFees += feeLPAmount;
         uint returnAmountPlusFees = returnAmount.add(feeLPAmount);
         mergePositionsThroughAllConditions(returnAmountPlusFees);
 
@@ -552,6 +616,10 @@ contract FixedProductMarketMaker is ERC1155TokenReceiver {
             z = (x / z + z) / 2;
         }
         z = z + 1;
+    }
+	
+	function getVersion() public pure returns(uint8){
+        return 2;
     }
 
 }
