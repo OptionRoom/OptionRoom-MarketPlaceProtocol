@@ -7,7 +7,7 @@ const {
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('OR: tests for the rewards for the liquidity providers when adding liquidity', 
+contract('OR: tests for the rewards for the liquidity providers when adding liquidity',
     function([deployer, creator, oracle, investor1, trader, investor2]) {
 
   let controller
@@ -27,11 +27,11 @@ contract('OR: tests for the rewards for the liquidity providers when adding liqu
   let oracleInstance;
 
   let rewardCenterBalance;
-   
+
   // let positionIds
   before(async function() {
     setDeployer(deployer);
-    
+
     let retArray = await prepareContracts(creator, oracle, investor1, trader, investor2,deployer)
     controller = retArray[0];
 
@@ -57,7 +57,7 @@ contract('OR: tests for the rewards for the liquidity providers when adding liqu
 
     // setting the reward value here.
     await rewardsProgram.setLPRewardPerDay(toBN(10e18));
-    
+
     // set the min liquidity from here
     await controller.setMarketMinShareLiq(minLiquidityFunding)
   })
@@ -114,6 +114,34 @@ contract('OR: tests for the rewards for the liquidity providers when adding liqu
       await fixedProductMarketMaker.withdrawProposerFee(toBN(0), {from : creator});
   })
 
+  it('Should just pass by the call', async function() {
+    await fixedProductMarketMaker.withdrawFees(toBN(0), {from : creator});
+  })
+
+  it('Should just pass by the call', async function() {
+    let rewards = await fixedProductMarketMaker.getLPReward( creator);
+    let investor2Rewards = await fixedProductMarketMaker.getLPReward( investor2 );
+    let pendingRewards = rewards['pendingRewards'];
+    let claimedRewards = rewards['claimedRewards'];
+    expect(new BigNumber(pendingRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+    expect(new BigNumber(claimedRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+
+    pendingRewards = investor2Rewards['pendingRewards'];
+    claimedRewards = investor2Rewards['claimedRewards'];
+    expect(new BigNumber(pendingRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+    expect(new BigNumber(claimedRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+
+    // userTotalRewards
+    const userTotalRewards = await fixedProductMarketMaker.userTotalRewards.call(creator);
+    const userTotalRewards1 = await fixedProductMarketMaker.userTotalRewards.call(investor2);
+    expect(new BigNumber(userTotalRewards).isEqualTo(new BigNumber(0))).to.equal(true)
+    expect(new BigNumber(userTotalRewards1).isEqualTo(new BigNumber(0))).to.equal(true)
+
+    let collectedFees = await fixedProductMarketMaker.collectedFees();
+    expect(new BigNumber(collectedFees).isEqualTo(new BigNumber(0))).to.equal(true)
+  })
+
+
   it('Should fail to withdraw trying to remove more liquidity than min liquidity', async function() {
     await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: investor1 })
     await controller.castGovernanceValidatingVote(fixedProductMarketMaker.address, true, { from: oracle })
@@ -140,7 +168,7 @@ contract('OR: tests for the rewards for the liquidity providers when adding liqu
     await collateralToken.deposit({ value: investmentAmount, from: creator })
     await collateralToken.approve(controller.address, investmentAmount, { from: creator })
     await controller.marketAddLiquidity(fixedProductMarketMaker.address, investmentAmount, { from: creator })
-    
+
     await collateralToken.deposit({ value: investmentAmount, from: investor2 })
     await collateralToken.approve(controller.address, investmentAmount, { from: investor2 })
     await controller.marketAddLiquidity(fixedProductMarketMaker.address, investmentAmount, { from: investor2 })
