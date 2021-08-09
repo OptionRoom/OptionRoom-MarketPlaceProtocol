@@ -7,7 +7,7 @@ const {
 const { toBN } = web3.utils
 var BigNumber = require('bignumber.js')
 
-contract('OR: tests for the rewards for the liquidity providers when adding liquidity',
+contract('OR: tests for the rewards for the liquidity provider when adding liquidity',
     function([deployer, creator, oracle, investor1, trader, investor2]) {
 
   let controller
