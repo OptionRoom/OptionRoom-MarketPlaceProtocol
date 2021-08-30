@@ -74,7 +74,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
 
   fixedProductMarketMakerFactory = await PredictionMarketFactoryMock.deployed()
   governanceMock = await RoomsGovernor.deployed()
-  
+
   let courtStakeContract = await CourtStakeMock.new();
 
   await centralTime.initializeTime();
@@ -84,10 +84,10 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
   rewardProgram = await RewardProgram.deployed();
   await rewardProgram.setCentralTimeForTesting(centralTime.address);
   await rewardProgram.doInitialization();
-  
+
   rewardCenter = await RewardCenterMockController.new();
   await rewardCenter.setCentralTimeForTesting(centralTime.address);
-  
+
   // setting the time for the governance as well.
   await governanceMock.setCentralTimeForTesting(centralTime.address);
   await governanceMock.setMarketsControllerAddress(fixedProductMarketMakerFactory.address);
@@ -103,7 +103,7 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
 
   // Assingn the oracle for the controller.
   await fixedProductMarketMakerFactory.setRoomoracleAddress(oracleInstance.address);
-  
+
   let deployedMarketMakerContract = await ORFPMarket.deployed();
   await fixedProductMarketMakerFactory.setTemplateAddress(deployedMarketMakerContract.address);
   await fixedProductMarketMakerFactory.assign(conditionalTokens.address);
@@ -117,12 +117,12 @@ async function prepareContracts(creator, oracle, investor1, trader, investor2) {
 
   // add suspend permission for this controller.
   await courtStakeContract.suspendPermission(governanceMock.address, true);
-  
+
   await governanceMock.setPower(investor1, 5);
   await governanceMock.setPower(investor2, 1);
   await governanceMock.setPower(trader, 2);
   await governanceMock.setPower(oracle, 3);
-  
+
   return [fixedProductMarketMakerFactory,rewardProgram,rewardCenter, conditionalTokens, governanceMock];
 }
 
@@ -153,7 +153,7 @@ async function createNewMarket(creator) {
   const { fixedProductMarketMaker } = createTx.logs.find(
     ({ event }) => event === 'FixedProductMarketMakerCreation'
   ).args;
-  
+
   const marketToReturn = await ORFPMarket.at(fixedProductMarketMaker)
   positionIds = await marketToReturn.getPositionIds();
   return [marketToReturn, collateralToken, positionIds];
@@ -192,7 +192,7 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds, quest
   await centralTime.initializeTime();
 
   await col.approve(fixedProductMarketMakerFactory.address, addedFunds, { from: creator })
-  
+
   const createTx = await fixedProductMarketMakerFactory.createMarketProposal(...createArgs)
   expectEvent.inLogs(createTx.logs, 'FixedProductMarketMakerCreation', {
     creator,
@@ -207,7 +207,8 @@ async function createNewMarketWithCollateral(creator, isERC20, addedFunds, quest
   // Return those attributes to the creation, so that we can check on them.
   const marketToReturn = await ORFPMarket.at(fixedProductMarketMaker)
   positionIds = await marketToReturn.getPositionIds();
-  return [marketToReturn, col, positionIds];
+  // return [marketToReturn, collateralToken, positionIds];
+  return [marketToReturn, col, positionIds, collateralToken];
 }
 
 function addDays(theDate, days) {
@@ -233,6 +234,15 @@ async function executeControllerMethod(func,args) {
 
 async function conditionalApproveForAll(market,account) {
    conditionalTokens.setApprovalForAll(market.address, true, { from: account });
+}
+
+async function conditionalApproveForAll22(market,account) {
+  conditionalTokens.setApprovalForAll(market, true, { from: account });
+}
+
+
+async function conditionalApproveForAll1(account, market) {
+  conditionalTokens.setApprovalForAll(account, true,{ from: market });
 }
 
 async function conditionalApproveFor(market,amount, account) {
@@ -281,9 +291,9 @@ async function moveOneDay() {
 }
 
 async function forwardMarketToResolving(fixedProductMarketMaker, investor1, trader, investor2) {
-  await fixedProductMarketMakerFactory.castGovernanceValidatingVote(fixedProductMarketMaker.address,true, 
+  await fixedProductMarketMakerFactory.castGovernanceValidatingVote(fixedProductMarketMaker.address,true,
     { from: investor2 });
-  
+
   await moveToActive();
 }
 
@@ -319,4 +329,6 @@ module.exports = {
   getOracleMock,
   getRoomFakeToken,
   getCollateralBalance,
+  conditionalApproveForAll1,
+  conditionalApproveForAll22,
 }
