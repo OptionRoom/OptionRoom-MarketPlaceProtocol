@@ -22,6 +22,8 @@ contract OROracleInfo is GnGOwnable {
         uint256[] optionalTokenHolding;
         uint256 createdTime;
         uint256 endTime;
+        uint256[] categoriesIndices;
+        string description;
     }
 
     struct KnownAccountStruct {
@@ -32,7 +34,7 @@ contract OROracleInfo is GnGOwnable {
         string name;
     }
 
-    IERC20 public ROOM;//TODO
+    IERC20 public ROOM = IERC20(0x460A9872c00f01172d9efE9a3d6971475212517b);//TODO
     uint256 public minRoomHolding; //TODO
 
     bool public anonymousProposerAllowed = true; //TODO
@@ -46,11 +48,16 @@ contract OROracleInfo is GnGOwnable {
     KnownAccountStruct[] public knownAccounts;
     mapping(address => uint256) proposersIDMap;
 
-    mapping(uint256 => mapping(address => bool)) voteCheck;
+    mapping(uint256 => mapping(address => bool)) public voteCheck;
+    mapping(uint256 => mapping(address => uint8)) public userVote;
 
     mapping(address => uint256[]) userPendingRewards;
     mapping(address => uint256) userClaimedRewards;
-    
+
+    mapping(address => bool) categoriesModifyPermission;
+
+    string[] public categories;
+
     event QuestionCreated(address indexed creator, uint256 indexed qid);
     event Vote(uint256 indexed qid, uint8 choice);
 
@@ -58,7 +65,7 @@ contract OROracleInfo is GnGOwnable {
         addProposer(address(this), 0, 0, "");
     }
 
-    function createQuestion(string memory question, string[] memory choices, uint256 reward, uint256 endTime, uint256 minRoomHoldingAboveDefault, address optionalERC20Address, uint256 minOptionalERC20Holding) public returns (uint256 qid) {
+    function createQuestion(string memory question, string[] memory choices, uint256 reward, uint256 endTime, uint256 minRoomHoldingAboveDefault, address optionalERC20Address, uint256 minOptionalERC20Holding, uint256[] memory categoriesIndices, string memory description) public returns (uint256 qid) {
         address account = msg.sender;
         uint256 proposerID = proposersIDMap[account];
         uint256 fees;
@@ -79,10 +86,10 @@ contract OROracleInfo is GnGOwnable {
 
         ROOM.transferFrom(account, address(this), reward);
 
-        return _createQuestion(question, choices, reward, endTime, minRoomHoldingAboveDefault, optionalERC20Address, minOptionalERC20Holding);
+        return _createQuestion(question, choices, reward, endTime, minRoomHoldingAboveDefault, optionalERC20Address, minOptionalERC20Holding, categoriesIndices, description);
     }
 
-    function _createQuestion(string memory question, string[] memory choices, uint256 reward, uint256 endTime, uint256 minRoomHoldingAboveDefault, address optionalERC20Address, uint256 minOptionalERC20Holding) internal returns (uint256 qid){
+    function _createQuestion(string memory question, string[] memory choices, uint256 reward, uint256 endTime, uint256 minRoomHoldingAboveDefault, address optionalERC20Address, uint256 minOptionalERC20Holding, uint256[] memory categoriesIndices, string memory description) internal returns (uint256 qid){
         require(choices.length >= 2, "choices must be at least 2");
         uint256[] memory votes = new uint256[](choices.length);
         uint256[] memory votesPower = new uint256[](choices.length);
@@ -105,9 +112,11 @@ contract OROracleInfo is GnGOwnable {
         optionalTokenHolding : optionalTokenHolding,
         createdTime : block.timestamp,
         endTime : endTime,
-        votersCount : 0
+        votersCount : 0,
+        categoriesIndices: categoriesIndices,
+        description: description
         }));
-        
+
         emit QuestionCreated(msg.sender,qid);
     }
 
@@ -119,7 +128,7 @@ contract OROracleInfo is GnGOwnable {
         uint256 cTime = getCurrentTime();
 
         require(questions[qid].endTime > cTime, "Question has reached end time");
-
+        userVote[qid][msg.sender] = choice;
         // No Transfer for room or the optional token, just check how much the user is holding
 
         if (questions[qid].optionalERC20Address != address(0)) {
@@ -136,7 +145,7 @@ contract OROracleInfo is GnGOwnable {
         questions[qid].votesCounts[choice]++;
 
         userPendingRewards[msg.sender].push(qid);
-        
+
         emit Vote(qid,choice);
     }
 
@@ -153,7 +162,7 @@ contract OROracleInfo is GnGOwnable {
             uint256 reward = 0;
             reward = questions[qid].reward / questions[qid].votersCount;
 
-            // if current time > question end time , then its reward are claimable 
+            // if current time > question end time , then its reward are claimable
             if (cTime > questions[qid].endTime) {
                 claimableRewards += reward;
 
@@ -179,7 +188,7 @@ contract OROracleInfo is GnGOwnable {
             uint256 reward = 0;
             reward = questions[qid].reward / questions[qid].votersCount;
 
-             // if current time > question end time , then its reward are claimable else its in pending state
+            // if current time > question end time , then its reward are claimable else its in pending state
             if (cTime >questions[qid].endTime) {
                 claimableRewards += reward;
             } else {
@@ -204,9 +213,10 @@ contract OROracleInfo is GnGOwnable {
         return questions[qid].choices;
     }
 
-    function getQuestion(uint256 qid) public view returns (string memory question, string[] memory choices) {
+    function getQuestion(uint256 qid) public view returns (string memory question, string memory description, string[] memory choices) {
         question = questions[qid].question;
         choices = questions[qid].choices;
+        description = questions[qid].description;
     }
 
     function getQuestionResult(uint256 qid) public view returns (uint256[] memory votes, uint256[] memory votesPower) {
@@ -271,6 +281,42 @@ contract OROracleInfo is GnGOwnable {
     function transferCollectedFees() public onlyGovOrGur {
         ROOM.transfer(msg.sender, feesCollected);
         feesCollected = 0;
+    }
+
+    function addCategory(string memory category) public {
+        require(categoriesModifyPermission[msg.sender] == true, "user has no permission to add category");
+        categories.push(category);
+    }
+
+    function modifyCategory(uint256 cid, string memory category) public {
+        require(categoriesModifyPermission[msg.sender] == true, "user has no permission to modify category");
+        require(cid < categories.length, "cid is not found");
+
+        categories[cid] = category;
+    }
+
+    function setCategoriesModifyPermission(address account, bool permissionFlag) public onlyGovOrGur{
+        categoriesModifyPermission[account] = permissionFlag;
+    }
+
+    function getAllCategories() public view returns(string[] memory){
+        return categories;
+    }
+
+    function getCategoriesCount() public view returns(uint256){
+        return categories.length;
+    }
+
+    function getCategories(uint256[] memory cids) public view returns(string[] memory categoriesStr){
+        categoriesStr = new string[](cids.length);
+        for(uint256 indx=0;indx<cids.length;indx++){
+            categoriesStr[indx] = categories[indx];
+        }
+    }
+
+    function getUserVote(uint256 qid, address account) public view returns(bool voteFlag, uint8 choice){
+        voteFlag = voteCheck[qid][account];
+        choice = userVote[qid][account];
     }
 
 
