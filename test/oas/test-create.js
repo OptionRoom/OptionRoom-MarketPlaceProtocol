@@ -36,11 +36,13 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     const totalToApprove = toBN(2e18)
     const minRoomHolding = toBN(1e18)
     const minOptionalERC20Holding = toBN(1e18)
+    const questionDescription = "Really cool description that goes to this question";
 
     // Set the fees
     await contractInstance.setAnonymousFees(fees, { from: deployer })
 
     let choices = ['1', '2', '3']
+    let categories = ['1', '2', '3'];
     let now = new Date()
     let endDate = addDays(now, 5)
     let questionEndTime = Math.floor(endDate.getTime() / 1000)
@@ -48,7 +50,7 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     await roomTokenFake.approve(contractInstance.address, totalToApprove, { from: deployer });
 
     let createTx = await contractInstance.createQuestion('QITest', choices, reward, questionEndTime, minRoomHolding,
-      roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
+        roomTokenFake.address,minOptionalERC20Holding,categories, questionDescription,  { from: deployer })
 
     expectEvent.inLogs(createTx.logs, 'QuestionCreated', {
       creator: deployer
@@ -149,7 +151,11 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     const rewards = toBN(1e18)
     const minRoomHolding = toBN(1e18)
     const minOptionalERC20Holding = toBN(1e18)
+    const questionDescription = "Really cool description that goes to this question";
+
     let choices = ['1', '2', '3', '4']
+    let categories = ['1', '2', '3'];
+
     let now = new Date()
     let endDate = addDays(now, 5)
     let questionEndTime = Math.floor(endDate.getTime() / 1000)
@@ -158,7 +164,7 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
     await roomTokenFake.approve(contractInstance.address, rewards, { from: deployer });
 
     await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
-      roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
+      roomTokenFake.address, minOptionalERC20Holding, categories, questionDescription, { from: deployer })
   })
 
   it('Should fail fees is not 0 and oracle do not have enough ROOM tokens', async function() {
@@ -167,14 +173,18 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
       const rewards = toBN(1e18)
       const minRoomHolding = toBN(1e18)
       const minOptionalERC20Holding = toBN(1e18)
+      const questionDescription = "Really cool description that goes to this question";
+
       let choices = ['1', '2', '3', '4']
+      let categories = ['1', '2', '3'];
+
       let now = new Date()
       let endDate = addDays(now, 5)
       let questionEndTime = Math.floor(endDate.getTime() / 1000)
       await contractInstance.setAnonymousFees(toBN(1e17), { from: deployer })
 
       await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
-        roomTokenFake.address, minOptionalERC20Holding, { from: oracle })
+        roomTokenFake.address, minOptionalERC20Holding,categories, questionDescription, { from: oracle })
 
       throw null
     } catch (error) {
@@ -214,6 +224,11 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
       const minRoomHolding = toBN(1e18)
       const minOptionalERC20Holding = toBN(1e18)
       let choices = ['1']
+
+      const questionDescription = "Really cool description that goes to this question";
+
+      let categories = ['1', '2', '3'];
+
       let now = new Date()
       let endDate = addDays(now, 5)
       let questionEndTime = Math.floor(endDate.getTime() / 1000)
@@ -221,7 +236,7 @@ contract('Test create OAS contract', function([deployer, creator, oracle, invest
       await roomTokenFake.approve(contractInstance.address, totalToApprove, { from: deployer });
 
       await contractInstance.createQuestion('QITest', choices, rewards, questionEndTime, minRoomHolding,
-        roomTokenFake.address, minOptionalERC20Holding, { from: deployer })
+        roomTokenFake.address, minOptionalERC20Holding,categories, questionDescription, { from: deployer })
 
       throw null
     } catch (error) {
